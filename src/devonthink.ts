@@ -1,4 +1,3 @@
-
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import {
   CallToolRequestSchema,
@@ -10,6 +9,13 @@ import {
   Tool,
 } from "@modelcontextprotocol/sdk/types.js";
 import { isRunningTool } from "./tools/isRunning.js";
+import { createRecordTool } from "./tools/createRecord.js";
+import { deleteRecordTool } from "./tools/deleteRecord.js";
+import { moveRecordTool } from "./tools/moveRecord.js";
+import { getRecordPropertiesTool } from "./tools/getRecordProperties.js";
+import { searchTool } from "./tools/search.js";
+import { lookupRecordTool } from "./tools/lookupRecord.js";
+import { createFromUrlTool } from "./tools/createFromUrl.js";
 
 export const createServer = async () => {
   const server = new Server(
@@ -26,7 +32,16 @@ export const createServer = async () => {
     }
   );
 
-  const tools: Tool[] = [isRunningTool];
+  const tools: Tool[] = [
+    isRunningTool,
+    createRecordTool,
+    deleteRecordTool,
+    moveRecordTool,
+    getRecordPropertiesTool,
+    searchTool,
+    lookupRecordTool,
+    createFromUrlTool,
+  ];
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     return { tools };
@@ -43,14 +58,17 @@ export const createServer = async () => {
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args = {} } = request.params;
 
-    const tool = tools.find(t => t.name === name);
+    const tool = tools.find((t) => t.name === name);
 
     if (!tool) {
       throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
     }
 
-    if (typeof tool.run !== 'function') {
-      throw new McpError(ErrorCode.InternalError, `Tool '${name}' has no run function.`);
+    if (typeof tool.run !== "function") {
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Tool '${name}' has no run function.`
+      );
     }
 
     try {
