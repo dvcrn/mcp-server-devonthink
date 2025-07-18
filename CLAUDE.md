@@ -19,6 +19,11 @@
   - **`lookupRecord.ts`**: Looks up records by specific attributes
   - **`createFromUrl.ts`**: Creates records from web URLs in various formats
   - **`getOpenDatabases.ts`**: Lists all currently open databases
+  - **`listGroupContent.ts`**: Lists the content of a specific group
+  - **`getRecordContent.ts`**: Retrieves the content of a specific record
+  - **`renameRecord.ts`**: Renames a record
+  - **`addTags.ts`**: Adds tags to a record
+  - **`removeTags.ts`**: Removes tags from a record
 - **`src/applescript/execute.ts`**: A utility module that provides the `executeJxa` function to run JXA scripts via the command line.
 
 ## Available Tools
@@ -34,6 +39,11 @@ The MCP server currently provides the following tools:
 7. **`lookup_record`** - Look up records by filename, path, URL, tags, comment, or content hash (exact matches only, no wildcards)
 8. **`create_from_url`** - Create records from web URLs in multiple formats
 9. **`get_open_databases`** - Get a list of all currently open databases
+10. **`list_group_content`** - Lists the content of a specific group
+11. **`get_record_content`** - Gets the content of a specific record
+12. **`rename_record`** - Renames a specific record
+13. **`add_tags`** - Adds tags to a specific record
+14. **`remove_tags`** - Removes tags from a specific record
 
 ## Adding New Tools
 
