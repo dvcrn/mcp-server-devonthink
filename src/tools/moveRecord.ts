@@ -18,9 +18,10 @@ const MoveRecordSchema = z
       .string()
       .optional()
       .describe("The path of the record to move (if ID not provided)"),
-    destinationGroup: z
+    destinationGroupUuid: z
       .string()
-      .describe("The name or path of the destination group"),
+      .optional()
+      .describe("The UUID of the destination group"),
     databaseName: z
       .string()
       .optional()
@@ -51,7 +52,7 @@ const moveRecord = async (
     recordId,
     recordName,
     recordPath,
-    destinationGroup,
+    destinationGroupUuid,
     databaseName,
   } = input;
 
@@ -97,10 +98,14 @@ const moveRecord = async (
           });
         }
         
-        // Find or create the destination group
-        const destinationGroupRecord = theApp.createLocation("${destinationGroup}", { in: targetDatabase });
+        // Find the destination group
+        let destinationGroupRecord;
+        if ("${destinationGroupUuid || ""}") {
+          destinationGroupRecord = theApp.getRecordWithUuid("${destinationGroupUuid}");
+        }
+        
         if (!destinationGroupRecord) {
-          throw new Error("Could not create or find destination group: ${destinationGroup}");
+          throw new Error("Destination group with UUID not found: ${destinationGroupUuid}");
         }
         
         // Move the record

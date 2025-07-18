@@ -19,11 +19,11 @@ const CreateRecordSchema = z
       .optional()
       .describe("The content of the record (for text-based records)"),
     url: z.string().optional().describe("The URL for bookmark records"),
-    parentGroup: z
+    parentGroupUuid: z
       .string()
       .optional()
       .describe(
-        "The name or path of the parent group (defaults to current group)"
+        "The UUID of the parent group (defaults to the database's incoming group)"
       ),
     databaseName: z
       .string()
@@ -45,7 +45,7 @@ const createRecord = async (
   uuid?: string;
   error?: string;
 }> => {
-  const { name, type, content, url, parentGroup, databaseName } = input;
+  const { name, type, content, url, parentGroupUuid, databaseName } = input;
 
   const script = `
     (() => {
@@ -66,10 +66,10 @@ const createRecord = async (
 
         // Get the parent group
         let destinationGroup;
-        if ("${parentGroup || ""}") {
-          destinationGroup = theApp.createLocation("${parentGroup}", { in: targetDatabase });
+        if ("${parentGroupUuid || ""}") {
+          destinationGroup = theApp.getRecordWithUuid("${parentGroupUuid}");
           if (!destinationGroup) {
-            throw new Error("Could not create or find parent group: ${parentGroup}");
+            throw new Error("Parent group with UUID not found: ${parentGroupUuid}");
           }
         } else {
           destinationGroup = targetDatabase.incomingGroup();

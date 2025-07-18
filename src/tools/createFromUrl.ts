@@ -16,11 +16,11 @@ const CreateFromUrlSchema = z
       .string()
       .optional()
       .describe("Custom name for the record (auto-generated if not provided)"),
-    parentGroup: z
+    parentGroupUuid: z
       .string()
       .optional()
       .describe(
-        "The name or path of the parent group (defaults to current group)"
+        "The UUID of the parent group (defaults to the database's incoming group)"
       ),
     readability: z
       .boolean()
@@ -74,7 +74,7 @@ const createFromUrl = async (
     url,
     format,
     name,
-    parentGroup,
+    parentGroupUuid,
     readability,
     userAgent,
     referrer,
@@ -101,10 +101,10 @@ const createFromUrl = async (
 
         // Get the parent group
         let destinationGroup;
-        if ("${parentGroup || ""}") {
-          destinationGroup = theApp.createLocation("${parentGroup}", { in: targetDatabase });
+        if ("${parentGroupUuid || ""}") {
+          destinationGroup = theApp.getRecordWithUuid("${parentGroupUuid}");
           if (!destinationGroup) {
-            throw new Error("Could not create or find parent group: ${parentGroup}");
+            throw new Error("Parent group with UUID not found: ${parentGroupUuid}");
           }
         } else {
           destinationGroup = targetDatabase.incomingGroup();
