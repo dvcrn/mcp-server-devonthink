@@ -128,7 +128,7 @@ const createRecord = async (
 export const createRecordTool: Tool = {
   name: "create_record",
   description:
-    "Create a new record in DEVONthink. This tool can create various record types, including groups, markdown files, and bookmarks. Use the `parentGroupUuid` to specify a location, otherwise it will be created in the database's incoming group. The tool returns the `uuid` of the new record, which can be used in other tools.",
+    "Create a new record in DEVONthink. This tool can create various record types, including groups, markdown files, and bookmarks. Use the `parentGroupUuid` to specify a location, otherwise it will be created in the database's incoming group. The tool returns the `uuid` of the new record, which can be used in other tools.\n\nIMPORTANT - Database Root vs Inbox:\n- No parentGroupUuid = creates in database's Inbox (incoming group)\n- To create at database root: use parentGroupUuid with the database UUID\n- Get database UUID first using get_open_databases tool\n\nExample workflow for root creation:\n1. Use get_open_databases to get database UUID (e.g., '5E47D6F2-5E0C-4E30-A6ED-2AC92116C3E1')\n2. Use create_record with parentGroupUuid: '5E47D6F2-5E0C-4E30-A6ED-2AC92116C3E1'",
   inputSchema: zodToJsonSchema(CreateRecordSchema) as ToolInput,
   run: createRecord,
 };
