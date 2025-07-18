@@ -61,10 +61,7 @@ const getRecordContent = async (
         } else if (recordType === "rtf") {
             content = record.richText();
         } else {
-            return JSON.stringify({
-                success: false,
-                error: "Record content for type '" + recordType + "' is not supported."
-            });
+            content = record.plainText();
         }
         
         return JSON.stringify({
