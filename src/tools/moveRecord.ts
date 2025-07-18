@@ -8,6 +8,7 @@ type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const MoveRecordSchema = z
   .object({
+    uuid: z.string().optional().describe("The UUID of the record"),
     recordId: z.number().optional().describe("The ID of the record to move"),
     recordName: z
       .string()
@@ -30,10 +31,14 @@ const MoveRecordSchema = z
   .strict()
   .refine(
     (data) =>
+      data.uuid !== undefined ||
       data.recordId !== undefined ||
       data.recordName !== undefined ||
       data.recordPath !== undefined,
-    { message: "Either recordId, recordName, or recordPath must be provided" }
+    {
+      message:
+        "Either uuid, recordId, recordName, or recordPath must be provided",
+    }
   );
 
 type MoveRecordInput = z.infer<typeof MoveRecordSchema>;
@@ -41,8 +46,14 @@ type MoveRecordInput = z.infer<typeof MoveRecordSchema>;
 const moveRecord = async (
   input: MoveRecordInput
 ): Promise<{ success: boolean; newLocation?: string; error?: string }> => {
-  const { recordId, recordName, recordPath, destinationGroup, databaseName } =
-    input;
+  const {
+    uuid,
+    recordId,
+    recordName,
+    recordPath,
+    destinationGroup,
+    databaseName,
+  } = input;
 
   const script = `
     (() => {
@@ -64,7 +75,9 @@ const moveRecord = async (
         }
 
         // Find the record to move
-        if (${recordId || "null"}) {
+        if ("${uuid || ""}") {
+          targetRecord = theApp.getRecordWithUuid("${uuid}");
+        } else if (${recordId || "null"}) {
           const allRecords = targetDatabase.contents();
           targetRecord = allRecords.find(r => r.id() === ${recordId});
         } else if ("${recordName || ""}") {

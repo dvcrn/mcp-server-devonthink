@@ -8,6 +8,7 @@ type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const GetRecordPropertiesSchema = z
   .object({
+    uuid: z.string().optional().describe("The UUID of the record"),
     recordId: z
       .number()
       .optional()
@@ -34,10 +35,14 @@ const GetRecordPropertiesSchema = z
   .strict()
   .refine(
     (data) =>
+      data.uuid !== undefined ||
       data.recordId !== undefined ||
       data.recordName !== undefined ||
       data.recordPath !== undefined,
-    { message: "Either recordId, recordName, or recordPath must be provided" }
+    {
+      message:
+        "Either uuid, recordId, recordName, or recordPath must be provided",
+    }
   );
 
 type GetRecordPropertiesInput = z.infer<typeof GetRecordPropertiesSchema>;
@@ -72,7 +77,7 @@ interface RecordProperties {
 const getRecordProperties = async (
   input: GetRecordPropertiesInput
 ): Promise<RecordProperties> => {
-  const { recordId, recordName, recordPath, databaseName } = input;
+  const { uuid, recordId, recordName, recordPath, databaseName } = input;
 
   const script = `
     (() => {
@@ -94,7 +99,9 @@ const getRecordProperties = async (
         }
 
         // Find the record
-        if (${recordId || "null"}) {
+        if ("${uuid || ""}") {
+          targetRecord = theApp.getRecordWithUuid("${uuid}");
+        } else if (${recordId || "null"}) {
           const allRecords = targetDatabase.contents();
           targetRecord = allRecords.find(r => r.id() === ${recordId});
         } else if ("${recordName || ""}") {
