@@ -17,6 +17,11 @@ import { searchTool } from "./tools/search.js";
 import { lookupRecordTool } from "./tools/lookupRecord.js";
 import { createFromUrlTool } from "./tools/createFromUrl.js";
 import { getOpenDatabasesTool } from "./tools/getOpenDatabases.js";
+import { listGroupContentTool } from "./tools/listGroupContent.js";
+import { getRecordContentTool } from "./tools/getRecordContent.js";
+import { renameRecordTool } from "./tools/renameRecord.js";
+import { addTagsTool } from "./tools/addTags.js";
+import { removeTagsTool } from "./tools/removeTags.js";
 
 export const createServer = async () => {
   const server = new Server(
@@ -43,6 +48,11 @@ export const createServer = async () => {
     lookupRecordTool,
     createFromUrlTool,
     getOpenDatabasesTool,
+    listGroupContentTool,
+    getRecordContentTool,
+    renameRecordTool,
+    addTagsTool,
+    removeTagsTool,
   ];
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
