@@ -185,7 +185,7 @@ const createFromUrl = async (
 export const createFromUrlTool: Tool = {
   name: "create_from_url",
   description:
-    "Create a record in DEVONthink from a web URL in various formats (formatted note, markdown, PDF, or web document)",
+    "Create a record in DEVONthink from a web URL. This tool supports creating formatted notes, markdown, PDFs, and web documents. Use `parentGroupUuid` to specify a location, otherwise it will be created in the database's incoming group. The tool returns the `uuid` of the new record.",
   inputSchema: zodToJsonSchema(CreateFromUrlSchema) as ToolInput,
   run: createFromUrl,
 };

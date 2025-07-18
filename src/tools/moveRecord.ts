@@ -140,7 +140,8 @@ const moveRecord = async (
 
 export const moveRecordTool: Tool = {
   name: "move_record",
-  description: "Move a record to a different group in DEVONthink",
+  description:
+    "Move a record to a different group in DEVONthink. It's highly recommended to use the `uuid` for the record and `destinationGroupUuid` for the destination to ensure accurate moving.",
   inputSchema: zodToJsonSchema(MoveRecordSchema) as ToolInput,
   run: moveRecord,
 };
