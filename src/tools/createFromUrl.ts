@@ -64,6 +64,7 @@ interface CreateFromUrlResult {
   name?: string;
   path?: string;
   location?: string;
+  uuid?: string;
 }
 
 const createFromUrl = async (
@@ -101,15 +102,9 @@ const createFromUrl = async (
         // Get the parent group
         let destinationGroup;
         if ("${parentGroup || ""}") {
-          const groupSearchResults = theApp.search("${parentGroup}", { in: targetDatabase });
-          const groups = groupSearchResults.filter(r => r.recordType() === "group");
-          if (groups.length > 0) {
-            destinationGroup = groups[0];
-          } else {
-            return JSON.stringify({
-              success: false,
-              error: "Parent group not found: ${parentGroup}"
-            });
+          destinationGroup = theApp.createLocation("${parentGroup}", { in: targetDatabase });
+          if (!destinationGroup) {
+            throw new Error("Could not create or find parent group: ${parentGroup}");
           }
         } else {
           destinationGroup = targetDatabase.incomingGroup();
@@ -166,7 +161,8 @@ const createFromUrl = async (
             recordId: newRecord.id(),
             name: newRecord.name(),
             path: newRecord.path(),
-            location: newRecord.location()
+            location: newRecord.location(),
+            uuid: newRecord.uuid()
           });
         } else {
           return JSON.stringify({

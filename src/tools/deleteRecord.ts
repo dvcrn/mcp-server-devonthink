@@ -8,6 +8,7 @@ type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const DeleteRecordSchema = z
   .object({
+    uuid: z.string().optional().describe("The UUID of the record"),
     recordId: z.number().optional().describe("The ID of the record to delete"),
     recordName: z
       .string()
@@ -27,10 +28,14 @@ const DeleteRecordSchema = z
   .strict()
   .refine(
     (data) =>
+      data.uuid !== undefined ||
       data.recordId !== undefined ||
       data.recordName !== undefined ||
       data.recordPath !== undefined,
-    { message: "Either recordId, recordName, or recordPath must be provided" }
+    {
+      message:
+        "Either uuid, recordId, recordName, or recordPath must be provided",
+    }
   );
 
 type DeleteRecordInput = z.infer<typeof DeleteRecordSchema>;
@@ -38,7 +43,7 @@ type DeleteRecordInput = z.infer<typeof DeleteRecordSchema>;
 const deleteRecord = async (
   input: DeleteRecordInput
 ): Promise<{ success: boolean; error?: string }> => {
-  const { recordId, recordName, recordPath, databaseName } = input;
+  const { uuid, recordId, recordName, recordPath, databaseName } = input;
 
   const script = `
     (() => {
@@ -59,7 +64,9 @@ const deleteRecord = async (
           targetDatabase = theApp.currentDatabase();
         }
 
-        if (${recordId || "null"}) {
+        if ("${uuid || ""}") {
+          targetRecord = theApp.getRecordWithUuid("${uuid}");
+        } else if (${recordId || "null"}) {
           // Find by ID
           const allRecords = targetDatabase.contents();
           targetRecord = allRecords.find(r => r.id() === ${recordId});
