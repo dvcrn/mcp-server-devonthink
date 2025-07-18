@@ -109,7 +109,8 @@ const deleteRecord = async (
 
 export const deleteRecordTool: Tool = {
   name: "delete_record",
-  description: "Delete a record from DEVONthink by ID, name, or path",
+  description:
+    "Delete a record from DEVONthink. It's highly recommended to use the `uuid` for accurate record identification. The tool will permanently delete the record and its contents if it's a group.",
   inputSchema: zodToJsonSchema(DeleteRecordSchema) as ToolInput,
   run: deleteRecord,
 };

@@ -155,7 +155,7 @@ const search = async (input: SearchInput): Promise<SearchResult> => {
 export const searchTool: Tool = {
   name: "search",
   description:
-    "Search for records in DEVONthink with various options and filters",
+    "Search for records in DEVONthink. This tool is useful for general text-based queries and can be scoped to a specific group. It supports various comparison options and returns a list of matching records with their properties.",
   inputSchema: zodToJsonSchema(SearchSchema) as ToolInput,
   run: search,
 };

@@ -88,7 +88,7 @@ const getOpenDatabases = async (): Promise<GetOpenDatabasesResult> => {
 export const getOpenDatabasesTool: Tool = {
   name: "get_open_databases",
   description:
-    "Get a list of all currently open databases in DEVONthink with their properties",
+    "Get a list of all currently open databases in DEVONthink. This tool is useful for discovering available databases and their properties, such as name, path, and encryption status. The returned database names can be used in other tools.",
   inputSchema: zodToJsonSchema(GetOpenDatabasesSchema) as ToolInput,
   run: getOpenDatabases,
 };

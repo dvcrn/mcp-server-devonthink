@@ -127,7 +127,8 @@ const createRecord = async (
 
 export const createRecordTool: Tool = {
   name: "create_record",
-  description: "Create a new record in DEVONthink with specified properties",
+  description:
+    "Create a new record in DEVONthink. This tool can create various record types, including groups, markdown files, and bookmarks. Use the `parentGroupUuid` to specify a location, otherwise it will be created in the database's incoming group. The tool returns the `uuid` of the new record, which can be used in other tools.",
   inputSchema: zodToJsonSchema(CreateRecordSchema) as ToolInput,
   run: createRecord,
 };

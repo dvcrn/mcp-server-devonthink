@@ -185,7 +185,7 @@ const lookupRecord = async (
 export const lookupRecordTool: Tool = {
   name: "lookup_record",
   description:
-    "Look up records in DEVONthink by specific attributes like filename, path, URL, tags, comment, or content hash. Note: filename lookups require exact matches (no wildcards), tags can be arrays for multiple tag matching, paths and URLs must be exact matches.",
+    "Look up records in DEVONthink by a specific attribute. This tool is ideal for finding records when you have an exact value to match, such as a filename, URL, or tag. It does not support wildcards or partial matches.",
   inputSchema: zodToJsonSchema(LookupRecordSchema) as ToolInput,
   run: lookupRecord,
 };
