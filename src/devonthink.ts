@@ -1,0 +1,77 @@
+
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+  ErrorCode,
+  ListResourcesRequestSchema,
+  ListPromptsRequestSchema,
+  McpError,
+  Tool,
+} from "@modelcontextprotocol/sdk/types.js";
+import { isRunningTool } from "./tools/isRunning.js";
+
+export const createServer = async () => {
+  const server = new Server(
+    {
+      name: "devonthink-mcp",
+      version: "0.1.0",
+    },
+    {
+      capabilities: {
+        tools: {},
+        resources: {},
+        prompts: {},
+      },
+    }
+  );
+
+  const tools: Tool[] = [isRunningTool];
+
+  server.setRequestHandler(ListToolsRequestSchema, async () => {
+    return { tools };
+  });
+
+  server.setRequestHandler(ListResourcesRequestSchema, async () => {
+    return { resources: [] };
+  });
+
+  server.setRequestHandler(ListPromptsRequestSchema, async () => {
+    return { prompts: [] };
+  });
+
+  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    const { name, arguments: args = {} } = request.params;
+
+    const tool = tools.find(t => t.name === name);
+
+    if (!tool) {
+      throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
+    }
+
+    if (typeof tool.run !== 'function') {
+      throw new McpError(ErrorCode.InternalError, `Tool '${name}' has no run function.`);
+    }
+
+    try {
+      const result = await tool.run(args);
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      throw error instanceof McpError
+        ? error
+        : new McpError(
+            ErrorCode.InternalError,
+            error instanceof Error ? error.message : String(error)
+          );
+    }
+  });
+
+  return { server, cleanup: async () => {} };
+};
