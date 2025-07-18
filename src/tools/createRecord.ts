@@ -25,6 +25,12 @@ const CreateRecordSchema = z
       .describe(
         "The name or path of the parent group (defaults to current group)"
       ),
+    databaseName: z
+      .string()
+      .optional()
+      .describe(
+        "The name of the database to create the record in (defaults to current database)"
+      ),
   })
   .strict();
 
@@ -38,7 +44,7 @@ const createRecord = async (
   name?: string;
   error?: string;
 }> => {
-  const { name, type, content, url, parentGroup } = input;
+  const { name, type, content, url, parentGroup, databaseName } = input;
 
   const script = `
     (() => {
@@ -46,19 +52,26 @@ const createRecord = async (
       theApp.includeStandardAdditions = true;
       
       try {
+        let targetDatabase;
+        if ("${databaseName || ""}") {
+          const databases = theApp.databases();
+          targetDatabase = databases.find(db => db.name() === "${databaseName}");
+          if (!targetDatabase) {
+            throw new Error("Database not found: ${databaseName}");
+          }
+        } else {
+          targetDatabase = theApp.currentDatabase();
+        }
+
         // Get the parent group
         let destinationGroup;
         if ("${parentGroup || ""}") {
-          // Try to find the group by name or path
-          const searchResults = theApp.search("${parentGroup}", { in: theApp.currentDatabase() });
-          const groups = searchResults.filter(r => r.recordType() === "group");
-          if (groups.length > 0) {
-            destinationGroup = groups[0];
-          } else {
-            throw new Error("Parent group not found: ${parentGroup}");
+          destinationGroup = theApp.createLocation("${parentGroup}", { in: targetDatabase });
+          if (!destinationGroup) {
+            throw new Error("Could not create or find parent group: ${parentGroup}");
           }
         } else {
-          destinationGroup = theApp.currentGroup();
+          destinationGroup = targetDatabase.incomingGroup();
         }
         
         // Create the record properties

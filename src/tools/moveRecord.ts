@@ -20,6 +20,12 @@ const MoveRecordSchema = z
     destinationGroup: z
       .string()
       .describe("The name or path of the destination group"),
+    databaseName: z
+      .string()
+      .optional()
+      .describe(
+        "The name of the database to move the record in (defaults to current database)"
+      ),
   })
   .strict()
   .refine(
@@ -35,7 +41,8 @@ type MoveRecordInput = z.infer<typeof MoveRecordSchema>;
 const moveRecord = async (
   input: MoveRecordInput
 ): Promise<{ success: boolean; newLocation?: string; error?: string }> => {
-  const { recordId, recordName, recordPath, destinationGroup } = input;
+  const { recordId, recordName, recordPath, destinationGroup, databaseName } =
+    input;
 
   const script = `
     (() => {
@@ -45,15 +52,26 @@ const moveRecord = async (
       try {
         let targetRecord;
         
+        let targetDatabase;
+        if ("${databaseName || ""}") {
+          const databases = theApp.databases();
+          targetDatabase = databases.find(db => db.name() === "${databaseName}");
+          if (!targetDatabase) {
+            throw new Error("Database not found: ${databaseName}");
+          }
+        } else {
+          targetDatabase = theApp.currentDatabase();
+        }
+
         // Find the record to move
         if (${recordId || "null"}) {
-          const allRecords = theApp.currentDatabase().contents();
+          const allRecords = targetDatabase.contents();
           targetRecord = allRecords.find(r => r.id() === ${recordId});
         } else if ("${recordName || ""}") {
-          const searchResults = theApp.search("${recordName}", { in: theApp.currentDatabase() });
+          const searchResults = theApp.search("${recordName}", { in: targetDatabase });
           targetRecord = searchResults.find(r => r.name() === "${recordName}");
         } else if ("${recordPath || ""}") {
-          const searchResults = theApp.lookupRecordsWithPath("${recordPath}", { in: theApp.currentDatabase() });
+          const searchResults = theApp.lookupRecordsWithPath("${recordPath}", { in: targetDatabase });
           if (searchResults && searchResults.length > 0) {
             targetRecord = searchResults[0];
           }
@@ -66,26 +84,10 @@ const moveRecord = async (
           });
         }
         
-        // Find the destination group
-        let destinationGroupRecord;
-        const groupSearchResults = theApp.search("${destinationGroup}", { in: theApp.currentDatabase() });
-        const groups = groupSearchResults.filter(r => r.recordType() === "group");
-        
-        if (groups.length > 0) {
-          destinationGroupRecord = groups[0];
-        } else {
-          // Try to find by path
-          const pathResults = theApp.lookupRecordsWithPath("${destinationGroup}", { in: theApp.currentDatabase() });
-          if (pathResults && pathResults.length > 0) {
-            destinationGroupRecord = pathResults[0];
-          }
-        }
-        
+        // Find or create the destination group
+        const destinationGroupRecord = theApp.createLocation("${destinationGroup}", { in: targetDatabase });
         if (!destinationGroupRecord) {
-          return JSON.stringify({
-            success: false,
-            error: "Destination group not found: ${destinationGroup}"
-          });
+          throw new Error("Could not create or find destination group: ${destinationGroup}");
         }
         
         // Move the record

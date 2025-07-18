@@ -31,7 +31,7 @@ The MCP server currently provides the following tools:
 4. **`move_record`** - Move records between groups
 5. **`get_record_properties`** - Get detailed metadata and properties for records
 6. **`search`** - Perform text-based searches with various comparison options
-7. **`lookup_record`** - Look up records by filename, path, URL, tags, comment, or content hash
+7. **`lookup_record`** - Look up records by filename, path, URL, tags, comment, or content hash (exact matches only, no wildcards)
 8. **`create_from_url`** - Create records from web URLs in multiple formats
 9. **`get_open_databases`** - Get a list of all currently open databases
 
