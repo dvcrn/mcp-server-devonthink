@@ -24,6 +24,12 @@ const GetRecordPropertiesSchema = z
       .describe(
         "The path of the record to get properties for (if ID not provided)"
       ),
+    databaseName: z
+      .string()
+      .optional()
+      .describe(
+        "The name of the database to get the record properties from (defaults to current database)"
+      ),
   })
   .strict()
   .refine(
@@ -66,7 +72,7 @@ interface RecordProperties {
 const getRecordProperties = async (
   input: GetRecordPropertiesInput
 ): Promise<RecordProperties> => {
-  const { recordId, recordName, recordPath } = input;
+  const { recordId, recordName, recordPath, databaseName } = input;
 
   const script = `
     (() => {
@@ -76,15 +82,26 @@ const getRecordProperties = async (
       try {
         let targetRecord;
         
+        let targetDatabase;
+        if ("${databaseName || ""}") {
+          const databases = theApp.databases();
+          targetDatabase = databases.find(db => db.name() === "${databaseName}");
+          if (!targetDatabase) {
+            throw new Error("Database not found: ${databaseName}");
+          }
+        } else {
+          targetDatabase = theApp.currentDatabase();
+        }
+
         // Find the record
         if (${recordId || "null"}) {
-          const allRecords = theApp.currentDatabase().contents();
+          const allRecords = targetDatabase.contents();
           targetRecord = allRecords.find(r => r.id() === ${recordId});
         } else if ("${recordName || ""}") {
-          const searchResults = theApp.search("${recordName}", { in: theApp.currentDatabase() });
+          const searchResults = theApp.search("${recordName}", { in: targetDatabase });
           targetRecord = searchResults.find(r => r.name() === "${recordName}");
         } else if ("${recordPath || ""}") {
-          const searchResults = theApp.lookupRecordsWithPath("${recordPath}", { in: theApp.currentDatabase() });
+          const searchResults = theApp.lookupRecordsWithPath("${recordPath}", { in: targetDatabase });
           if (searchResults && searchResults.length > 0) {
             targetRecord = searchResults[0];
           }

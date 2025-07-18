@@ -17,6 +17,12 @@ const DeleteRecordSchema = z
       .string()
       .optional()
       .describe("The path of the record to delete (if ID not provided)"),
+    databaseName: z
+      .string()
+      .optional()
+      .describe(
+        "The name of the database to delete the record from (defaults to current database)"
+      ),
   })
   .strict()
   .refine(
@@ -32,7 +38,7 @@ type DeleteRecordInput = z.infer<typeof DeleteRecordSchema>;
 const deleteRecord = async (
   input: DeleteRecordInput
 ): Promise<{ success: boolean; error?: string }> => {
-  const { recordId, recordName, recordPath } = input;
+  const { recordId, recordName, recordPath, databaseName } = input;
 
   const script = `
     (() => {
@@ -42,17 +48,28 @@ const deleteRecord = async (
       try {
         let targetRecord;
         
+        let targetDatabase;
+        if ("${databaseName || ""}") {
+          const databases = theApp.databases();
+          targetDatabase = databases.find(db => db.name() === "${databaseName}");
+          if (!targetDatabase) {
+            throw new Error("Database not found: ${databaseName}");
+          }
+        } else {
+          targetDatabase = theApp.currentDatabase();
+        }
+
         if (${recordId || "null"}) {
           // Find by ID
-          const allRecords = theApp.currentDatabase().contents();
+          const allRecords = targetDatabase.contents();
           targetRecord = allRecords.find(r => r.id() === ${recordId});
         } else if ("${recordName || ""}") {
           // Find by name
-          const searchResults = theApp.search("${recordName}", { in: theApp.currentDatabase() });
+          const searchResults = theApp.search("${recordName}", { in: targetDatabase });
           targetRecord = searchResults.find(r => r.name() === "${recordName}");
         } else if ("${recordPath || ""}") {
           // Find by path
-          const searchResults = theApp.lookupRecordsWithPath("${recordPath}", { in: theApp.currentDatabase() });
+          const searchResults = theApp.lookupRecordsWithPath("${recordPath}", { in: targetDatabase });
           if (searchResults && searchResults.length > 0) {
             targetRecord = searchResults[0];
           }

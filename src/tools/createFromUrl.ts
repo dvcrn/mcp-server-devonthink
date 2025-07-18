@@ -46,6 +46,12 @@ const CreateFromUrlSchema = z
       })
       .optional()
       .describe("PDF-specific options (only used when format is 'pdf')"),
+    databaseName: z
+      .string()
+      .optional()
+      .describe(
+        "The name of the database to create the record in (defaults to current database)"
+      ),
   })
   .strict();
 
@@ -72,6 +78,7 @@ const createFromUrl = async (
     userAgent,
     referrer,
     pdfOptions,
+    databaseName,
   } = input;
 
   const script = `
@@ -80,10 +87,21 @@ const createFromUrl = async (
       theApp.includeStandardAdditions = true;
       
       try {
+        let targetDatabase;
+        if ("${databaseName || ""}") {
+          const databases = theApp.databases();
+          targetDatabase = databases.find(db => db.name() === "${databaseName}");
+          if (!targetDatabase) {
+            throw new Error("Database not found: ${databaseName}");
+          }
+        } else {
+          targetDatabase = theApp.currentDatabase();
+        }
+
         // Get the parent group
         let destinationGroup;
         if ("${parentGroup || ""}") {
-          const groupSearchResults = theApp.search("${parentGroup}", { in: theApp.currentDatabase() });
+          const groupSearchResults = theApp.search("${parentGroup}", { in: targetDatabase });
           const groups = groupSearchResults.filter(r => r.recordType() === "group");
           if (groups.length > 0) {
             destinationGroup = groups[0];
@@ -94,7 +112,7 @@ const createFromUrl = async (
             });
           }
         } else {
-          destinationGroup = theApp.currentGroup();
+          destinationGroup = targetDatabase.incomingGroup();
         }
         
         // Build options object
