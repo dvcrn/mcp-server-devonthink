@@ -99,26 +99,29 @@ const lookupRecord = async (
         // Perform the appropriate lookup
         switch ("${lookupType}") {
           case "filename":
-            searchResults = theApp.lookupRecordsWithFile("${value}", searchOptions);
+            searchResults = theApp.lookupRecordsWithFile("${value}", { in: searchDatabase });
             break;
           case "path":
-            searchResults = theApp.lookupRecordsWithPath("${value}", searchOptions);
+            searchResults = theApp.lookupRecordsWithPath("${value}", { in: searchDatabase });
             break;
           case "url":
-            searchResults = theApp.lookupRecordsWithURL("${value}", searchOptions);
+            searchResults = theApp.lookupRecordsWithURL("${value}", { in: searchDatabase });
             break;
           case "comment":
-            searchResults = theApp.lookupRecordsWithComment("${value}", searchOptions);
+            searchResults = theApp.lookupRecordsWithComment("${value}", { in: searchDatabase });
             break;
           case "contentHash":
-            searchResults = theApp.lookupRecordsWithContentHash("${value}", searchOptions);
+            searchResults = theApp.lookupRecordsWithContentHash("${value}", { in: searchDatabase });
             break;
           case "tags":
-            const tagArray = ${
-              tags ? JSON.stringify(tags) : '["' + value + '"]'
-            };
+            const tagArray = ${tags ? JSON.stringify(tags) : "[]"};
+            if (tagArray.length === 0 && "${value}") {
+              tagArray.push("${value}");
+            }
             const tagOptions = { in: searchDatabase };
-            ${matchAnyTag ? "tagOptions.any = true;" : ""}
+            if (${matchAnyTag}) {
+              tagOptions.any = true;
+            }
             searchResults = theApp.lookupRecordsWithTags(tagArray, tagOptions);
             break;
           default:
@@ -185,7 +188,7 @@ const lookupRecord = async (
 export const lookupRecordTool: Tool = {
   name: "lookup_record",
   description:
-    "Look up records in DEVONthink by a specific attribute. This tool is ideal for finding records when you have an exact value to match, such as a filename, URL, or tag. It does not support wildcards or partial matches.",
+    "Look up records in DEVONthink by a specific attribute. This tool is ideal for finding records when you have an exact value to match, such as a filename, URL, or tag. It does not support wildcards or partial matches.\n\nExamples:\n- Find by filename: lookupType='filename', value='report.pdf'\n- Find by URL: lookupType='url', value='https://example.com'\n- Find by single tag: lookupType='tags', value='important' (or tags=['important'])\n- Find by multiple tags (all): lookupType='tags', tags=['work', 'project']\n- Find by multiple tags (any): lookupType='tags', tags=['work', 'project'], matchAnyTag=true\n- Find by path: lookupType='path', value='/Documents/Research'\n- Find by comment: lookupType='comment', value='Meeting notes'\n- Find by content hash: lookupType='contentHash', value='abc123...'\n\nFor tag lookups, you can either use the 'tags' parameter for an array of tags, or use the 'value' parameter for a single tag.",
   inputSchema: zodToJsonSchema(LookupRecordSchema) as ToolInput,
   run: lookupRecord,
 };
