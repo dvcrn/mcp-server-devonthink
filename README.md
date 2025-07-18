@@ -85,8 +85,20 @@ This MCP server provides access to DEVONthink functionality via the Model Contex
     - Input: record ID and tags
 
 14. `remove_tags`
+
     - Removes tags from a specific record
     - Input: record ID and tags
+
+15. `classify`
+
+    - Gets classification proposals for a record using DEVONthink's AI
+    - Input: record UUID, optional database name, comparison type, and tags option
+    - Returns: Array of classification proposals (groups or tags) with scores
+
+16. `compare`
+    - Compares records to find similarities (hybrid approach)
+    - Input: primary record UUID, optional second record UUID, database name, and comparison type
+    - Returns: Either similar records (single mode) or detailed comparison analysis (two-record mode)
 
 ### Example: Search Tool
 

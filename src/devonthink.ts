@@ -22,6 +22,8 @@ import { getRecordContentTool } from "./tools/getRecordContent.js";
 import { renameRecordTool } from "./tools/renameRecord.js";
 import { addTagsTool } from "./tools/addTags.js";
 import { removeTagsTool } from "./tools/removeTags.js";
+import { classifyTool } from "./tools/classify.js";
+import { compareTool } from "./tools/compare.js";
 
 export const createServer = async () => {
   const server = new Server(
@@ -53,6 +55,8 @@ export const createServer = async () => {
     renameRecordTool,
     addTagsTool,
     removeTagsTool,
+    classifyTool,
+    compareTool,
   ];
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
