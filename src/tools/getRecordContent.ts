@@ -58,7 +58,7 @@ const getRecordContent = async (
 
         if (recordType === "markdown" || recordType === "txt" || recordType === "formatted note") {
             content = record.plainText();
-        } else if (recordType === 'rtf') {
+        } else if (recordType === "rtf") {
             content = record.richText();
         } else {
             return JSON.stringify({
