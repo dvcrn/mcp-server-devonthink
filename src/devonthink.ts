@@ -16,6 +16,7 @@ import { getRecordPropertiesTool } from "./tools/getRecordProperties.js";
 import { searchTool } from "./tools/search.js";
 import { lookupRecordTool } from "./tools/lookupRecord.js";
 import { createFromUrlTool } from "./tools/createFromUrl.js";
+import { getOpenDatabasesTool } from "./tools/getOpenDatabases.js";
 
 export const createServer = async () => {
   const server = new Server(
@@ -41,6 +42,7 @@ export const createServer = async () => {
     searchTool,
     lookupRecordTool,
     createFromUrlTool,
+    getOpenDatabasesTool,
   ];
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
