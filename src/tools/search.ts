@@ -65,6 +65,12 @@ const search = async (input: SearchInput): Promise<SearchResult> => {
         // Determine search scope
         if ("${groupName || ""}") {
           const groupSearchResults = theApp.search("${groupName}", { in: theApp.currentDatabase() });
+          if (!groupSearchResults) {
+            return JSON.stringify({
+              success: false,
+              error: "Group not found: ${groupName}"
+            });
+          }
           const groups = groupSearchResults.filter(r => r.recordType() === "group");
           if (groups.length > 0) {
             searchScope = groups[0];
@@ -75,11 +81,14 @@ const search = async (input: SearchInput): Promise<SearchResult> => {
             });
           }
         } else {
-          searchScope = theApp.currentDatabase();
+          searchScope = null; // Search all databases
         }
         
         // Build search options
-        const searchOptions = { in: searchScope };
+        const searchOptions = {};
+        if (searchScope) {
+          searchOptions.in = searchScope;
+        }
         ${comparison ? `searchOptions.comparison = "${comparison}";` : ""}
         ${
           excludeSubgroups
