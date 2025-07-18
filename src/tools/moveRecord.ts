@@ -141,7 +141,7 @@ const moveRecord = async (
 export const moveRecordTool: Tool = {
   name: "move_record",
   description:
-    "Move a record to a different group in DEVONthink. It's highly recommended to use the `uuid` for the record and `destinationGroupUuid` for the destination to ensure accurate moving.",
+    "Move a record to a different group in DEVONthink. It's highly recommended to use the `uuid` for the record and `destinationGroupUuid` for the destination to ensure accurate moving.\n\nIMPORTANT - Moving to Database Root:\n- Cannot use '/' as destinationGroupUuid (tool limitation)\n- To move to database root: use destinationGroupUuid with the database UUID\n- Get database UUID first using get_open_databases tool\n\nExample workflow for root move:\n1. Use get_open_databases to get database UUID (e.g., '5E47D6F2-5E0C-4E30-A6ED-2AC92116C3E1')\n2. Use move_record with destinationGroupUuid: '5E47D6F2-5E0C-4E30-A6ED-2AC92116C3E1'",
   inputSchema: zodToJsonSchema(MoveRecordSchema) as ToolInput,
   run: moveRecord,
 };
