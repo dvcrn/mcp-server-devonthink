@@ -2,6 +2,12 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { Tool, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../applescript/execute.js";
+import {
+  escapeStringForJXA,
+  formatValueForJXA,
+  isJXASafeString,
+} from "../utils/escapeString.js";
+import { getRecordLookupHelpers, getDatabaseHelper } from "../utils/jxaHelpers.js";
 
 const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
@@ -43,39 +49,53 @@ interface ClassifyResult {
 const classify = async (input: ClassifyInput): Promise<ClassifyResult> => {
   const { recordUuid, databaseName, comparison, tags } = input;
 
+  // Validate string inputs
+  if (!isJXASafeString(recordUuid)) {
+    return { success: false, error: "Record UUID contains invalid characters" };
+  }
+  if (databaseName && !isJXASafeString(databaseName)) {
+    return { success: false, error: "Database name contains invalid characters" };
+  }
+  if (comparison && !isJXASafeString(comparison)) {
+    return { success: false, error: "Comparison type contains invalid characters" };
+  }
+
   const script = `
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
       
+      // Inject helper functions
+      ${getRecordLookupHelpers()}
+      ${getDatabaseHelper}
+      
       try {
-        let targetDatabase;
-        if ("${databaseName || ""}") {
-          try {
-            targetDatabase = theApp.databases["${databaseName}"]();
-          } catch (e) {
-            throw new Error("Database not found: ${databaseName}");
-          }
-        } else {
-          targetDatabase = theApp.currentDatabase();
-        }
+        // Get target database
+        const targetDatabase = getDatabase(theApp, ${databaseName ? `"${escapeStringForJXA(databaseName)}"` : "null"});
 
-        // Get the record to classify
-        const targetRecord = theApp.getRecordWithUuid("${recordUuid}");
-        if (!targetRecord) {
+        // Use the unified lookup function
+        const lookupOptions = {
+          uuid: ${recordUuid ? `"${escapeStringForJXA(recordUuid)}"` : "null"}
+        };
+        
+        const lookupResult = getRecord(theApp, lookupOptions);
+        
+        if (!lookupResult.record) {
           return JSON.stringify({
             success: false,
-            error: "Record not found with UUID: ${recordUuid}"
+            error: "Record not found with UUID: " + (${recordUuid ? `"${escapeStringForJXA(recordUuid)}"` : "null"} || "unknown")
           });
         }
+        
+        const targetRecord = lookupResult.record;
         
         // Build classify options
         const classifyOptions = { record: targetRecord };
         if (targetDatabase) {
           classifyOptions.in = targetDatabase;
         }
-        if ("${comparison || ""}") {
-          classifyOptions.comparison = "${comparison}";
+        if (${comparison ? `"${escapeStringForJXA(comparison)}"` : "null"}) {
+          classifyOptions.comparison = ${comparison ? `"${escapeStringForJXA(comparison)}"` : "null"};
         }
         if (${tags || false}) {
           classifyOptions.tags = ${tags};

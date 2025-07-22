@@ -2,6 +2,12 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { Tool, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../applescript/execute.js";
+import {
+  escapeStringForJXA,
+  formatValueForJXA,
+  isJXASafeString,
+} from "../utils/escapeString.js";
+import { getRecordLookupHelpers, getDatabaseHelper } from "../utils/jxaHelpers.js";
 
 const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
@@ -45,52 +51,73 @@ const deleteRecord = async (
 ): Promise<{ success: boolean; error?: string }> => {
   const { uuid, recordId, recordName, recordPath, databaseName } = input;
 
+  // Validate string inputs
+  if (uuid && !isJXASafeString(uuid)) {
+    return { success: false, error: "UUID contains invalid characters" };
+  }
+  if (recordName && !isJXASafeString(recordName)) {
+    return { success: false, error: "Record name contains invalid characters" };
+  }
+  if (recordPath && !isJXASafeString(recordPath)) {
+    return { success: false, error: "Record path contains invalid characters" };
+  }
+  if (databaseName && !isJXASafeString(databaseName)) {
+    return { success: false, error: "Database name contains invalid characters" };
+  }
+
   const script = `
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
       
+      // Inject helper functions
+      ${getRecordLookupHelpers()}
+      ${getDatabaseHelper}
+      
       try {
-        let targetRecord;
+        // Get target database
+        const targetDatabase = getDatabase(theApp, ${databaseName ? `"${escapeStringForJXA(databaseName)}"` : "null"});
         
-        let targetDatabase;
-        if ("${databaseName || ""}") {
-          const databases = theApp.databases();
-          targetDatabase = databases.find(db => db.name() === "${databaseName}");
-          if (!targetDatabase) {
-            throw new Error("Database not found: ${databaseName}");
-          }
-        } else {
-          targetDatabase = theApp.currentDatabase();
-        }
-
-        if ("${uuid || ""}") {
-          targetRecord = theApp.getRecordWithUuid("${uuid}");
-        } else if (${recordId || "null"}) {
-          // Find by ID
-          const allRecords = targetDatabase.contents();
-          targetRecord = allRecords.find(r => r.id() === ${recordId});
-        } else if ("${recordName || ""}") {
-          // Find by name
-          const searchResults = theApp.search("${recordName}", { in: targetDatabase });
-          targetRecord = searchResults.find(r => r.name() === "${recordName}");
-        } else if ("${recordPath || ""}") {
-          // Find by path
-          const searchResults = theApp.lookupRecordsWithPath("${recordPath}", { in: targetDatabase });
-          if (searchResults && searchResults.length > 0) {
-            targetRecord = searchResults[0];
-          }
-        }
+        // Build lookup options for the record to delete
+        const lookupOptions = {
+          uuid: ${uuid ? `"${escapeStringForJXA(uuid)}"` : "null"},
+          id: ${recordId !== undefined ? recordId : "null"},
+          path: ${recordPath ? `"${escapeStringForJXA(recordPath)}"` : "null"},
+          name: ${recordName ? `"${escapeStringForJXA(recordName)}"` : "null"},
+          database: targetDatabase
+        };
         
-        if (!targetRecord) {
+        // Use the unified lookup function
+        const lookupResult = getRecord(theApp, lookupOptions);
+        
+        if (!lookupResult.record) {
+          // Build detailed error message
+          let errorDetails = lookupResult.error || "Record not found";
+          if (${recordId !== undefined ? recordId : "null"}) {
+            errorDetails = "Record with ID " + ${recordId} + " not found in database '" + targetDatabase.name() + "'";
+          } else if (${uuid ? `"${escapeStringForJXA(uuid)}"` : "null"}) {
+            errorDetails = "Record with UUID " + (${uuid ? `"${escapeStringForJXA(uuid)}"` : "null"} || "unknown") + " not found";
+          } else if (${recordName ? `"${escapeStringForJXA(recordName)}"` : "null"}) {
+            errorDetails = "Record with name " + (${recordName ? `"${escapeStringForJXA(recordName)}"` : "null"} || "unknown") + " not found in database '" + targetDatabase.name() + "'";
+          } else if (${recordPath ? `"${escapeStringForJXA(recordPath)}"` : "null"}) {
+            errorDetails = "Record at path " + (${recordPath ? `"${escapeStringForJXA(recordPath)}"` : "null"} || "unknown") + " not found";
+          }
+          
           return JSON.stringify({
             success: false,
-            error: "Record not found"
+            error: errorDetails
           });
         }
         
+        const targetRecord = lookupResult.record;
+        
         // Delete the record
-        const deleteResult = theApp.delete({ record: targetRecord });
+        let deleteResult;
+        try {
+          deleteResult = theApp.delete({ record: targetRecord });
+        } catch (e) {
+          throw e;
+        }
         
         return JSON.stringify({
           success: deleteResult

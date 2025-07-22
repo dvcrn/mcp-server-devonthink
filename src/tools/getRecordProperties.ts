@@ -7,6 +7,7 @@ import {
   formatValueForJXA,
   isJXASafeString,
 } from "../utils/escapeString.js";
+import { getRecordLookupHelpers, getDatabaseHelper } from "../utils/jxaHelpers.js";
 
 const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
@@ -103,77 +104,46 @@ const getRecordProperties = async (
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
       
+      // Inject helper functions
+      ${getRecordLookupHelpers()}
+      ${getDatabaseHelper}
+      
       try {
-        let targetRecord;
+        // Get target database
+        const targetDatabase = getDatabase(theApp, ${databaseName ? `"${escapeStringForJXA(databaseName)}"` : "null"});
         
-        let targetDatabase;
-        if (${formatValueForJXA(databaseName)}) {
-          const databases = theApp.databases();
-          targetDatabase = databases.find(db => db.name() === ${formatValueForJXA(databaseName)});
-          if (!targetDatabase) {
-            throw new Error("Database not found: " + ${formatValueForJXA(databaseName)});
-          }
-        } else {
-          targetDatabase = theApp.currentDatabase();
-        }
-
-        // Find the record - try multiple approaches
-        if (${formatValueForJXA(uuid)}) {
-          // UUID is the most reliable method
-          targetRecord = theApp.getRecordWithUuid(${formatValueForJXA(uuid)});
-        } else if (${recordId !== undefined ? recordId : "null"}) {
-          // For ID lookup, search in the database
-          // This is more comprehensive than just checking contents()
-          const searchQuery = "id:" + ${recordId};
-          const searchResults = theApp.search(searchQuery, { in: targetDatabase });
-          if (searchResults && searchResults.length > 0) {
-            // Verify the ID matches exactly
-            targetRecord = searchResults.find(r => r.id() === ${recordId});
-          }
-          
-          // If not found via search, try a more exhaustive approach
-          if (!targetRecord) {
-            // Function to recursively search all groups
-            function findRecordById(group, id) {
-              const children = group.children();
-              for (let child of children) {
-                if (child.id() === id) {
-                  return child;
-                }
-                if (child.recordType() === "group") {
-                  const found = findRecordById(child, id);
-                  if (found) return found;
-                }
-              }
-              return null;
-            }
-            
-            targetRecord = findRecordById(targetDatabase.root(), ${recordId});
-          }
-        } else if (${formatValueForJXA(recordName)}) {
-          const searchResults = theApp.search(${formatValueForJXA(recordName)}, { in: targetDatabase });
-          targetRecord = searchResults.find(r => r.name() === ${formatValueForJXA(recordName)});
-        } else if (${formatValueForJXA(recordPath)}) {
-          const searchResults = theApp.lookupRecordsWithPath(${formatValueForJXA(recordPath)}, { in: targetDatabase });
-          if (searchResults && searchResults.length > 0) {
-            targetRecord = searchResults[0];
-          }
-        }
+        // Build lookup options
+        const lookupOptions = {
+          uuid: ${uuid ? `"${escapeStringForJXA(uuid)}"` : "null"},
+          id: ${recordId !== undefined ? recordId : "null"},
+          path: ${recordPath ? `"${escapeStringForJXA(recordPath)}"` : "null"},
+          name: ${recordName ? `"${escapeStringForJXA(recordName)}"` : "null"},
+          database: targetDatabase
+        };
         
-        if (!targetRecord) {
-          let errorDetails = "Record not found";
+        // Use the unified lookup function
+        const lookupResult = getRecord(theApp, lookupOptions);
+        
+        if (!lookupResult.record) {
+          // Build detailed error message
+          let errorDetails = lookupResult.error || "Record not found";
           if (${recordId !== undefined ? recordId : "null"}) {
             errorDetails = "Record with ID " + ${recordId} + " not found in database '" + targetDatabase.name() + "'";
-          } else if (${formatValueForJXA(uuid)}) {
-            errorDetails = "Record with UUID " + ${formatValueForJXA(uuid)} + " not found";
-          } else if (${formatValueForJXA(recordName)}) {
-            errorDetails = "Record with name " + ${formatValueForJXA(recordName)} + " not found in database '" + targetDatabase.name() + "'";
+          } else if (${uuid ? `"${escapeStringForJXA(uuid)}"` : "null"}) {
+            errorDetails = "Record with UUID " + (${uuid ? `"${escapeStringForJXA(uuid)}"` : "null"} || "unknown") + " not found";
+          } else if (${recordName ? `"${escapeStringForJXA(recordName)}"` : "null"}) {
+            errorDetails = "Record with name " + (${recordName ? `"${escapeStringForJXA(recordName)}"` : "null"} || "unknown") + " not found in database '" + targetDatabase.name() + "'";
+          } else if (${recordPath ? `"${escapeStringForJXA(recordPath)}"` : "null"}) {
+            errorDetails = "Record at path " + (${recordPath ? `"${escapeStringForJXA(recordPath)}"` : "null"} || "unknown") + " not found";
           }
+          
           return JSON.stringify({
             success: false,
             error: errorDetails
           });
         }
+        
+        const targetRecord = lookupResult.record;
         
         // Get all properties
         const properties = {

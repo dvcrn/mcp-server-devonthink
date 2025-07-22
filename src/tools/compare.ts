@@ -2,6 +2,12 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { Tool, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../applescript/execute.js";
+import {
+  escapeStringForJXA,
+  formatValueForJXA,
+  isJXASafeString,
+} from "../utils/escapeString.js";
+import { getRecordLookupHelpers, getDatabaseHelper } from "../utils/jxaHelpers.js";
 
 const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
@@ -78,44 +84,68 @@ interface CompareResult {
 const compare = async (input: CompareInput): Promise<CompareResult> => {
   const { recordUuid, compareWithUuid, databaseName, comparison } = input;
 
+  // Validate string inputs
+  if (!isJXASafeString(recordUuid)) {
+    return { success: false, error: "Record UUID contains invalid characters" };
+  }
+  if (compareWithUuid && !isJXASafeString(compareWithUuid)) {
+    return { success: false, error: "Compare with UUID contains invalid characters" };
+  }
+  if (databaseName && !isJXASafeString(databaseName)) {
+    return { success: false, error: "Database name contains invalid characters" };
+  }
+  if (comparison && !isJXASafeString(comparison)) {
+    return { success: false, error: "Comparison type contains invalid characters" };
+  }
+
   const script = `
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
       
+      // Inject helper functions
+      ${getRecordLookupHelpers()}
+      ${getDatabaseHelper}
+      
       try {
-        let targetDatabase;
-        if ("${databaseName || ""}") {
-          try {
-            targetDatabase = theApp.databases["${databaseName}"]();
-          } catch (e) {
-            throw new Error("Database not found: ${databaseName}");
-          }
-        } else {
-          targetDatabase = theApp.currentDatabase();
-        }
+        // Get target database
+        const targetDatabase = getDatabase(theApp, ${databaseName ? `"${escapeStringForJXA(databaseName)}"` : "null"});
 
-        // Get the primary record
-        const primaryRecord = theApp.getRecordWithUuid("${recordUuid}");
-        if (!primaryRecord) {
+        // Get the primary record using unified lookup
+        const primaryLookupOptions = {
+          uuid: ${recordUuid ? `"${escapeStringForJXA(recordUuid)}"` : "null"}
+        };
+        
+        const primaryLookupResult = getRecord(theApp, primaryLookupOptions);
+        
+        if (!primaryLookupResult.record) {
           return JSON.stringify({
             success: false,
-            error: "Primary record not found with UUID: ${recordUuid}"
+            error: "Primary record not found with UUID: " + (${recordUuid ? `"${escapeStringForJXA(recordUuid)}"` : "null"} || "unknown")
           });
         }
         
+        const primaryRecord = primaryLookupResult.record;
+        
         // Check if this is a two-record comparison
-        const isDirectComparison = "${compareWithUuid || ""}";
+        const isDirectComparison = ${compareWithUuid ? `"${escapeStringForJXA(compareWithUuid)}"` : "null"};
         
         if (isDirectComparison) {
           // Two-record comparison mode
-          const secondRecord = theApp.getRecordWithUuid("${compareWithUuid}");
-          if (!secondRecord) {
+          const secondLookupOptions = {
+            uuid: ${compareWithUuid ? `"${escapeStringForJXA(compareWithUuid)}"` : "null"}
+          };
+          
+          const secondLookupResult = getRecord(theApp, secondLookupOptions);
+          
+          if (!secondLookupResult.record) {
             return JSON.stringify({
               success: false,
-              error: "Second record not found with UUID: ${compareWithUuid}"
+              error: "Second record not found with UUID: " + (${compareWithUuid ? `"${escapeStringForJXA(compareWithUuid)}"` : "null"} || "unknown")
             });
           }
+          
+          const secondRecord = secondLookupResult.record;
           
           // Get properties of both records
           const record1 = {
@@ -160,8 +190,8 @@ const compare = async (input: CompareInput): Promise<CompareResult> => {
           if (targetDatabase) {
             compareOptions.to = targetDatabase;
           }
-          if ("${comparison || ""}") {
-            compareOptions.comparison = "${comparison}";
+          if (${comparison ? `"${escapeStringForJXA(comparison)}"` : "null"}) {
+            compareOptions.comparison = ${comparison ? `"${escapeStringForJXA(comparison)}"` : "null"};
           }
           
           // Perform comparison using DEVONthink's compare method

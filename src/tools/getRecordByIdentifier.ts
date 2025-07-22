@@ -7,6 +7,7 @@ import {
   formatValueForJXA,
   isJXASafeString,
 } from "../utils/escapeString.js";
+import { getRecordLookupHelpers, getDatabaseHelper } from "../utils/jxaHelpers.js";
 
 const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
@@ -75,68 +76,53 @@ const getRecordByIdentifier = async (
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
       
+      // Inject helper functions
+      ${getRecordLookupHelpers()}
+      ${getDatabaseHelper}
+      
       try {
         let targetRecord;
         let targetDatabase;
+        let lookupResult;
         
-        if (${formatValueForJXA(uuid)}) {
-          // UUID lookup - most straightforward
-          targetRecord = theApp.getRecordWithUuid(${formatValueForJXA(uuid)});
+        if (${uuid ? `"${escapeStringForJXA(uuid)}"` : "null"}) {
+          // UUID lookup - globally unique
+          const lookupOptions = {
+            uuid: ${uuid ? `"${escapeStringForJXA(uuid)}"` : "null"}
+          };
           
-          if (!targetRecord) {
+          lookupResult = getRecord(theApp, lookupOptions);
+          
+          if (!lookupResult.record) {
             return JSON.stringify({
               success: false,
-              error: "Record with UUID " + ${formatValueForJXA(uuid)} + " not found"
+              error: "Record with UUID " + (${uuid ? `"${escapeStringForJXA(uuid)}"` : "null"} || "unknown") + " not found"
             });
           }
           
+          targetRecord = lookupResult.record;
           // Get the database of the record
           targetDatabase = targetRecord.database();
           
-        } else if (${id !== undefined ? id : "null"} && ${formatValueForJXA(databaseName)}) {
+        } else if (${id !== undefined ? id : "null"} && ${databaseName ? `"${escapeStringForJXA(databaseName)}"` : "null"}) {
           // ID + Database lookup
-          const databases = theApp.databases();
-          targetDatabase = databases.find(db => db.name() === ${formatValueForJXA(databaseName)});
+          targetDatabase = getDatabase(theApp, ${databaseName ? `"${escapeStringForJXA(databaseName)}"` : "null"});
           
-          if (!targetDatabase) {
+          const lookupOptions = {
+            id: ${id},
+            database: targetDatabase
+          };
+          
+          lookupResult = getRecord(theApp, lookupOptions);
+          
+          if (!lookupResult.record) {
             return JSON.stringify({
               success: false,
-              error: "Database not found: " + ${formatValueForJXA(databaseName)}
+              error: "Record with ID " + ${id} + " not found in database '" + (${databaseName ? `"${escapeStringForJXA(databaseName)}"` : "null"} || "unknown") + "'"
             });
           }
           
-          // Try search first
-          const searchQuery = "id:" + ${id};
-          const searchResults = theApp.search(searchQuery, { in: targetDatabase });
-          if (searchResults && searchResults.length > 0) {
-            targetRecord = searchResults.find(r => r.id() === ${id});
-          }
-          
-          // If not found via search, try recursive search
-          if (!targetRecord) {
-            function findRecordById(group, id) {
-              const children = group.children();
-              for (let child of children) {
-                if (child.id() === id) {
-                  return child;
-                }
-                if (child.recordType() === "group") {
-                  const found = findRecordById(child, id);
-                  if (found) return found;
-                }
-              }
-              return null;
-            }
-            
-            targetRecord = findRecordById(targetDatabase.root(), ${id});
-          }
-          
-          if (!targetRecord) {
-            return JSON.stringify({
-              success: false,
-              error: "Record with ID " + ${id} + " not found in database '" + ${formatValueForJXA(databaseName)} + "'"
-            });
-          }
+          targetRecord = lookupResult.record;
         }
         
         // Extract record properties

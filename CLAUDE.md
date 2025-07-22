@@ -190,15 +190,18 @@ Refer to `docs/devonthink-javascript-2.md` for comprehensive documentation of av
 - Added validation to reject inputs with problematic control characters
 
 ### Enhanced Record Lookup
-- **ID Lookup Improvements**: Tools now use a more comprehensive approach to find records by ID:
-  1. First attempts using DEVONthink's search with `id:` prefix
-  2. Falls back to recursive search through all groups if needed
-  3. Returns detailed error messages specifying which database was searched
+- **ID Lookup Improvements**: Tools now use DEVONthink's direct `getRecordWithId()` method for fast, reliable ID lookups
+- **Path Lookup**: Discovered and implemented `getRecordAt()` for direct path-based lookups
 - **UUID vs ID Clarification**: All tools now clearly document when to use UUID (globally unique) vs ID+Database (database-specific)
 - **New Tool**: Added `get_record_by_identifier` for unified record lookup
 
 ### Search Tool Enhancements
 - Now returns both `id` and `uuid` for all search results
+- Added multiple search scope options:
+  - `groupUuid` - Direct UUID lookup (fastest)
+  - `groupId` + `databaseName` - Direct ID lookup (fast)
+  - `groupPath` - Direct path lookup (fast)
+  - `groupName` - Search by name (fallback)
 - Improved query escaping to handle complex searches with quotes and special characters
 - Added examples of search syntax in tool description
 - Better error messages for invalid queries
@@ -234,6 +237,15 @@ Refer to `docs/devonthink-javascript-2.md` for comprehensive documentation of av
 - Use search to find groups by name
 - Get the UUID from search results or list operations
 
+### Searching Within Specific Groups
+**Problem**: Need to search within a specific folder/group
+
+**Solution**: Use the enhanced search tool with one of these methods:
+1. **By UUID** (fastest): `search(query: "invoice", groupUuid: "5557A251-0062-4DD9-9DA5-4CFE9DEE627B")`
+2. **By Path** (fast): `search(query: "invoice", groupPath: "/Trips/2025")`
+3. **By ID** (fast): `search(query: "invoice", groupId: 121910, databaseName: "1 - Documents")`
+4. **By Name** (slower): `search(query: "invoice", groupName: "2025")`
+
 ### Moving to Database Root
 **Problem**: Can't move a record to the database root level
 
@@ -257,3 +269,238 @@ Refer to `docs/devonthink-javascript-2.md` for comprehensive documentation of av
 1. Use `get_record_by_identifier` for single record lookup instead of searching
 2. When searching, use specific queries to reduce result sets
 3. Use appropriate tools for the task (e.g., `lookup_record` for exact matches, `search` for text queries)
+
+## JXA Interpreter Limitations and Best Practices
+
+### Important Discovery (2025-07)
+
+During debugging, we discovered that the JXA (JavaScript for Automation) interpreter has specific limitations when it comes to object literal syntax, particularly when used within template literals. This section documents these limitations and the best practices to avoid common errors.
+
+### Object Literal Syntax Issues
+
+**Problem**: When creating objects in JXA scripts generated via template literals, using ES6 object literal syntax can cause "ReferenceError: Can't find variable" errors.
+
+**Example of problematic code**:
+```javascript
+// This FAILS in JXA when generated via template literals
+const lookupOptions = {
+  uuid: pGroupUuid,    // JXA may interpret 'uuid' as a variable name
+  id: pGroupId,
+  path: pGroupPath
+};
+```
+
+**Solution**: Use bracket notation for object property assignment:
+```javascript
+// This WORKS reliably in JXA
+const lookupOptions = {};
+lookupOptions["uuid"] = pGroupUuid;
+lookupOptions["id"] = pGroupId;
+lookupOptions["path"] = pGroupPath;
+```
+
+### Direct Object Return Limitation
+
+**CRITICAL**: JXA cannot return object literals directly. This is a separate issue from the property assignment problem above.
+
+**Problem**: Returning object literals directly causes errors in JXA:
+```javascript
+// This FAILS in JXA
+return { record: record, method: 'uuid' };
+
+// This also FAILS
+return { success: true, data: someData };
+```
+
+**Solution**: Always build objects using bracket notation before returning:
+```javascript
+// This WORKS in JXA
+const result = {};
+result["record"] = record;
+result["method"] = "uuid";
+return result;
+
+// For simple success/error returns
+const response = {};
+response["success"] = true;
+response["data"] = someData;
+return response;
+```
+
+**Important**: This applies to ALL object returns in JXA scripts, not just those with computed property names.
+
+### String Interpolation Best Practices
+
+When building JXA scripts with template literals, follow these guidelines:
+
+1. **Avoid formatValueForJXA for object properties**:
+   ```javascript
+   // DON'T do this:
+   const options = {
+     uuid: ${formatValueForJXA(uuid)}  // Can cause issues
+   };
+   
+   // DO this instead:
+   const options = {};
+   options["uuid"] = ${uuid ? `"${escapeStringForJXA(uuid)}"` : "null"};
+   ```
+
+2. **Use intermediate variables for complex expressions**:
+   ```javascript
+   // DON'T do this:
+   error = "UUID not found: " + options.uuid;  // May fail if options.uuid is undefined
+   
+   // DO this instead:
+   const uuidValue = options.uuid || "undefined";
+   error = "UUID not found: " + uuidValue;
+   ```
+
+3. **Always use bracket notation when building objects dynamically**:
+   ```javascript
+   // Building search options
+   const searchOptions = {};
+   if (searchScope) {
+     searchOptions["in"] = searchScope;
+   }
+   if (comparison) {
+     searchOptions["comparison"] = comparison;
+   }
+   ```
+
+### Error Message Construction
+
+Be careful when constructing error messages that reference object properties:
+
+```javascript
+// Problematic - may cause reference errors
+if (!record) {
+  error = "Record not found: " + options.name;
+}
+
+// Better - use intermediate variable
+if (!record) {
+  const nameValue = options.name || "unknown";
+  error = "Record not found: " + nameValue;
+}
+```
+
+### Template Literal Variable Definition
+
+When defining variables in JXA scripts via template literals:
+
+```javascript
+// Define with proper null handling
+const pGroupUuid = ${groupUuid ? `"${escapeStringForJXA(groupUuid)}"` : "null"};
+const pGroupId = ${groupId !== undefined ? groupId : "null"};
+
+// Then use bracket notation for objects
+const options = {};
+options["uuid"] = pGroupUuid;
+options["id"] = pGroupId;
+```
+
+### Error Handling in JXA Scripts
+
+**CRITICAL**: `console.log` statements in JXA scripts will cause stdio JSON-RPC errors because they output to stderr, which the MCP server interprets as an error condition.
+
+**Problem**: Using console.log for debugging or in error handlers:
+```javascript
+// This FAILS - causes MCP error even if the operation succeeds
+try {
+  const result = someOperation();
+} catch (e) {
+  console.log("[DEBUG] Error:", e.toString());  // DON'T DO THIS
+  throw e;
+}
+```
+
+**Solution**: Always return a properly formatted error object without console.log:
+```javascript
+// This WORKS - proper error handling
+try {
+  const result = someOperation();
+  // ... process result ...
+} catch (e) {
+  const errorResponse = {};
+  errorResponse["success"] = false;
+  errorResponse["error"] = e.toString();
+  return JSON.stringify(errorResponse);
+}
+```
+
+**Important Notes**:
+1. Never use `console.log` in production JXA scripts
+2. Always return valid JSON with `success: false` for errors
+3. Build error objects using bracket notation (not inline object literals)
+4. For debugging, temporarily return error details in the JSON response instead of logging
+
+### JSON.stringify and DEVONthink Objects
+
+**Problem**: DEVONthink objects (records, databases, etc.) cannot be directly JSON.stringify'd. Attempting to do so returns `undefined` or causes errors.
+
+```javascript
+// This FAILS - returns undefined or errors
+const record = theApp.getRecordWithUuid("some-uuid");
+console.log("Record:", JSON.stringify(record));  // Outputs: Record: undefined
+```
+
+**Solution**: Convert DEVONthink objects to plain JavaScript objects before stringifying:
+
+```javascript
+// Extract properties first
+const record = theApp.getRecordWithUuid("some-uuid");
+const recordData = {};
+recordData["id"] = record.id();
+recordData["uuid"] = record.uuid();
+recordData["name"] = record.name();
+recordData["type"] = record.type();
+// ... other properties as needed
+
+console.log("Record:", JSON.stringify(recordData));  // Works correctly
+```
+
+### Common Patterns to Avoid
+
+1. **Direct object literal with computed property names**
+2. **Complex property access in string concatenation**
+3. **Assuming ES6+ features work the same as in Node.js**
+4. **Using shorthand property syntax**
+5. **JSON.stringify on DEVONthink objects without conversion**
+6. **Returning object literals directly**
+
+### Recommended Pattern for Tool Development
+
+When creating new tools, follow this pattern for building JXA scripts:
+
+```typescript
+const script = `
+  (() => {
+    const theApp = Application("DEVONthink");
+    theApp.includeStandardAdditions = true;
+    
+    try {
+      // Define variables with proper escaping
+      const param1 = ${param1 ? `"${escapeStringForJXA(param1)}"` : "null"};
+      
+      // Build objects using bracket notation
+      const options = {};
+      options["property1"] = param1;
+      options["property2"] = "value";
+      
+      // Use intermediate variables for property access
+      const value = options.property1 || "default";
+      
+      // Perform operations...
+      
+      return JSON.stringify({ success: true });
+    } catch (error) {
+      return JSON.stringify({ 
+        success: false, 
+        error: error.toString() 
+      });
+    }
+  })();
+`;
+```
+
+This pattern ensures compatibility with the JXA interpreter and avoids common pitfalls that can cause runtime errors.
