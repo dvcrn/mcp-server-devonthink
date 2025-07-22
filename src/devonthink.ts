@@ -24,6 +24,8 @@ import { addTagsTool } from "./tools/addTags.js";
 import { removeTagsTool } from "./tools/removeTags.js";
 import { classifyTool } from "./tools/classify.js";
 import { compareTool } from "./tools/compare.js";
+import { currentDatabaseTool } from "./tools/getCurrentDatabase.js";
+import { selectedRecordsTool } from "./tools/getSelectedRecords.js";
 
 export const createServer = async () => {
   const server = new Server(
@@ -50,6 +52,8 @@ export const createServer = async () => {
     lookupRecordTool,
     createFromUrlTool,
     getOpenDatabasesTool,
+    currentDatabaseTool,
+    selectedRecordsTool,
     listGroupContentTool,
     getRecordContentTool,
     renameRecordTool,
