@@ -2,6 +2,11 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { Tool, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../applescript/execute.js";
+import {
+  escapeStringForJXA,
+  formatValueForJXA,
+  isJXASafeString,
+} from "../utils/escapeString.js";
 
 const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
@@ -56,6 +61,23 @@ const moveRecord = async (
     databaseName,
   } = input;
 
+  // Validate string inputs
+  if (uuid && !isJXASafeString(uuid)) {
+    return { success: false, error: "UUID contains invalid characters" };
+  }
+  if (recordName && !isJXASafeString(recordName)) {
+    return { success: false, error: "Record name contains invalid characters" };
+  }
+  if (recordPath && !isJXASafeString(recordPath)) {
+    return { success: false, error: "Record path contains invalid characters" };
+  }
+  if (destinationGroupUuid && !isJXASafeString(destinationGroupUuid)) {
+    return { success: false, error: "Destination UUID contains invalid characters" };
+  }
+  if (databaseName && !isJXASafeString(databaseName)) {
+    return { success: false, error: "Database name contains invalid characters" };
+  }
+
   const script = `
     (() => {
       const theApp = Application("DEVONthink");
@@ -65,47 +87,78 @@ const moveRecord = async (
         let targetRecord;
         
         let targetDatabase;
-        if ("${databaseName || ""}") {
+        if (${formatValueForJXA(databaseName)}) {
           const databases = theApp.databases();
-          targetDatabase = databases.find(db => db.name() === "${databaseName}");
+          targetDatabase = databases.find(db => db.name() === ${formatValueForJXA(databaseName)});
           if (!targetDatabase) {
-            throw new Error("Database not found: ${databaseName}");
+            throw new Error("Database not found: " + ${formatValueForJXA(databaseName)});
           }
         } else {
           targetDatabase = theApp.currentDatabase();
         }
 
-        // Find the record to move
-        if ("${uuid || ""}") {
-          targetRecord = theApp.getRecordWithUuid("${uuid}");
-        } else if (${recordId || "null"}) {
-          const allRecords = targetDatabase.contents();
-          targetRecord = allRecords.find(r => r.id() === ${recordId});
-        } else if ("${recordName || ""}") {
-          const searchResults = theApp.search("${recordName}", { in: targetDatabase });
-          targetRecord = searchResults.find(r => r.name() === "${recordName}");
-        } else if ("${recordPath || ""}") {
-          const searchResults = theApp.lookupRecordsWithPath("${recordPath}", { in: targetDatabase });
+        // Find the record to move - improved lookup
+        if (${formatValueForJXA(uuid)}) {
+          targetRecord = theApp.getRecordWithUuid(${formatValueForJXA(uuid)});
+        } else if (${recordId !== undefined ? recordId : "null"}) {
+          // Improved ID lookup using search
+          const searchQuery = "id:" + ${recordId};
+          const searchResults = theApp.search(searchQuery, { in: targetDatabase });
+          if (searchResults && searchResults.length > 0) {
+            targetRecord = searchResults.find(r => r.id() === ${recordId});
+          }
+          
+          // Fallback to recursive search
+          if (!targetRecord) {
+            function findRecordById(group, id) {
+              const children = group.children();
+              for (let child of children) {
+                if (child.id() === id) {
+                  return child;
+                }
+                if (child.recordType() === "group") {
+                  const found = findRecordById(child, id);
+                  if (found) return found;
+                }
+              }
+              return null;
+            }
+            targetRecord = findRecordById(targetDatabase.root(), ${recordId});
+          }
+        } else if (${formatValueForJXA(recordName)}) {
+          const searchResults = theApp.search(${formatValueForJXA(recordName)}, { in: targetDatabase });
+          targetRecord = searchResults.find(r => r.name() === ${formatValueForJXA(recordName)});
+        } else if (${formatValueForJXA(recordPath)}) {
+          const searchResults = theApp.lookupRecordsWithPath(${formatValueForJXA(recordPath)}, { in: targetDatabase });
           if (searchResults && searchResults.length > 0) {
             targetRecord = searchResults[0];
           }
         }
         
         if (!targetRecord) {
+          let errorDetails = "Record not found";
+          if (${recordId !== undefined ? recordId : "null"}) {
+            errorDetails = "Record with ID " + ${recordId} + " not found in database '" + targetDatabase.name() + "'";
+          }
           return JSON.stringify({
             success: false,
-            error: "Record not found"
+            error: errorDetails
           });
         }
         
         // Find the destination group
         let destinationGroupRecord;
-        if ("${destinationGroupUuid || ""}") {
-          destinationGroupRecord = theApp.getRecordWithUuid("${destinationGroupUuid}");
+        if (${formatValueForJXA(destinationGroupUuid)}) {
+          destinationGroupRecord = theApp.getRecordWithUuid(${formatValueForJXA(destinationGroupUuid)});
         }
         
         if (!destinationGroupRecord) {
-          throw new Error("Destination group with UUID not found: ${destinationGroupUuid}");
+          throw new Error("Destination group with UUID not found: " + ${formatValueForJXA(destinationGroupUuid)});
+        }
+        
+        // Verify destination is a group
+        if (destinationGroupRecord.recordType() !== "group" && destinationGroupRecord.recordType() !== "smart group") {
+          throw new Error("Destination is not a group. Record type: " + destinationGroupRecord.recordType());
         }
         
         // Move the record

@@ -13,6 +13,7 @@ import { createRecordTool } from "./tools/createRecord.js";
 import { deleteRecordTool } from "./tools/deleteRecord.js";
 import { moveRecordTool } from "./tools/moveRecord.js";
 import { getRecordPropertiesTool } from "./tools/getRecordProperties.js";
+import { getRecordByIdentifierTool } from "./tools/getRecordByIdentifier.js";
 import { searchTool } from "./tools/search.js";
 import { lookupRecordTool } from "./tools/lookupRecord.js";
 import { createFromUrlTool } from "./tools/createFromUrl.js";
@@ -48,6 +49,7 @@ export const createServer = async () => {
     deleteRecordTool,
     moveRecordTool,
     getRecordPropertiesTool,
+    getRecordByIdentifierTool,
     searchTool,
     lookupRecordTool,
     createFromUrlTool,
