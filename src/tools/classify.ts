@@ -51,9 +51,9 @@ const classify = async (input: ClassifyInput): Promise<ClassifyResult> => {
       try {
         let targetDatabase;
         if ("${databaseName || ""}") {
-          const databases = theApp.databases();
-          targetDatabase = databases.find(db => db.name() === "${databaseName}");
-          if (!targetDatabase) {
+          try {
+            targetDatabase = theApp.databases["${databaseName}"]();
+          } catch (e) {
             throw new Error("Database not found: ${databaseName}");
           }
         } else {
@@ -74,8 +74,12 @@ const classify = async (input: ClassifyInput): Promise<ClassifyResult> => {
         if (targetDatabase) {
           classifyOptions.in = targetDatabase;
         }
-        ${comparison ? `classifyOptions.comparison = "${comparison}";` : ""}
-        ${tags ? `classifyOptions.tags = ${tags};` : ""}
+        if ("${comparison || ""}") {
+          classifyOptions.comparison = "${comparison}";
+        }
+        if (${tags || false}) {
+          classifyOptions.tags = ${tags};
+        }
         
         // Perform classification
         const classifyResults = theApp.classify(classifyOptions);

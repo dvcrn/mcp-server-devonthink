@@ -10,12 +10,6 @@ const AddTagsSchema = z
   .object({
     uuid: z.string().describe("The UUID of the record to add tags to"),
     tags: z.array(z.string()).describe("An array of tags to add"),
-    databaseName: z
-      .string()
-      .optional()
-      .describe(
-        "The name of the database to add tags to the record in (optional)"
-      ),
   })
   .strict();
 
@@ -27,7 +21,7 @@ interface AddTagsResult {
 }
 
 const addTags = async (input: AddTagsInput): Promise<AddTagsResult> => {
-  const { uuid, tags, databaseName } = input;
+  const { uuid, tags } = input;
 
   const script = `
     (() => {
@@ -43,21 +37,9 @@ const addTags = async (input: AddTagsInput): Promise<AddTagsResult> => {
             error: "Record with UUID ${uuid} not found"
           });
         }
-
-        if ("${
-          databaseName || ""
-        }" && record.database().name() !== "${databaseName}") {
-          return JSON.stringify({
-            success: false,
-            error: "Record with UUID ${uuid} not found in database ${databaseName}"
-          });
-        }
         
         const existingTags = record.tags();
-        const newTags = [...new Set([...existingTags, ...${JSON.stringify(
-          tags
-        )}])];
-        record.tags = newTags;
+        record.tags = existingTags.concat(${JSON.stringify(tags)});
         
         return JSON.stringify({
           success: true

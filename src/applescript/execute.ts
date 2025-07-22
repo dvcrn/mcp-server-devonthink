@@ -11,13 +11,13 @@ export const executeJxa = <T>(script: string): Promise<T> => {
         return reject(
           new McpError(
             ErrorCode.InternalError,
-            `AppleScript execution failed: ${error.message}`
+            `JXA execution failed: ${error.message}`
           )
         );
       }
       if (stderr) {
         return reject(
-          new McpError(ErrorCode.InternalError, `AppleScript error: ${stderr}`)
+          new McpError(ErrorCode.InternalError, `JXA error: ${stderr}`)
         );
       }
       try {
@@ -27,7 +27,7 @@ export const executeJxa = <T>(script: string): Promise<T> => {
         reject(
           new McpError(
             ErrorCode.InternalError,
-            `Failed to parse AppleScript output: ${parseError}`
+            `Failed to parse JXA output: ${parseError}`
           )
         );
       }
