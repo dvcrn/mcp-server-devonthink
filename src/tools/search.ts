@@ -2,6 +2,11 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { Tool, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../applescript/execute.js";
+import {
+  escapeSearchQuery,
+  formatValueForJXA,
+  isJXASafeString,
+} from "../utils/escapeString.js";
 
 const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
@@ -37,6 +42,7 @@ interface SearchResult {
   error?: string;
   results?: Array<{
     id: number;
+    uuid: string;
     name: string;
     path: string;
     location: string;
@@ -54,6 +60,25 @@ interface SearchResult {
 const search = async (input: SearchInput): Promise<SearchResult> => {
   const { query, groupName, comparison, excludeSubgroups, limit = 50 } = input;
 
+  // Validate inputs
+  if (!isJXASafeString(query)) {
+    return {
+      success: false,
+      error: "Search query contains invalid characters",
+    };
+  }
+
+  if (groupName && !isJXASafeString(groupName)) {
+    return {
+      success: false,
+      error: "Group name contains invalid characters",
+    };
+  }
+
+  // Escape the search query
+  const escapedQuery = escapeSearchQuery(query);
+  const escapedGroupName = groupName ? escapeSearchQuery(groupName) : "";
+
   const script = `
     (() => {
       const theApp = Application("DEVONthink");
@@ -63,12 +88,14 @@ const search = async (input: SearchInput): Promise<SearchResult> => {
         let searchScope;
         
         // Determine search scope
-        if ("${groupName || ""}") {
-          const groupSearchResults = theApp.search("${groupName}", { in: theApp.currentDatabase() });
+        if (${formatValueForJXA(groupName)}) {
+          const groupSearchResults = theApp.search(${formatValueForJXA(
+            groupName
+          )}, { in: theApp.currentDatabase() });
           if (!groupSearchResults) {
             return JSON.stringify({
               success: false,
-              error: "Group not found: ${groupName}"
+              error: "Group not found: " + ${formatValueForJXA(groupName)}
             });
           }
           const groups = groupSearchResults.filter(r => r.recordType() === "group");
@@ -77,7 +104,7 @@ const search = async (input: SearchInput): Promise<SearchResult> => {
           } else {
             return JSON.stringify({
               success: false,
-              error: "Group not found: ${groupName}"
+              error: "Group not found: " + ${formatValueForJXA(groupName)}
             });
           }
         } else {
@@ -89,15 +116,19 @@ const search = async (input: SearchInput): Promise<SearchResult> => {
         if (searchScope) {
           searchOptions.in = searchScope;
         }
-        ${comparison ? `searchOptions.comparison = "${comparison}";` : ""}
         ${
-          excludeSubgroups
+          comparison
+            ? `searchOptions.comparison = ${formatValueForJXA(comparison)};`
+            : ""
+        }
+        ${
+          excludeSubgroups !== undefined
             ? `searchOptions.excludeSubgroups = ${excludeSubgroups};`
             : ""
         }
         
         // Perform the search
-        const searchResults = theApp.search("${query}", searchOptions);
+        const searchResults = theApp.search("${escapedQuery}", searchOptions);
         
         if (!searchResults || searchResults.length === 0) {
           return JSON.stringify({
@@ -112,6 +143,7 @@ const search = async (input: SearchInput): Promise<SearchResult> => {
         const results = limitedResults.map(record => {
           const result = {
             id: record.id(),
+            uuid: record.uuid(),
             name: record.name(),
             path: record.path(),
             location: record.location(),
@@ -155,7 +187,7 @@ const search = async (input: SearchInput): Promise<SearchResult> => {
 export const searchTool: Tool = {
   name: "search",
   description:
-    "Search for records in DEVONthink. This tool is useful for general text-based queries and can be scoped to a specific group. It supports various comparison options and returns a list of matching records with their properties.",
+    "Search for records in DEVONthink. This tool is useful for general text-based queries and can be scoped to a specific group. It supports various comparison options and returns a list of matching records with their properties including both ID and UUID.\n\nSearch query examples:\n- Simple text: 'invoice 2024'\n- With operators: 'travel AND (berlin OR munich)'\n- Exact phrase: '\"exact phrase here\"'\n\nNote: Special characters in queries are automatically escaped. The tool returns both the record ID (database-specific) and UUID (globally unique) for each result.\n\nComparison options:\n- 'no case': Case insensitive\n- 'no umlauts': Diacritics insensitive\n- 'fuzzy': Fuzzy matching\n- 'related': Find related content",
   inputSchema: zodToJsonSchema(SearchSchema) as ToolInput,
   run: search,
 };

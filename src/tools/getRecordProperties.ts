@@ -2,6 +2,11 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { Tool, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../applescript/execute.js";
+import {
+  escapeStringForJXA,
+  formatValueForJXA,
+  isJXASafeString,
+} from "../utils/escapeString.js";
 
 const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
@@ -79,6 +84,20 @@ const getRecordProperties = async (
 ): Promise<RecordProperties> => {
   const { uuid, recordId, recordName, recordPath, databaseName } = input;
 
+  // Validate string inputs
+  if (uuid && !isJXASafeString(uuid)) {
+    return { success: false, error: "UUID contains invalid characters" };
+  }
+  if (recordName && !isJXASafeString(recordName)) {
+    return { success: false, error: "Record name contains invalid characters" };
+  }
+  if (recordPath && !isJXASafeString(recordPath)) {
+    return { success: false, error: "Record path contains invalid characters" };
+  }
+  if (databaseName && !isJXASafeString(databaseName)) {
+    return { success: false, error: "Database name contains invalid characters" };
+  }
+
   const script = `
     (() => {
       const theApp = Application("DEVONthink");
@@ -88,36 +107,71 @@ const getRecordProperties = async (
         let targetRecord;
         
         let targetDatabase;
-        if ("${databaseName || ""}") {
+        if (${formatValueForJXA(databaseName)}) {
           const databases = theApp.databases();
-          targetDatabase = databases.find(db => db.name() === "${databaseName}");
+          targetDatabase = databases.find(db => db.name() === ${formatValueForJXA(databaseName)});
           if (!targetDatabase) {
-            throw new Error("Database not found: ${databaseName}");
+            throw new Error("Database not found: " + ${formatValueForJXA(databaseName)});
           }
         } else {
           targetDatabase = theApp.currentDatabase();
         }
 
-        // Find the record
-        if ("${uuid || ""}") {
-          targetRecord = theApp.getRecordWithUuid("${uuid}");
-        } else if (${recordId || "null"}) {
-          const allRecords = targetDatabase.contents();
-          targetRecord = allRecords.find(r => r.id() === ${recordId});
-        } else if ("${recordName || ""}") {
-          const searchResults = theApp.search("${recordName}", { in: targetDatabase });
-          targetRecord = searchResults.find(r => r.name() === "${recordName}");
-        } else if ("${recordPath || ""}") {
-          const searchResults = theApp.lookupRecordsWithPath("${recordPath}", { in: targetDatabase });
+        // Find the record - try multiple approaches
+        if (${formatValueForJXA(uuid)}) {
+          // UUID is the most reliable method
+          targetRecord = theApp.getRecordWithUuid(${formatValueForJXA(uuid)});
+        } else if (${recordId !== undefined ? recordId : "null"}) {
+          // For ID lookup, search in the database
+          // This is more comprehensive than just checking contents()
+          const searchQuery = "id:" + ${recordId};
+          const searchResults = theApp.search(searchQuery, { in: targetDatabase });
+          if (searchResults && searchResults.length > 0) {
+            // Verify the ID matches exactly
+            targetRecord = searchResults.find(r => r.id() === ${recordId});
+          }
+          
+          // If not found via search, try a more exhaustive approach
+          if (!targetRecord) {
+            // Function to recursively search all groups
+            function findRecordById(group, id) {
+              const children = group.children();
+              for (let child of children) {
+                if (child.id() === id) {
+                  return child;
+                }
+                if (child.recordType() === "group") {
+                  const found = findRecordById(child, id);
+                  if (found) return found;
+                }
+              }
+              return null;
+            }
+            
+            targetRecord = findRecordById(targetDatabase.root(), ${recordId});
+          }
+        } else if (${formatValueForJXA(recordName)}) {
+          const searchResults = theApp.search(${formatValueForJXA(recordName)}, { in: targetDatabase });
+          targetRecord = searchResults.find(r => r.name() === ${formatValueForJXA(recordName)});
+        } else if (${formatValueForJXA(recordPath)}) {
+          const searchResults = theApp.lookupRecordsWithPath(${formatValueForJXA(recordPath)}, { in: targetDatabase });
           if (searchResults && searchResults.length > 0) {
             targetRecord = searchResults[0];
           }
         }
         
         if (!targetRecord) {
+          let errorDetails = "Record not found";
+          if (${recordId !== undefined ? recordId : "null"}) {
+            errorDetails = "Record with ID " + ${recordId} + " not found in database '" + targetDatabase.name() + "'";
+          } else if (${formatValueForJXA(uuid)}) {
+            errorDetails = "Record with UUID " + ${formatValueForJXA(uuid)} + " not found";
+          } else if (${formatValueForJXA(recordName)}) {
+            errorDetails = "Record with name " + ${formatValueForJXA(recordName)} + " not found in database '" + targetDatabase.name() + "'";
+          }
           return JSON.stringify({
             success: false,
-            error: "Record not found"
+            error: errorDetails
           });
         }
         
@@ -176,7 +230,7 @@ const getRecordProperties = async (
 export const getRecordPropertiesTool: Tool = {
   name: "get_record_properties",
   description:
-    "Get detailed properties and metadata for a DEVONthink record. It's highly recommended to use the `uuid` for accurate record identification. This tool returns a comprehensive set of properties, including dates, size, tags, and more.",
+    "Get detailed properties and metadata for a DEVONthink record. This tool returns a comprehensive set of properties, including dates, size, tags, and more.\n\nRecord identification methods (in order of reliability):\n1. **UUID** (recommended): Globally unique identifier that works across all databases\n2. **ID + Database**: Database-specific ID requires specifying the database name\n3. **Name**: Searches for exact name match (may return wrong record if duplicates exist)\n4. **Path**: File system path for indexed records\n\nWhen using ID, always specify the database name for accurate results. The tool will search recursively through all groups to find records by ID.\n\nReturns both UUID and ID in the result for future reference.",
   inputSchema: zodToJsonSchema(GetRecordPropertiesSchema) as ToolInput,
   run: getRecordProperties,
 };
