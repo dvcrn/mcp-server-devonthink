@@ -86,9 +86,9 @@ const compare = async (input: CompareInput): Promise<CompareResult> => {
       try {
         let targetDatabase;
         if ("${databaseName || ""}") {
-          const databases = theApp.databases();
-          targetDatabase = databases.find(db => db.name() === "${databaseName}");
-          if (!targetDatabase) {
+          try {
+            targetDatabase = theApp.databases["${databaseName}"]();
+          } catch (e) {
             throw new Error("Database not found: ${databaseName}");
           }
         } else {
@@ -160,7 +160,9 @@ const compare = async (input: CompareInput): Promise<CompareResult> => {
           if (targetDatabase) {
             compareOptions.to = targetDatabase;
           }
-          ${comparison ? `compareOptions.comparison = "${comparison}";` : ""}
+          if ("${comparison || ""}") {
+            compareOptions.comparison = "${comparison}";
+          }
           
           // Perform comparison using DEVONthink's compare method
           const compareResults = theApp.compare(compareOptions);
