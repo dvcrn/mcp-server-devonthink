@@ -27,6 +27,9 @@ import { classifyTool } from "./tools/classify.js";
 import { compareTool } from "./tools/compare.js";
 import { currentDatabaseTool } from "./tools/getCurrentDatabase.js";
 import { selectedRecordsTool } from "./tools/getSelectedRecords.js";
+import { replicateRecordTool } from "./tools/replicateRecord.js";
+import { duplicateRecordTool } from "./tools/duplicateRecord.js";
+import { convertRecordTool } from "./tools/convertRecord.js";
 
 export const createServer = async () => {
   const server = new Server(
@@ -63,6 +66,9 @@ export const createServer = async () => {
     removeTagsTool,
     classifyTool,
     compareTool,
+    replicateRecordTool,
+    duplicateRecordTool,
+    convertRecordTool,
   ];
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {

@@ -29,6 +29,9 @@
   - **`removeTags.ts`**: Removes tags from a record
   - **`classify.ts`**: Gets AI-powered classification suggestions
   - **`compare.ts`**: Finds similar records or compares specific records
+  - **`replicateRecord.ts`**: Replicates records within the same database (creates linked references)
+  - **`duplicateRecord.ts`**: Duplicates records to any database (creates independent copies)
+  - **`convertRecord.ts`**: Converts records to different formats
 - **`src/utils/`**: Utility functions
   - **`escapeString.ts`**: Provides safe string escaping for JXA script interpolation
 - **`src/applescript/execute.ts`**: A utility module that provides the `executeJxa` function to run JXA scripts via the command line.
@@ -56,6 +59,9 @@ The MCP server currently provides the following tools:
 17. **`remove_tags`** - Removes tags from a specific record
 18. **`classify`** - Get AI-powered suggestions for organizing records
 19. **`compare`** - Find similar records or compare two specific records
+20. **`replicate_record`** - Replicate records within the same database (creates linked references)
+21. **`duplicate_record`** - Duplicate records to any database (creates independent copies)
+22. **`convert_record`** - Convert records to different formats (plain text, rich text, markdown, HTML, PDF, etc.)
 
 ## Adding New Tools
 
