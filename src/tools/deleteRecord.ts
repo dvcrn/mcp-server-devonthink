@@ -16,14 +16,10 @@ const DeleteRecordSchema = z
   .object({
     uuid: z.string().optional().describe("The UUID of the record"),
     recordId: z.number().optional().describe("The ID of the record to delete"),
-    recordName: z
-      .string()
-      .optional()
-      .describe("The name of the record to delete (if ID not provided)"),
     recordPath: z
       .string()
       .optional()
-      .describe("The path of the record to delete (if ID not provided)"),
+      .describe("The DEVONthink location path of the record (e.g., '/Inbox/My Document'), NOT the filesystem path"),
     databaseName: z
       .string()
       .optional()
@@ -36,11 +32,10 @@ const DeleteRecordSchema = z
     (data) =>
       data.uuid !== undefined ||
       data.recordId !== undefined ||
-      data.recordName !== undefined ||
       data.recordPath !== undefined,
     {
       message:
-        "Either uuid, recordId, recordName, or recordPath must be provided",
+        "Either uuid, recordId, or recordPath must be provided",
     }
   );
 
@@ -49,14 +44,11 @@ type DeleteRecordInput = z.infer<typeof DeleteRecordSchema>;
 const deleteRecord = async (
   input: DeleteRecordInput
 ): Promise<{ success: boolean; error?: string }> => {
-  const { uuid, recordId, recordName, recordPath, databaseName } = input;
+  const { uuid, recordId, recordPath, databaseName } = input;
 
   // Validate string inputs
   if (uuid && !isJXASafeString(uuid)) {
     return { success: false, error: "UUID contains invalid characters" };
-  }
-  if (recordName && !isJXASafeString(recordName)) {
-    return { success: false, error: "Record name contains invalid characters" };
   }
   if (recordPath && !isJXASafeString(recordPath)) {
     return { success: false, error: "Record path contains invalid characters" };
@@ -83,7 +75,7 @@ const deleteRecord = async (
           uuid: ${uuid ? `"${escapeStringForJXA(uuid)}"` : "null"},
           id: ${recordId !== undefined ? recordId : "null"},
           path: ${recordPath ? `"${escapeStringForJXA(recordPath)}"` : "null"},
-          name: ${recordName ? `"${escapeStringForJXA(recordName)}"` : "null"},
+          name: null,
           database: targetDatabase
         };
         
@@ -97,10 +89,8 @@ const deleteRecord = async (
             errorDetails = "Record with ID " + ${recordId} + " not found in database '" + targetDatabase.name() + "'";
           } else if (${uuid ? `"${escapeStringForJXA(uuid)}"` : "null"}) {
             errorDetails = "Record with UUID " + (${uuid ? `"${escapeStringForJXA(uuid)}"` : "null"} || "unknown") + " not found";
-          } else if (${recordName ? `"${escapeStringForJXA(recordName)}"` : "null"}) {
-            errorDetails = "Record with name " + (${recordName ? `"${escapeStringForJXA(recordName)}"` : "null"} || "unknown") + " not found in database '" + targetDatabase.name() + "'";
           } else if (${recordPath ? `"${escapeStringForJXA(recordPath)}"` : "null"}) {
-            errorDetails = "Record at path " + (${recordPath ? `"${escapeStringForJXA(recordPath)}"` : "null"} || "unknown") + " not found";
+            errorDetails = "Record at DEVONthink location path " + (${recordPath ? `"${escapeStringForJXA(recordPath)}"` : "null"} || "unknown") + " not found";
           }
           
           return JSON.stringify({
@@ -137,7 +127,7 @@ const deleteRecord = async (
 export const deleteRecordTool: Tool = {
   name: "delete_record",
   description:
-    "Delete a record from DEVONthink. It's highly recommended to use the `uuid` for accurate record identification. The tool will permanently delete the record and its contents if it's a group.",
+    "Delete a record from DEVONthink. This tool will permanently delete the record and its contents if it's a group.\n\nRecord identification methods (in order of reliability):\n1. **UUID** (recommended): Globally unique identifier that works across all databases\n2. **ID + Database**: Database-specific ID requires specifying the database name\n3. **DEVONthink Path**: Internal DEVONthink location path like '/Inbox/My Document' (NOT filesystem paths like '/Users/.../')\n\n**Important Path Note**: Use DEVONthink's internal location paths (shown in the 'Path' column in DEVONthink), not filesystem paths. Example: '/Projects/2024/Report.pdf' not '/Users/david/Databases/MyDB.dtBase2/Files.noindex/...'",
   inputSchema: zodToJsonSchema(DeleteRecordSchema) as ToolInput,
   run: deleteRecord,
 };
