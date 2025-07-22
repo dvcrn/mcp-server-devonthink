@@ -19,17 +19,11 @@ const GetRecordPropertiesSchema = z
       .number()
       .optional()
       .describe("The ID of the record to get properties for"),
-    recordName: z
-      .string()
-      .optional()
-      .describe(
-        "The name of the record to get properties for (if ID not provided)"
-      ),
     recordPath: z
       .string()
       .optional()
       .describe(
-        "The path of the record to get properties for (if ID not provided)"
+        "The DEVONthink location path of the record (e.g., '/Inbox/My Document'), NOT the filesystem path"
       ),
     databaseName: z
       .string()
@@ -43,11 +37,10 @@ const GetRecordPropertiesSchema = z
     (data) =>
       data.uuid !== undefined ||
       data.recordId !== undefined ||
-      data.recordName !== undefined ||
       data.recordPath !== undefined,
     {
       message:
-        "Either uuid, recordId, recordName, or recordPath must be provided",
+        "Either uuid, recordId, or recordPath must be provided",
     }
   );
 
@@ -83,14 +76,11 @@ interface RecordProperties {
 const getRecordProperties = async (
   input: GetRecordPropertiesInput
 ): Promise<RecordProperties> => {
-  const { uuid, recordId, recordName, recordPath, databaseName } = input;
+  const { uuid, recordId, recordPath, databaseName } = input;
 
   // Validate string inputs
   if (uuid && !isJXASafeString(uuid)) {
     return { success: false, error: "UUID contains invalid characters" };
-  }
-  if (recordName && !isJXASafeString(recordName)) {
-    return { success: false, error: "Record name contains invalid characters" };
   }
   if (recordPath && !isJXASafeString(recordPath)) {
     return { success: false, error: "Record path contains invalid characters" };
@@ -117,7 +107,7 @@ const getRecordProperties = async (
           uuid: ${uuid ? `"${escapeStringForJXA(uuid)}"` : "null"},
           id: ${recordId !== undefined ? recordId : "null"},
           path: ${recordPath ? `"${escapeStringForJXA(recordPath)}"` : "null"},
-          name: ${recordName ? `"${escapeStringForJXA(recordName)}"` : "null"},
+          name: null,
           database: targetDatabase
         };
         
@@ -131,10 +121,8 @@ const getRecordProperties = async (
             errorDetails = "Record with ID " + ${recordId} + " not found in database '" + targetDatabase.name() + "'";
           } else if (${uuid ? `"${escapeStringForJXA(uuid)}"` : "null"}) {
             errorDetails = "Record with UUID " + (${uuid ? `"${escapeStringForJXA(uuid)}"` : "null"} || "unknown") + " not found";
-          } else if (${recordName ? `"${escapeStringForJXA(recordName)}"` : "null"}) {
-            errorDetails = "Record with name " + (${recordName ? `"${escapeStringForJXA(recordName)}"` : "null"} || "unknown") + " not found in database '" + targetDatabase.name() + "'";
           } else if (${recordPath ? `"${escapeStringForJXA(recordPath)}"` : "null"}) {
-            errorDetails = "Record at path " + (${recordPath ? `"${escapeStringForJXA(recordPath)}"` : "null"} || "unknown") + " not found";
+            errorDetails = "Record at DEVONthink location path " + (${recordPath ? `"${escapeStringForJXA(recordPath)}"` : "null"} || "unknown") + " not found";
           }
           
           return JSON.stringify({
@@ -200,7 +188,7 @@ const getRecordProperties = async (
 export const getRecordPropertiesTool: Tool = {
   name: "get_record_properties",
   description:
-    "Get detailed properties and metadata for a DEVONthink record. This tool returns a comprehensive set of properties, including dates, size, tags, and more.\n\nRecord identification methods (in order of reliability):\n1. **UUID** (recommended): Globally unique identifier that works across all databases\n2. **ID + Database**: Database-specific ID requires specifying the database name\n3. **Name**: Searches for exact name match (may return wrong record if duplicates exist)\n4. **Path**: File system path for indexed records\n\nWhen using ID, always specify the database name for accurate results. The tool will search recursively through all groups to find records by ID.\n\nReturns both UUID and ID in the result for future reference.",
+    "Get detailed properties and metadata for a DEVONthink record. This tool returns a comprehensive set of properties, including dates, size, tags, and more.\n\nRecord identification methods (in order of reliability):\n1. **UUID** (recommended): Globally unique identifier that works across all databases\n2. **ID + Database**: Database-specific ID requires specifying the database name\n3. **DEVONthink Path**: Internal DEVONthink location path like '/Inbox/My Document' (NOT filesystem paths like '/Users/.../')\n\n**Important Path Note**: Use DEVONthink's internal location paths (shown in the 'Path' column in DEVONthink), not filesystem paths. Example: '/Projects/2024/Report.pdf' not '/Users/david/Databases/MyDB.dtBase2/Files.noindex/...'\n\nWhen using ID, always specify the database name for accurate results. The tool will search recursively through all groups to find records by ID.\n\nReturns both UUID and ID in the result for future reference.",
   inputSchema: zodToJsonSchema(GetRecordPropertiesSchema) as ToolInput,
   run: getRecordProperties,
 };

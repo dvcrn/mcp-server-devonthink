@@ -504,3 +504,82 @@ const script = `
 ```
 
 This pattern ensures compatibility with the JXA interpreter and avoids common pitfalls that can cause runtime errors.
+
+## DEVONthink Path vs Filesystem Path Distinction
+
+**CRITICAL**: When working with DEVONthink paths, there are two distinct types of paths:
+
+### DEVONthink Location Paths (Correct)
+- **What it is**: Internal DEVONthink path showing location within the database hierarchy
+- **Format**: `/Inbox/My Document.md`, `/Projects/2024/Report.pdf`
+- **Where to find**: The "Path" column in DEVONthink's interface, or the `location()` property of records
+- **Usage**: This is what the `recordPath` parameter expects in tools like `get_record_properties` and `delete_record`
+
+### Filesystem Paths (Incorrect for DEVONthink tools)
+- **What it is**: Physical file system path where DEVONthink stores files
+- **Format**: `/Users/david/Databases/MyDB.dtBase2/Files.noindex/md/2/My Document.md`
+- **Why wrong**: This is an internal implementation detail that can change and is not recognized by DEVONthink's API
+
+### Tool Usage Examples
+
+**Correct usage:**
+```javascript
+// Using DEVONthink location path
+get_record_properties({ recordPath: "/Inbox/My Document.md" })
+delete_record({ recordPath: "/Projects/2024/Report.pdf" })
+```
+
+**Incorrect usage:**
+```javascript
+// DON'T use filesystem paths
+get_record_properties({ recordPath: "/Users/david/Databases/Test.dtBase2/Files.noindex/md/2/My Document.md" })
+```
+
+## DEVONthink Search Query Syntax
+
+Based on testing and user feedback, here are the correct search query patterns:
+
+### Working Date Syntax
+- **Recent dates**: `created:Yesterday`, `created:#3days`, `created:#1week`
+- **Specific dates**: `created>=2025-07-14`, `created<=2025-07-21`
+- **Combined**: `kind:document created>=2025-07-14 created<=2025-07-21`
+
+### Working Content Filters
+- **Kind filters**: `kind:pdf`, `kind:group`, `kind:markdown`, `kind:!group` (exclude groups)
+- **Name searches**: `name:foo kind:pdf`, `name:~thailand` (contains thailand)
+- **Combined filters**: `kind:pdf created:#3days name:invoice`
+
+### Non-Working Patterns (Avoid)
+- **ISO date ranges**: `created:2024-01-01..2024-12-31` (doesn't work)
+- **Wildcard dates**: `created:2024-*` (unreliable)
+
+### Recommended Query Patterns
+```javascript
+// Recent PDFs containing "invoice"
+search({ query: "kind:pdf created:#3days name:~invoice" })
+
+// Documents from specific date range
+search({ query: "kind:document created>=2025-07-14 created<=2025-07-21" })
+
+// Everything except groups, created yesterday
+search({ query: "kind:!group created:Yesterday" })
+
+// PDFs with specific name
+search({ query: "name:foo kind:pdf" })
+```
+
+## Tool Parameter Best Practices
+
+### Record Identification Priority
+1. **UUID** (most reliable): Works across all databases, globally unique
+2. **ID + Database**: Fast and reliable within a specific database
+3. **DEVONthink Path**: Internal location path (NOT filesystem path)
+
+### Deprecated Parameters
+- **recordName**: Removed from `get_record_properties` and `delete_record` due to ambiguity
+- **groupName**: Removed from `search` due to ambiguity and unreliable matching
+
+### Error Prevention
+- Always validate that paths are DEVONthink location paths, not filesystem paths
+- Use proper date syntax for search queries
+- Prefer UUID or ID+Database over path-based lookups when possible
