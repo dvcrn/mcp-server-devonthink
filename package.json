@@ -12,13 +12,13 @@
   "bugs": "https://github.com/dvcrn/mcp-server-devonthink/issues",
   "type": "module",
   "bin": {
-    "mcp-server-devonthink": "dist/src/index.js"
+    "mcp-server-devonthink": "dist/index.js"
   },
   "files": [
-    "dist/src"
+    "dist"
   ],
   "scripts": {
-    "build": "tsc && shx chmod +x dist/*.js",
+    "build": "tsc && shx chmod +x dist/index.js",
     "prepare": "npm run build",
     "watch": "tsc --watch",
     "format": "biome format --write",
