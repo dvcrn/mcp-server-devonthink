@@ -5,6 +5,7 @@ import {
   ErrorCode,
   ListResourcesRequestSchema,
   ListPromptsRequestSchema,
+  ListResourceTemplatesRequestSchema,
   McpError,
   Tool,
 } from "@modelcontextprotocol/sdk/types.js";
@@ -76,6 +77,10 @@ export const createServer = async () => {
   });
 
   server.setRequestHandler(ListResourcesRequestSchema, async () => {
+    return { resources: [] };
+  });
+
+  server.setRequestHandler(ListResourceTemplatesRequestSchema, async () => {
     return { resources: [] };
   });
 
