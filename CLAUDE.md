@@ -32,6 +32,7 @@
   - **`replicateRecord.ts`**: Replicates records within the same database (creates linked references)
   - **`duplicateRecord.ts`**: Duplicates records to any database (creates independent copies)
   - **`convertRecord.ts`**: Converts records to different formats
+  - **`updateRecordContent.ts`**: Updates the content of existing records while preserving UUID
 - **`src/utils/`**: Utility functions
   - **`escapeString.ts`**: Provides safe string escaping for JXA script interpolation
 - **`src/applescript/execute.ts`**: A utility module that provides the `executeJxa` function to run JXA scripts via the command line.
@@ -62,6 +63,7 @@ The MCP server currently provides the following tools:
 20. **`replicate_record`** - Replicate records within the same database (creates linked references)
 21. **`duplicate_record`** - Duplicate records to any database (creates independent copies)
 22. **`convert_record`** - Convert records to different formats (plain text, rich text, markdown, HTML, PDF, etc.)
+23. **`update_record_content`** - Update the content of existing records while preserving UUID and metadata
 
 ## Adding New Tools
 
@@ -188,6 +190,12 @@ Update this `CLAUDE.md` file to:
 Refer to `docs/devonthink-javascript-2.md` for comprehensive documentation of available DEVONthink JXA commands and properties.
 
 ## Recent Improvements (2025-07)
+
+### Content Update Capability
+- Added `update_record_content` tool to modify existing records without changing UUID
+- Supports updating markdown, text, RTF, formatted notes, and HTML documents
+- Preserves all metadata including creation date, tags, and references
+- Uses `plainText` property for text-based formats and `source` property for HTML
 
 ### String Escaping and Safety
 - Added `src/utils/escapeString.ts` utility for proper JXA string escaping
