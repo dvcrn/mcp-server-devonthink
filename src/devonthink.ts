@@ -31,6 +31,7 @@ import { selectedRecordsTool } from "./tools/getSelectedRecords.js";
 import { replicateRecordTool } from "./tools/replicateRecord.js";
 import { duplicateRecordTool } from "./tools/duplicateRecord.js";
 import { convertRecordTool } from "./tools/convertRecord.js";
+import { updateRecordContentTool } from "./tools/updateRecordContent.js";
 
 export const createServer = async () => {
   const server = new Server(
@@ -70,6 +71,7 @@ export const createServer = async () => {
     replicateRecordTool,
     duplicateRecordTool,
     convertRecordTool,
+    updateRecordContentTool,
   ];
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
