@@ -32,6 +32,13 @@ import { replicateRecordTool } from "./tools/replicateRecord.js";
 import { duplicateRecordTool } from "./tools/duplicateRecord.js";
 import { convertRecordTool } from "./tools/convertRecord.js";
 import { updateRecordContentTool } from "./tools/updateRecordContent.js";
+import { chatWithKnowledgeBaseTool } from "./tools/ai/chatWithKnowledgeBase.js";
+import { extractKeywordsTool } from "./tools/ai/extractKeywords.js";
+import { analyzeDocumentThemesTool } from "./tools/ai/analyzeDocumentThemes.js";
+import { findSimilarDocumentsTool } from "./tools/ai/findSimilarDocuments.js";
+import { checkAIStatusTool } from "./tools/ai/checkAIStatus.js";
+import { summarizeContentsTool } from "./tools/summarizeContents.js";
+import { getChatResponseTool } from "./tools/getChatResponse.js";
 
 export const createServer = async () => {
   const server = new Server(
@@ -72,6 +79,13 @@ export const createServer = async () => {
     duplicateRecordTool,
     convertRecordTool,
     updateRecordContentTool,
+    getChatResponseTool,
+    checkAIStatusTool,
+    chatWithKnowledgeBaseTool,
+    extractKeywordsTool,
+    analyzeDocumentThemesTool,
+    findSimilarDocumentsTool,
+    summarizeContentsTool,
   ];
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {

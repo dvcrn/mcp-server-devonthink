@@ -151,11 +151,12 @@ function getDatabase(theApp, databaseName) {
   }
   
   const databases = theApp.databases();
-  const found = databases.find(db => db.name() === databaseName);
-  if (!found) {
-    throw new Error("Database not found: " + databaseName);
+  for (let i = 0; i < databases.length; i++) {
+    if (databases[i].name() === databaseName) {
+      return databases[i];
+    }
   }
-  return found;
+  throw new Error("Database not found: " + databaseName);
 }`;
 
 /**
