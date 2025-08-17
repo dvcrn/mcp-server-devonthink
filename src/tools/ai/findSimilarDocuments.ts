@@ -336,7 +336,7 @@ const findSimilarDocuments = async (input: FindSimilarDocumentsInput): Promise<S
             }
             
             // Extract key terms from reference text for search
-            const searchTerms = referenceText.split(/\\s+/)
+            const searchTerms = referenceText.split(/\\\\s+/)
               .filter(term => term.length > 3)
               .slice(0, 10) // Use first 10 significant terms
               .join(" ");

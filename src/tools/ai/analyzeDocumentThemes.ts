@@ -12,11 +12,10 @@ import { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../../applescript/execute.js";
 import { escapeStringForJXA } from "../../utils/escapeString.js";
 import { 
-  checkAIServiceAvailability, 
-  handleAIError,
-  validateAnalysisInput,
-  processAIResult 
-} from "./utils/index.js";
+  checkAIServiceSimple,
+  getSimpleStatusMessage,
+  selectSimpleEngine
+} from "./utils/simpleAIChecker.js";
 import { getRecordLookupHelpers } from "../../utils/jxaHelpers.js";
 
 // Define input schema for theme analysis
@@ -153,8 +152,16 @@ const analyzeDocumentThemes = async (input: AnalyzeDocumentThemesInput): Promise
     };
   }
 
-  // Skip problematic pre-execution AI availability check
-  // Rely on inline JXA availability checking that already exists in the script
+  // Simple, reliable AI service check
+  const aiStatus = await checkAIServiceSimple();
+  
+  if (!aiStatus.success || !aiStatus.devonthinkRunning) {
+    return {
+      success: false,
+      error: getSimpleStatusMessage(aiStatus),
+      executionTime: Date.now() - startTime
+    };
+  }
 
   // Build the comprehensive JXA script for theme analysis
   const script = `
@@ -413,14 +420,14 @@ const analyzeDocumentThemes = async (input: AnalyzeDocumentThemesInput): Promise
         
         // Parse the AI response to extract themes (simplified implementation)
         // In production, this would use more sophisticated NLP parsing
-        const responseLines = aiResponse.split('\\n').filter(line => line.trim().length > 0);
+        const responseLines = aiResponse.split('\\\\n').filter(line => line.trim().length > 0);
         let currentTheme = null;
         
         for (let i = 0; i < responseLines.length && themes.length < maxThemes; i++) {
           const line = responseLines[i].trim();
           
           // Look for theme headers (lines that look like titles)
-          if (line.match(/^\\d+\\.|^[A-Z][^.]*:$|^\\*\\*.*\\*\\*$/) || 
+          if (line.match(/^\\\\d+\\\\.|^[A-Z][^.]*:$|^\\\\*\\\\*.*\\\\*\\\\*$/) || 
               (line.length > 10 && line.length < 100 && !line.includes('.'))) {
             
             if (currentTheme) {
@@ -429,7 +436,7 @@ const analyzeDocumentThemes = async (input: AnalyzeDocumentThemesInput): Promise
             
             // Create new theme
             currentTheme = {};
-            currentTheme["theme"] = line.replace(/^\\d+\\.|^\\*\\*|\\*\\*$|:$/g, '').trim();
+            currentTheme["theme"] = line.replace(/^\\\\d+\\\\.|^\\\\*\\\\*|\\\\*\\\\*$|:$/g, '').trim();
             currentTheme["description"] = "";
             currentTheme["frequency"] = themes.length + 1;
             
@@ -587,24 +594,17 @@ const analyzeDocumentThemes = async (input: AnalyzeDocumentThemesInput): Promise
   try {
     const result = await executeJxa<ThemeAnalysisResult>(script);
     
-    // Process result using AI utilities
-    const processedResult = processAIResult(result, 'analyze', Date.now(), {
-      includeExecutionTime: true,
-      sanitizeContent: true
-    });
-    
     // Add execution time if not present
-    if (!processedResult.executionTime) {
-      processedResult.executionTime = Date.now() - startTime;
+    if (!result.executionTime) {
+      result.executionTime = Date.now() - startTime;
     }
     
-    return processedResult;
+    return result;
     
   } catch (error) {
-    const errorResult = await handleAIError(error, 'analyze', { executionTime: Date.now() - startTime });
     return {
       success: false,
-      error: errorResult?.message || (error instanceof Error ? error.message : String(error)),
+      error: error instanceof Error ? error.message : String(error),
       executionTime: Date.now() - startTime
     };
   }

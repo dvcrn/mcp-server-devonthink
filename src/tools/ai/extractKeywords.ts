@@ -11,7 +11,10 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../../applescript/execute.js";
 import { escapeStringForJXA } from "../../utils/escapeString.js";
-import { handleAIError } from "./utils/index.js";
+import { 
+  checkAIServiceSimple,
+  getSimpleStatusMessage
+} from "./utils/simpleAIChecker.js";
 import { getRecordLookupHelpers } from "../../utils/jxaHelpers.js";
 
 // Define input schema for keyword extraction
@@ -144,7 +147,16 @@ const extractKeywords = async (input: ExtractKeywordsInput): Promise<ExtractKeyw
     };
   }
 
-  // Skip AI service availability check for now - DEVONthink keyword extraction uses built-in processing
+  // Simple, reliable AI service check
+  const aiStatus = await checkAIServiceSimple();
+  
+  if (!aiStatus.success || !aiStatus.devonthinkRunning) {
+    return {
+      success: false,
+      error: getSimpleStatusMessage(aiStatus),
+      executionTime: Date.now() - startTime
+    };
+  }
 
   // Build the JXA script for keyword extraction
   const script = `
@@ -217,10 +229,11 @@ const extractKeywords = async (input: ExtractKeywordsInput): Promise<ExtractKeyw
         // Extract keywords using DEVONthink's built-in keyword extraction
         let extractedKeywords = [];
         try {
-          const rawKeywords = theApp.extractKeywordsFrom({
-            record: record,
-            options: extractionOptions
-          });
+          const extractionParams = {};
+          extractionParams["record"] = record;
+          extractionParams["options"] = extractionOptions;
+          
+          const rawKeywords = theApp.extractKeywordsFrom(extractionParams);
           
           if (rawKeywords && rawKeywords.length > 0) {
             extractedKeywords = rawKeywords;
@@ -386,10 +399,9 @@ const extractKeywords = async (input: ExtractKeywordsInput): Promise<ExtractKeyw
     return result;
     
   } catch (error) {
-    const errorResult = await handleAIError(error, 'analyze', { executionTime: Date.now() - startTime });
     return {
       success: false,
-      error: errorResult?.message || (error instanceof Error ? error.message : String(error)),
+      error: error instanceof Error ? error.message : String(error),
       executionTime: Date.now() - startTime
     };
   }
