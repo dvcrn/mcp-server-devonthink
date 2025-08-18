@@ -8,32 +8,13 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // Mock modules BEFORE importing the tool
 vi.mock('../../../src/applescript/execute.js');
-vi.mock('../../../src/tools/ai/utils/aiAvailabilityChecker.js', () => ({
-  checkAIServiceAvailability: vi.fn(),
-  getAIServiceInfo: vi.fn().mockResolvedValue({
-    status: {
-      isAvailable: true,
-      devonthinkRunning: true,
-      aiFeatureEnabled: true
-    },
-    engines: [
-      {
-        engine: 'ChatGPT',
-        isConfigured: true,
-        models: ['gpt-4', 'gpt-3.5-turbo'],
-        capabilities: ['chat', 'analysis']
-      },
-      {
-        engine: 'Claude',
-        isConfigured: true,
-        models: ['claude-3.5-sonnet'],
-        capabilities: ['chat', 'analysis']
-      }
-    ],
+vi.mock('../../../src/tools/ai/utils/simpleAIChecker.js', () => ({
+  checkAIServiceSimple: vi.fn().mockResolvedValue({
+    success: true,
+    devonthinkRunning: true,
+    aiEnginesConfigured: ['ChatGPT', 'Claude'],
     recommendedEngine: 'ChatGPT'
-  }),
-  getEngineConfigurationGuide: vi.fn(),
-  selectBestEngine: vi.fn()
+  })
 }));
 
 import { checkAIStatusTool } from '../../../src/tools/ai/checkAIStatus.js';
@@ -57,47 +38,63 @@ describe('checkAIStatus Tool', () => {
 
   describe('Core Functionality', () => {
     it('should handle basic input validation', async () => {
-      // Test only the input validation, not the complex AI service mocking
-      const input = {
-        includeModels: true,
-        includeConfiguration: false
-      };
+      // Test with empty input (new simplified interface)
+      const input = {};
+
+      // Mock executeJxa for engine testing (return working engines)
+      mockExecuteJxa.mockResolvedValue({
+        success: true,
+        model: 'gpt-4'
+      });
 
       // The test should at least not crash on valid inputs
       const result = await checkAIStatusTool.run(input);
       
-      // We expect either success or a reasonable error (not a crash)
+      // We expect either success or a reasonable result structure
       expect(typeof result.success).toBe('boolean');
-      if (!result.success) {
-        expect(typeof result.error).toBe('string');
-        expect(result.error.length).toBeGreaterThan(0);
-      }
+      expect(Array.isArray(result.workingEngines)).toBe(true);
+      expect(typeof result.summary).toBe('string');
+      expect(typeof result.devonthinkRunning).toBe('boolean');
+      expect(typeof result.aiAvailable).toBe('boolean');
+      expect(typeof result.lastChecked).toBe('string');
     });
   });
 
   describe('Error Handling', () => {
     it('should handle DEVONthink not running', async () => {
-      mockExecuteJxa.mockResolvedValueOnce({
+      // Mock checkAIServiceSimple to return DEVONthink not running
+      const { checkAIServiceSimple } = await import('../../../src/tools/ai/utils/simpleAIChecker.js');
+      vi.mocked(checkAIServiceSimple).mockResolvedValueOnce({
+        success: true,
+        devonthinkRunning: false,
+        aiEnginesConfigured: [],
+        recommendedEngine: null
+      });
+
+      const input = {};
+      const result = await checkAIStatusTool.run(input);
+
+      expect(result.success).toBe(true); // Tool runs successfully even if DEVONthink not running
+      expect(result.devonthinkRunning).toBe(false);
+      expect(result.summary).toContain('DEVONthink is not running');
+    });
+
+    it('should handle JXA execution errors', async () => {
+      // Mock checkAIServiceSimple to return failure
+      const { checkAIServiceSimple } = await import('../../../src/tools/ai/utils/simpleAIChecker.js');
+      vi.mocked(checkAIServiceSimple).mockResolvedValueOnce({
         success: false,
-        error: 'DEVONthink is not running',
-        devonthinkRunning: false
+        devonthinkRunning: false,
+        aiEnginesConfigured: [],
+        recommendedEngine: null,
+        error: 'Script failed'
       });
 
       const input = {};
       const result = await checkAIStatusTool.run(input);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBeTruthy();
-    });
-
-    it('should handle JXA execution errors', async () => {
-      mockExecuteJxa.mockRejectedValueOnce(new Error('Script failed'));
-
-      const input = {};
-      const result = await checkAIStatusTool.run(input);
-
-      expect(result.success).toBe(false);
-      expect(result.error).toBeTruthy();
+      expect(result.summary).toContain('Failed to check AI status');
     });
   });
 });
