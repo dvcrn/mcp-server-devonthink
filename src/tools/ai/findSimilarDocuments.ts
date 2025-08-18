@@ -794,7 +794,14 @@ export const findSimilarDocumentsTool: Tool = {
   description: `
 **Find Similar Documents** - Advanced semantic document discovery for intelligent content exploration and knowledge mining.
 
-Enables powerful document similarity search by finding documents related to a reference document or text query. This tool leverages DEVONthink's comparison engine combined with AI-powered semantic analysis to identify documents with similar content, concepts, or themes.
+**REQUIRED**: You must provide a reference (existing document, text content, or record ID) to find similar documents. This tool cannot work without specifying what to compare against.
+
+**Reference Methods** (choose one):
+• **referenceUuid**: UUID of an existing document to use as similarity reference
+• **referenceText**: Text content to find similar documents for (minimum 10 characters) 
+• **referenceRecordId + databaseName**: Record ID and database name for reference document
+
+Enables powerful document similarity search by finding documents related to your reference. This tool leverages DEVONthink's comparison engine combined with AI-powered semantic analysis to identify documents with similar content, concepts, or themes.
 
 **Key Features:**
 • **Multiple Reference Types**: Use existing documents, record IDs, or text queries as similarity references
@@ -810,10 +817,10 @@ Enables powerful document similarity search by finding documents related to a re
 • \`conceptual\`: Theme and concept analysis for intellectual relationships
 • \`mixed\`: Combined approach using multiple similarity factors
 
-**Reference Options:**
+**Reference Options** (⚠️ REQUIRED - Must provide ONE):
 • **Document Reference**: \`referenceUuid\` or \`referenceRecordId + databaseName\`
-• **Text Reference**: \`referenceText\` for query-based similarity matching
-• **Flexible Input**: Works with any document type that has analyzable content
+• **Text Reference**: \`referenceText\` for query-based similarity matching (min 10 chars)
+• **Example Usage**: \`{ "referenceUuid": "12345678-1234-1234-1234-123456789abc" }\`
 
 **Scope Control:**
 • **Database Scoping**: \`scope.databaseName\` to limit search to specific database
