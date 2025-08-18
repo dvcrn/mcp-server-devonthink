@@ -1,2 +1,11 @@
 node_modules
 dist
+
+# Swarm metrics and temporary files
+.claude-flow/metrics/
+.swarm/
+src/.claude-flow/metrics/
+src/.swarm/
+src/tools/.claude-flow/metrics/
+src/tools/.swarm/
+.debug/
