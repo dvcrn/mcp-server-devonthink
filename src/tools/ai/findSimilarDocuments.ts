@@ -194,13 +194,13 @@ const findSimilarDocuments = async (input: FindSimilarDocumentsInput): Promise<S
         const includeMetadata = ${input.includeMetadata};
         const sortBy = "${input.sortBy}";
         
-        // Parse scope parameters
-        ${input.scope?.databaseName ? `const scopeDatabaseName = "${escapeStringForJXA(input.scope.databaseName)}";` : 'const scopeDatabaseName = null;'}
-        ${input.scope?.groupUuid ? `const scopeGroupUuid = "${escapeStringForJXA(input.scope.groupUuid)}";` : 'const scopeGroupUuid = null;'}
-        ${input.scope?.groupPath ? `const scopeGroupPath = "${escapeStringForJXA(input.scope.groupPath)}";` : 'const scopeGroupPath = null;'}
-        ${input.scope?.documentTypes ? `const documentTypes = [${input.scope.documentTypes.map(type => `"${escapeStringForJXA(type)}"`).join(',')}];` : 'const documentTypes = null;'}
-        ${input.scope?.dateRange?.from ? `const dateFrom = "${escapeStringForJXA(input.scope.dateRange.from)}";` : 'const dateFrom = null;'}
-        ${input.scope?.dateRange?.to ? `const dateTo = "${escapeStringForJXA(input.scope.dateRange.to)}";` : 'const dateTo = null;'}
+        // Parse scope parameters with safe access
+        ${input.scope && input.scope.databaseName ? `const scopeDatabaseName = "${escapeStringForJXA(input.scope.databaseName)}";` : 'const scopeDatabaseName = null;'}
+        ${input.scope && input.scope.groupUuid ? `const scopeGroupUuid = "${escapeStringForJXA(input.scope.groupUuid)}";` : 'const scopeGroupUuid = null;'}
+        ${input.scope && input.scope.groupPath ? `const scopeGroupPath = "${escapeStringForJXA(input.scope.groupPath)}";` : 'const scopeGroupPath = null;'}
+        ${input.scope && input.scope.documentTypes ? `const documentTypes = [${input.scope.documentTypes.map(type => `"${escapeStringForJXA(type)}"`).join(',')}];` : 'const documentTypes = null;'}
+        ${input.scope && input.scope.dateRange && input.scope.dateRange.from ? `const dateFrom = "${escapeStringForJXA(input.scope.dateRange.from)}";` : 'const dateFrom = null;'}
+        ${input.scope && input.scope.dateRange && input.scope.dateRange.to ? `const dateTo = "${escapeStringForJXA(input.scope.dateRange.to)}";` : 'const dateTo = null;'}
 
         // Get reference document or prepare reference text
         let referenceDocument = null;

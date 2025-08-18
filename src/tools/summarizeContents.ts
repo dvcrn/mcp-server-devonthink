@@ -51,6 +51,10 @@ const SummarizeContentsSchema = z
       .max(5000)
       .optional()
       .describe("Approximate maximum length in words (AI will attempt to stay within this limit)"),
+    createDocument: z
+      .boolean()
+      .default(false)
+      .describe("Create a summary document in DEVONthink (default: false, returns text only)"),
   })
   .strict();
 
@@ -59,7 +63,8 @@ type SummarizeContentsInput = z.infer<typeof SummarizeContentsSchema>;
 // Define the return type interface
 interface SummarizeContentsResult {
   success: boolean;
-  summaryUuid?: string;
+  summaryText?: string;          // Text-only result when createDocument is false
+  summaryUuid?: string;          // Document result when createDocument is true
   summaryId?: number;
   summaryName?: string;
   summaryLocation?: string;
@@ -70,6 +75,7 @@ interface SummarizeContentsResult {
   }>;
   error?: string;
   wordCount?: number;
+  mode?: 'text' | 'document';    // Indicates which mode was used
 }
 
 const summarizeContents = async (
@@ -83,6 +89,7 @@ const summarizeContents = async (
     name,
     includeSourceReferences = true,
     maxLength,
+    createDocument = false,
   } = input;
 
   // Check AI service availability before attempting summarization
@@ -152,134 +159,225 @@ const summarizeContents = async (
           return JSON.stringify(errorResult);
         }
         
-        // Get destination group
-        let destinationGroup = null;
-        ${
-          destinationGroupUuid
-            ? `
-        try {
-          destinationGroup = theApp.getRecordWithUuid("${destinationGroupUuid}");
-          if (!destinationGroup) {
+        const createDocument = ${createDocument};
+        
+        // Handle text-only mode vs document creation mode
+        if (!createDocument) {
+          // Text-only mode: Use getChatResponseForMessage for summary
+          try {
+            let summaryPrompt = "Summarize the content from these documents";
+            
+            // Add style instruction
+            if ("${style}" !== "text summary") {
+              summaryPrompt += " as a ${style}";
+            }
+            
+            // Add format instruction
+            if ("${format}" === "markdown") {
+              summaryPrompt += " in Markdown format";
+            } else if ("${format}" === "rich") {
+              summaryPrompt += " in rich text format";
+            } else {
+              summaryPrompt += " in plain text format";
+            }
+            
+            // Add length constraint if specified
+            ${maxLength ? `summaryPrompt += " (approximately ${maxLength} words)";` : ''}
+            
+            const chatOptions = {};
+            chatOptions["engine"] = "ChatGPT";
+            chatOptions["temperature"] = 0.3;
+            chatOptions["as"] = "text";
+            chatOptions["record"] = records;
+            chatOptions["mode"] = "context";
+            
+            const summaryText = theApp.getChatResponseForMessage(summaryPrompt, chatOptions);
+            
+            if (!summaryText || summaryText.length === 0) {
+              const errorResult = {};
+              errorResult["success"] = false;
+              errorResult["error"] = "Failed to generate summary text. Check if AI features are configured and available.";
+              return JSON.stringify(errorResult);
+            }
+            
+            // Add source references if requested
+            let finalSummaryText = summaryText;
+            ${
+              includeSourceReferences
+                ? `
+            let references = "\\n\\n---\\n\\n## Source Documents\\n\\n";
+            sourceRecordInfo.forEach((info, index) => {
+              references += (index + 1) + ". **" + info.name + "** (" + info.location + ")\\n";
+            });
+            finalSummaryText += references;
+            `
+                : ""
+            }
+            
+            // Build text-only result
+            const result = {};
+            result["success"] = true;
+            result["mode"] = "text";
+            result["summaryText"] = finalSummaryText;
+            
+            // Add source record information
+            ${includeSourceReferences ? `result["sourceRecords"] = sourceRecordInfo;` : ""}
+            
+            return JSON.stringify(result);
+            
+          } catch (textError) {
             const errorResult = {};
             errorResult["success"] = false;
-            errorResult["error"] = "Destination group not found with UUID: ${destinationGroupUuid}";
+            errorResult["error"] = "Failed to generate summary text: " + textError.toString();
             return JSON.stringify(errorResult);
           }
-        } catch (groupError) {
-          const errorResult = {};
-          errorResult["success"] = false;
-          errorResult["error"] = "Error accessing destination group: " + groupError.toString();
-          return JSON.stringify(errorResult);
-        }
-        `
-            : `
-        // Use current group as default
-        destinationGroup = theApp.currentGroup();
-        if (!destinationGroup) {
-          destinationGroup = theApp.currentDatabase().root();
-        }
-        `
-        }
-        
-        // Build summarization options using bracket notation
-        const summaryOptions = {};
-        summaryOptions["records"] = records;
-        summaryOptions["to"] = "${format}";
-        
-        // Add style if not default
-        ${style !== "text summary" ? `summaryOptions["as"] = "${style}";` : ""}
-        
-        // Add destination group
-        if (destinationGroup) {
-          summaryOptions["in"] = destinationGroup;
-        }
-        
-        // Execute summarization
-        const summary = theApp.summarizeContentsOf(summaryOptions);
-        
-        if (!summary) {
-          const errorResult = {};
-          errorResult["success"] = false;
-          errorResult["error"] = "Failed to create summary. This usually means AI services aren't properly configured or have reached usage limits. Check DEVONthink > Preferences > AI to verify your AI service setup.";
-          return JSON.stringify(errorResult);
-        }
-        
-        // Apply custom name if provided
-        ${
-          name
-            ? `
-        try {
-          summary.name = "${escapeStringForJXA(name)}";
-        } catch (nameError) {
-          // Continue even if naming fails
-        }
-        `
-            : ""
-        }
-        
-        // Add source references if requested
-        ${
-          includeSourceReferences
-            ? `
-        try {
-          let currentContent = summary.plainText();
-          if (!currentContent) currentContent = "";
+        } else {
+          // Document creation mode: Use original summarizeContentsOf approach
           
-          // Add source references section
-          let references = "\\n\\n---\\n\\n## Source Documents\\n\\n";
-          sourceRecordInfo.forEach((info, index) => {
-            references += (index + 1) + ". **" + info.name + "** (" + info.location + ")\\n";
-          });
-          
-          // Update content based on format
+          // Get destination group (inbox for document creation)
+          let destinationGroup = null;
           ${
-            format === "markdown"
+            destinationGroupUuid
               ? `
-          if (summary.plainText !== undefined) {
-            summary.plainText = currentContent + references;
-          }
-          `
-              : format === "rich"
-              ? `
-          if (summary.richText !== undefined) {
-            summary.richText = currentContent + references;
+          try {
+            destinationGroup = theApp.getRecordWithUuid("${destinationGroupUuid}");
+            if (!destinationGroup) {
+              const errorResult = {};
+              errorResult["success"] = false;
+              errorResult["error"] = "Destination group not found with UUID: ${destinationGroupUuid}";
+              return JSON.stringify(errorResult);
+            }
+          } catch (groupError) {
+            const errorResult = {};
+            errorResult["success"] = false;
+            errorResult["error"] = "Error accessing destination group: " + groupError.toString();
+            return JSON.stringify(errorResult);
           }
           `
               : `
-          if (summary.plainText !== undefined) {
-            summary.plainText = currentContent + references;
+          // Use database inbox as default for document creation
+          try {
+            const currentDb = theApp.currentDatabase();
+            if (currentDb) {
+              // Try to find inbox group
+              const inboxGroup = currentDb.incomingGroup();
+              if (inboxGroup) {
+                destinationGroup = inboxGroup;
+              } else {
+                // Fallback to database root
+                destinationGroup = currentDb.root();
+              }
+            }
+          } catch (dbError) {
+            destinationGroup = theApp.currentGroup();
+            if (!destinationGroup) {
+              destinationGroup = theApp.currentDatabase().root();
+            }
           }
           `
           }
-        } catch (refError) {
-          // Continue even if adding references fails
-        }
-        `
-            : ""
-        }
         
-        // Build successful result
-        const result = {};
-        result["success"] = true;
-        result["summaryUuid"] = summary.uuid();
-        result["summaryId"] = summary.id();
-        result["summaryName"] = summary.name();
-        result["summaryLocation"] = summary.location();
-        
-        // Add source record information
-        ${includeSourceReferences ? `result["sourceRecords"] = sourceRecordInfo;` : ""}
-        
-        // Add word count if available
-        try {
-          const wordCount = summary.wordCount();
-          if (wordCount && wordCount > 0) {
-            result["wordCount"] = wordCount;
+          // Build summarization options using bracket notation
+          const summaryOptions = {};
+          summaryOptions["records"] = records;
+          summaryOptions["to"] = "${format}";
+          
+          // Add style if not default
+          ${style !== "text summary" ? `summaryOptions["as"] = "${style}";` : ""}
+          
+          // Add destination group
+          if (destinationGroup) {
+            summaryOptions["in"] = destinationGroup;
           }
-        } catch (wcError) {
-          // Word count not critical
-        }
+          
+          // Execute summarization
+          const summary = theApp.summarizeContentsOf(summaryOptions);
+          
+          if (!summary) {
+            const errorResult = {};
+            errorResult["success"] = false;
+            errorResult["error"] = "Failed to create summary document. This usually means AI services aren't properly configured or have reached usage limits. Check DEVONthink > Preferences > AI to verify your AI service setup.";
+            return JSON.stringify(errorResult);
+          }
         
-        return JSON.stringify(result);
+          // Apply custom name if provided
+          ${
+            name
+              ? `
+          try {
+            summary.name = "${escapeStringForJXA(name)}";
+          } catch (nameError) {
+            // Continue even if naming fails
+          }
+          `
+              : ""
+          }
+          
+          // Add source references if requested
+          ${
+            includeSourceReferences
+              ? `
+          try {
+            let currentContent = summary.plainText();
+            if (!currentContent) currentContent = "";
+            
+            // Add source references section
+            let references = "\\n\\n---\\n\\n## Source Documents\\n\\n";
+            sourceRecordInfo.forEach((info, index) => {
+              references += (index + 1) + ". **" + info.name + "** (" + info.location + ")\\n";
+            });
+            
+            // Update content based on format
+            ${
+              format === "markdown"
+                ? `
+            if (summary.plainText !== undefined) {
+              summary.plainText = currentContent + references;
+            }
+            `
+                : format === "rich"
+                ? `
+            if (summary.richText !== undefined) {
+              summary.richText = currentContent + references;
+            }
+            `
+                : `
+            if (summary.plainText !== undefined) {
+              summary.plainText = currentContent + references;
+            }
+            `
+            }
+          } catch (refError) {
+            // Continue even if adding references fails
+          }
+          `
+              : ""
+          }
+          
+          // Build document creation result
+          const result = {};
+          result["success"] = true;
+          result["mode"] = "document";
+          result["summaryUuid"] = summary.uuid();
+          result["summaryId"] = summary.id();
+          result["summaryName"] = summary.name();
+          result["summaryLocation"] = summary.location();
+          
+          // Add source record information
+          ${includeSourceReferences ? `result["sourceRecords"] = sourceRecordInfo;` : ""}
+          
+          // Add word count if available
+          try {
+            const wordCount = summary.wordCount();
+            if (wordCount && wordCount > 0) {
+              result["wordCount"] = wordCount;
+            }
+          } catch (wcError) {
+            // Word count not critical
+          }
+          
+          return JSON.stringify(result);
+        }
       } catch (error) {
         const errorResult = {};
         errorResult["success"] = false;
@@ -294,34 +392,49 @@ const summarizeContents = async (
 
 export const summarizeContentsTool: Tool = {
   name: "summarize_contents",
-  description: `Create an intelligent summary of one or more documents using DEVONthink's AI capabilities.
+  description: `Create intelligent summaries of documents using DEVONthink's AI capabilities with flexible output options.
 
-This tool uses DEVONthink's built-in AI to analyze and synthesize content from multiple documents, creating coherent summaries that capture key information, themes, and insights.
+This tool analyzes and synthesizes content from multiple documents using DEVONthink's built-in AI, with two distinct modes:
 
-Key Features:
-• Multi-document analysis: Summarize content from multiple records
-• Flexible output formats: Markdown, rich text, or plain text
-• Multiple summary styles: Lists, key points, tables, or narrative text
-• Source tracking: Automatically includes references to source documents
-• Smart organization: Places summaries in appropriate groups
+**Text Mode (Default)**: Returns summary text directly without creating documents
+**Document Mode**: Creates summary documents in DEVONthink with full metadata
 
-Summary Styles:
-- "list summary": Bullet-point format highlighting key items
-- "key points summary": Structured key takeaways and insights  
-- "table summary": Organized in table format for easy scanning
-- "text summary": Narrative paragraph format (default)
-- "custom summary": AI determines best format for content
+**Core Features:**
+• **Dual Output Modes**: Text-only results or document creation with explicit control
+• **Multi-document Analysis**: Synthesize content from multiple source documents  
+• **Flexible Formats**: Markdown, rich text, or plain text output
+• **Multiple Styles**: Lists, key points, tables, or narrative summaries
+• **Source Tracking**: Automatic references to source documents
+• **Smart Placement**: Document mode creates summaries in database inbox
 
-Use Cases:
-• Research synthesis: "Summarize findings from these research papers"
-• Meeting consolidation: "Create summary of meeting notes from this week"
-• Project overview: "Summarize all documents in this project folder"
-• Literature review: "Synthesize key points from these articles"
-• Report generation: "Create executive summary from quarterly reports"
+**Output Modes:**
+• **createDocument: false** (default): Returns summary text only, no document created
+• **createDocument: true**: Creates summary document in DEVONthink's inbox with full metadata
 
-The tool automatically creates a new record containing the summary and can include references back to source documents for easy navigation.
+**Summary Styles:**
+• "list summary": Bullet-point format highlighting key items
+• "key points summary": Structured takeaways and insights  
+• "table summary": Organized tabular format for easy scanning
+• "text summary": Narrative paragraph format (default)
+• "custom summary": AI determines optimal format for content
 
-Note: Requires DEVONthink Pro with AI features enabled and configured. Large document sets may take time to process.`,
+**Use Cases:**
+• **Quick Analysis**: Get summary text without cluttering database (createDocument: false)
+• **Research Synthesis**: Create permanent summary documents for reference (createDocument: true)
+• **Meeting Notes**: Consolidate meeting documentation with source links
+• **Project Overview**: Generate comprehensive project summaries
+• **Literature Review**: Synthesize key points from research articles
+• **Report Generation**: Create executive summaries from source materials
+
+**Document Placement:**
+When createDocument is true, summaries are created in the database inbox for organized storage and easy retrieval.
+
+**Performance Notes:**
+• Text mode is faster and doesn't affect database organization
+• Document mode provides persistent storage and better integration
+• Large document sets may take time to process regardless of mode
+
+Requires DEVONthink Pro with AI features enabled and configured.`,
   inputSchema: zodToJsonSchema(SummarizeContentsSchema) as ToolInput,
   run: summarizeContents,
 };
