@@ -55,7 +55,7 @@ function lookupByName(theApp, name, database) {
     if (!searchResults || searchResults.length === 0) return null;
     
     // Find exact name match
-    const matches = searchResults.filter(r => r.name() === name);
+    const matches = searchResults.filter(function(r) { return r.name() === name; });
     return matches.length > 0 ? matches[0] : null;
   } catch (e) {
     return null;

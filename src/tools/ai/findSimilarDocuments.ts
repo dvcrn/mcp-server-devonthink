@@ -253,7 +253,13 @@ const findSimilarDocuments = async (input: FindSimilarDocumentsInput): Promise<S
         let targetDatabase = null;
         if (scopeDatabaseName) {
           const allDatabases = theApp.databases();
-          targetDatabase = allDatabases.find(db => db.name() === scopeDatabaseName);
+          // Use ES5 compatible loop instead of .find()
+          for (let i = 0; i < allDatabases.length; i++) {
+            if (allDatabases[i].name() === scopeDatabaseName) {
+              targetDatabase = allDatabases[i];
+              break;
+            }
+          }
           if (!targetDatabase) {
             throw new Error("Scope database not found: " + scopeDatabaseName);
           }
@@ -299,7 +305,8 @@ const findSimilarDocuments = async (input: FindSimilarDocumentsInput): Promise<S
         let documentsScanned = 0;
         const algorithmStartTime = Date.now();
         
-        if (algorithm === "textual" || algorithm === "mixed") {
+        // ALWAYS try the reliable textual comparison first for document-based similarity
+        if (referenceDocument) {
           // Use DEVONthink's built-in comparison for textual similarity
           if (referenceDocument) {
             const compareOptions = {};
@@ -336,7 +343,7 @@ const findSimilarDocuments = async (input: FindSimilarDocumentsInput): Promise<S
             }
             
             // Extract key terms from reference text for search
-            const searchTerms = referenceText.split(/\\\\s+/)
+            const searchTerms = referenceText.split(/\\\\\\\\s+/)
               .filter(term => term.length > 3)
               .slice(0, 10) // Use first 10 significant terms
               .join(" ");
@@ -360,6 +367,7 @@ const findSimilarDocuments = async (input: FindSimilarDocumentsInput): Promise<S
           }
         }
         
+        // If we still need more results, try AI-enhanced search
         if ((algorithm === "semantic" || algorithm === "conceptual" || algorithm === "mixed") && similarDocuments.length < maxResults) {
           // Use AI-powered semantic analysis for better similarity matching
           try {
@@ -402,9 +410,48 @@ const findSimilarDocuments = async (input: FindSimilarDocumentsInput): Promise<S
             const aiResponse = theApp.getChatResponseForMessage(aiQuery, chatOptions);
             
             if (aiResponse) {
-              // Parse AI response to identify similar documents
-              // This is a simplified implementation - in practice, we'd use more sophisticated parsing
-              // AI similarity analysis completed (silent handling to avoid stderr)
+              // Use the AI response to help find similar documents by combining it with search
+              // Extract key terms from AI response for targeted search
+              const aiTerms = aiResponse.toLowerCase()
+                .replace(/[^a-zA-Z0-9\s]/g, ' ')
+                .split(/\s+/)
+                .filter(term => term.length > 3)
+                .slice(0, 10)
+                .join(' ');
+              
+              if (aiTerms.length > 0) {
+                try {
+                  const searchOptions = {};
+                  searchOptions["comparison"] = "phrase";
+                  
+                  if (scopeGroup) {
+                    searchOptions["in"] = scopeGroup;
+                  } else {
+                    searchOptions["in"] = targetDatabase;
+                  }
+                  
+                  const aiSearchResults = theApp.search(aiTerms, searchOptions);
+                  if (aiSearchResults && aiSearchResults.length > 0) {
+                    // Add unique documents from AI-guided search
+                    const seenUuids = {};
+                    similarDocuments.forEach(doc => { seenUuids[doc.uuid()] = true; });
+                    
+                    for (let i = 0; i < aiSearchResults.length && similarDocuments.length < maxResults * 1.5; i++) {
+                      const doc = aiSearchResults[i];
+                      const docUuid = doc.uuid();
+                      if (!seenUuids[docUuid] && doc.recordType() !== "group" && doc.recordType() !== "smart group") {
+                        similarDocuments.push(doc);
+                        seenUuids[docUuid] = true;
+                      }
+                    }
+                    
+                    totalCandidates += aiSearchResults.length;
+                    documentsScanned += Math.min(aiSearchResults.length, maxResults);
+                  }
+                } catch (searchError) {
+                  // AI-guided search failed, continue with existing results
+                }
+              }
             }
             
           } catch (aiError) {
@@ -438,7 +485,7 @@ const findSimilarDocuments = async (input: FindSimilarDocumentsInput): Promise<S
               
               const matchesType = documentTypes.some(type => {
                 const lowerType = type.toLowerCase();
-                return docType.includes(lowerType) || docKind.includes(lowerType) || doc.name().toLowerCase().endsWith('.' + lowerType);
+                return docType.indexOf(lowerType) !== -1 || docKind.indexOf(lowerType) !== -1 || doc.name().toLowerCase().lastIndexOf("." + lowerType) === doc.name().toLowerCase().length - ("." + lowerType).length;
               });
               
               if (!matchesType) {
@@ -473,7 +520,7 @@ const findSimilarDocuments = async (input: FindSimilarDocumentsInput): Promise<S
             
             try {
               // Try to get actual similarity score from DEVONthink
-              if (doc.score && doc.score() !== undefined) {
+              if (doc.score && doc.score() != null) {
                 similarity = Math.max(0.1, Math.min(1.0, doc.score()));
               } else {
                 // Fallback: calculate based on position in results

@@ -1,0 +1,14 @@
+❌ Script validation failed
+
+Errors:
+  • Use bracket notation instead of object literal syntax for JXA compatibility (line 157)
+
+Warnings:
+  • Function 'getRecord' is called but not defined in the script (line 22)
+  • String concatenation in loops can be slow - consider using array.join() (line 27)
+  • String concatenation in loops can be slow - consider using array.join() (line 29)
+  • String concatenation in loops can be slow - consider using array.join() (line 31)
+
+Suggestions:
+  • Add DEVONthink running validation for robustness
+  • Consider limiting document collection size for better performance

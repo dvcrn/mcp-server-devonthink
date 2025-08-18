@@ -161,7 +161,7 @@ const convertRecord = async (
         // Get destination group if specified
         let destinationGroup = null;
         if (${destinationGroupUuid ? `"${escapeStringForJXA(destinationGroupUuid)}"` : "null"}) {
-          destinationGroup = theApp.getRecordWithUuid("${destinationGroupUuid ? escapeStringForJXA(destinationGroupUuid) : ''}");
+          destinationGroup = theApp.getRecordWithUuid("${destinationGroupUuid ? escapeStringForJXA(destinationGroupUuid) : ""}");
           if (!destinationGroup) {
             return JSON.stringify({
               success: false,

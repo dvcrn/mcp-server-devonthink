@@ -89,7 +89,7 @@ export async function checkAIServiceSimple(): Promise<SimpleAIStatus> {
   const result = await executeJxa<SimpleAIStatus>(script);
   
   // Ensure we always return a valid SimpleAIStatus object
-  if (!result || typeof result !== 'object') {
+  if (!result || typeof result !== "object") {
     return {
       success: false,
       devonthinkRunning: false,
@@ -120,11 +120,11 @@ export function getSimpleStatusMessage(status: SimpleAIStatus): string {
   if (!status.success) {
     // Sanitize error message - remove any JXA technical details
     const sanitizedError = (status.error || 'Unknown error')
-      .replace(/AppleScript/gi, '')
-      .replace(/JXA/gi, '')
-      .replace(/JavaScript for Automation/gi, '')
-      .replace(/osascript/gi, '')
-      .replace(/theApp\./gi, '')
+      .replace(/AppleScript/gi, "")
+      .replace(/JXA/gi, "")
+      .replace(/JavaScript for Automation/gi, "")
+      .replace(/osascript/gi, "")
+      .replace(/theApp\./gi, "")
       .trim();
     
     return `AI service check failed: ${sanitizedError}`;

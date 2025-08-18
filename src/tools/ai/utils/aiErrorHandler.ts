@@ -534,7 +534,7 @@ export class AIErrorHandler {
     
     // Replace JXA patterns with user-friendly equivalents
     jxaPatterns.forEach(pattern => {
-      sanitized = sanitized.replace(pattern, '');
+      sanitized = sanitized.replace(pattern, "");
     });
     
     // Clean up multiple spaces and trim

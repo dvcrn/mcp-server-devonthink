@@ -33,6 +33,13 @@ const CompareSchema = z
       .enum(["data comparison", "tags comparison"])
       .optional()
       .describe("The comparison type"),
+    limit: z
+      .number()
+      .min(1)
+      .max(100)
+      .default(20)
+      .optional()
+      .describe("Maximum number of similar records to return (default: 20, max: 100)"),
   })
   .strict();
 
@@ -79,10 +86,12 @@ interface CompareResult {
     };
   };
   totalCount?: number;
+  returnedCount?: number;
+  limited?: boolean;
 }
 
 const compare = async (input: CompareInput): Promise<CompareResult> => {
-  const { recordUuid, compareWithUuid, databaseName, comparison } = input;
+  const { recordUuid, compareWithUuid, databaseName, comparison, limit = 20 } = input;
 
   // Validate string inputs
   if (!isJXASafeString(recordUuid)) {
@@ -206,8 +215,12 @@ const compare = async (input: CompareInput): Promise<CompareResult> => {
             });
           }
           
-          // Extract similar record information
-          const similarRecords = compareResults.map(record => {
+          // Extract similar record information (with limit to prevent stdout overflow)
+          const maxResults = ${limit};
+          const totalCount = compareResults.length;
+          const limitedResults = compareResults.slice(0, maxResults);
+          
+          const similarRecords = limitedResults.map(record => {
             const result = {
               id: record.id(),
               uuid: record.uuid(),
@@ -238,7 +251,9 @@ const compare = async (input: CompareInput): Promise<CompareResult> => {
             success: true,
             mode: "single_record",
             similarRecords: similarRecords,
-            totalCount: compareResults.length
+            totalCount: totalCount,
+            returnedCount: similarRecords.length,
+            limited: totalCount > maxResults
           });
         }
       } catch (error) {
@@ -256,7 +271,7 @@ const compare = async (input: CompareInput): Promise<CompareResult> => {
 export const compareTool: Tool = {
   name: "compare",
   description:
-    "Compare DEVONthink records to find similarities. Use with just `recordUuid` to find similar records in the database, or add `compareWithUuid` to directly compare two specific records. The tool returns either a list of similar records or a detailed comparison between two records.",
+    "Compare DEVONthink records to find similarities. Use with just `recordUuid` to find similar records in the database (returns up to 20 by default, max 100), or add `compareWithUuid` to directly compare two specific records. The tool returns either a list of similar records or a detailed comparison between two records. When many similar records exist, results are limited to prevent performance issues.",
   inputSchema: zodToJsonSchema(CompareSchema) as ToolInput,
   run: compare,
 };

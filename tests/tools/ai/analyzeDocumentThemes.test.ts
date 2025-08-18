@@ -6,21 +6,25 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { analyzeDocumentThemesTool } from '../../../src/tools/ai/analyzeDocumentThemes.js';
 import { executeJxa } from '../../../src/applescript/execute.js';
-import { checkAIServiceAvailability } from '../../../src/tools/ai/utils/index.js';
+import { checkAIServiceSimple } from '../../../src/tools/ai/utils/simpleAIChecker.js';
 
 // Mock the executeJxa function and AI service availability
 vi.mock('../../../src/applescript/execute.js');
-vi.mock('../../../src/tools/ai/utils/index.js');
+vi.mock('../../../src/tools/ai/utils/simpleAIChecker.js');
 
 const mockExecuteJxa = vi.mocked(executeJxa);
-const mockCheckAIServiceAvailability = vi.mocked(checkAIServiceAvailability);
+const mockCheckAIServiceSimple = vi.mocked(checkAIServiceSimple);
 
 describe('analyzeDocumentThemes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     
     // Mock AI service availability to be available by default
-    mockCheckAIServiceAvailability.mockResolvedValue({ isAvailable: true });
+    mockCheckAIServiceSimple.mockResolvedValue({ 
+      success: true, 
+      devonthinkRunning: true,
+      aiEnginesConfigured: ['ChatGPT'] 
+    });
   });
 
   describe('Input Schema Validation', () => {

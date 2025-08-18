@@ -116,7 +116,7 @@ export interface AIValidationResult {
  * Validates a string for JXA safety with AI-specific constraints
  */
 export function validateAIString(input: string, fieldName: string, maxLength: number = 50000): AIValidationError | null {
-  if (!input || typeof input !== 'string') {
+  if (!input || typeof input !== "string") {
     return {
       field: fieldName,
       message: `${fieldName} is required and must be a string`,

@@ -205,7 +205,7 @@ export function processAIResult(
   }
 
   // Handle string results (likely errors)
-  if (typeof rawResult === 'string') {
+  if (typeof rawResult === "string") {
     try {
       rawResult = JSON.parse(rawResult);
     } catch {
@@ -370,7 +370,7 @@ function processDocumentReferences(refs: any[]): DocumentReference[] {
  * Processes a single document reference
  */
 function processDocumentReference(ref: any): DocumentReference | null {
-  if (!ref || typeof ref !== 'object') return null;
+  if (!ref || typeof ref !== "object") return null;
 
   // Validate required fields
   if (!ref.uuid || !ref.name) return null;
@@ -379,7 +379,7 @@ function processDocumentReference(ref: any): DocumentReference | null {
     uuid: String(ref.uuid),
     ...(ref.id && { id: Number(ref.id) }),
     name: String(ref.name),
-    location: String(ref.location || ''),
+    location: String(ref.location || ""),
     ...(ref.type && { type: String(ref.type) }),
     ...(ref.databaseName && { databaseName: String(ref.databaseName) }),
     ...(ref.databaseUuid && { databaseUuid: String(ref.databaseUuid) })
@@ -393,7 +393,7 @@ function processClassificationProposals(proposals: any[]): ClassificationProposa
   if (!Array.isArray(proposals)) return [];
 
   return proposals.map(proposal => ({
-    name: String(proposal.name || ''),
+    name: String(proposal.name || ""),
     type: String(proposal.type || 'group'),
     ...(proposal.location && { location: String(proposal.location) }),
     ...(proposal.score !== undefined && { score: Number(proposal.score) }),
@@ -405,7 +405,7 @@ function processClassificationProposals(proposals: any[]): ClassificationProposa
  * Processes comparison results
  */
 function processComparisonResults(results: any): ComparisonResults {
-  if (!results || typeof results !== 'object') return {};
+  if (!results || typeof results !== "object") return {};
 
   return {
     ...(results.similarity !== undefined && { similarity: Number(results.similarity) }),
@@ -444,12 +444,12 @@ function processSimilarRecords(records: any[]): SimilarRecord[] {
  * Sanitizes text content for safe processing
  */
 function sanitizeTextContent(content: any, maxLength?: number): string {
-  if (typeof content !== 'string') {
+  if (typeof content !== "string") {
     content = String(content);
   }
 
   // Remove potential security issues
-  content = content.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+  content = content.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
 
   // Truncate if too long
   if (maxLength && content.length > maxLength) {
@@ -521,8 +521,8 @@ export function processAIError(error: string): ProcessedError {
  */
 function sanitizeErrorMessage(error: string): string {
   // Remove potential sensitive information or script remnants
-  return error.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
-    .replace(/script\s*:\s*/gi, '')
+  return error.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
+    .replace(/script\s*:\s*/gi, "")
     .trim();
 }
 
@@ -536,7 +536,7 @@ function validateResultStructure(result: BaseAIResult, operationType: AIOperatio
   const errors: string[] = [];
 
   // Check base structure
-  if (typeof result.success !== 'boolean') {
+  if (typeof result.success !== "boolean") {
     errors.push('success field must be boolean');
   }
 

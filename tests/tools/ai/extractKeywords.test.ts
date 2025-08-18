@@ -16,14 +16,14 @@ vi.mock('@/applescript/execute.js', () => ({
   executeJxa: vi.fn()
 }));
 
-vi.mock('@/tools/ai/utils/aiAvailabilityChecker.js', () => ({
-  checkAIServiceAvailability: vi.fn().mockResolvedValue({
-    isAvailable: true,
+vi.mock('@/tools/ai/utils/simpleAIChecker.js', () => ({
+  checkAIServiceSimple: vi.fn().mockResolvedValue({
+    success: true,
     devonthinkRunning: true,
-    aiFeatureEnabled: true,
-    availableEngines: ['ChatGPT', 'Claude', 'Gemini'],
-    defaultEngine: 'ChatGPT'
-  })
+    aiEnginesConfigured: ['ChatGPT', 'Claude', 'Gemini']
+  }),
+  getSimpleStatusMessage: vi.fn().mockReturnValue('Test error message'),
+  selectSimpleEngine: vi.fn().mockReturnValue('ChatGPT')
 }));
 
 // No need to mock AI validation since we're using Zod directly

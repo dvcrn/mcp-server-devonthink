@@ -180,11 +180,11 @@ const extractKeywords = async (input: ExtractKeywordsInput): Promise<ExtractKeyw
         ${input.recordPath ? `const recordPath = "${escapeStringForJXA(input.recordPath)}";` : 'const recordPath = null;'}
         
         const maxKeywords = ${input.maxKeywords};
-        const minWordLength = ${input.minWordLength};
+        const minWordLength = ${input.minWordLength != null ? input.minWordLength : 3};
         const includeExistingTags = ${input.includeExistingTags};
         const includeHashTags = ${input.includeHashTags};
-        const includeImageTags = ${input.includeImageTags};
-        const includeBarcodes = ${input.includeBarcodes};
+        const includeImageTags = ${input.includeImageTags != null ? input.includeImageTags : true};
+        const includeBarcodes = ${input.includeBarcodes != null ? input.includeBarcodes : false};
         const format = "${input.format}";
         const autoTag = ${input.autoTag};
         const filterCommonWords = ${input.filterCommonWords};
@@ -226,20 +226,39 @@ const extractKeywords = async (input: ExtractKeywordsInput): Promise<ExtractKeyw
         extractionOptions["imageTags"] = includeImageTags;
         extractionOptions["barcodes"] = includeBarcodes;
         
-        // Extract keywords using DEVONthink's built-in keyword extraction
+        // Extract keywords using AI chat (more reliable than extractKeywordsFrom)
         let extractedKeywords = [];
         try {
-          const extractionParams = {};
-          extractionParams["record"] = record;
-          extractionParams["options"] = extractionOptions;
+          // Create AI prompt for keyword extraction
+          let prompt = "Extract " + maxKeywords + " relevant keywords from this document.";
+          if (includeExistingTags) {
+            const tags = record.tags() || [];
+            if (tags.length > 0) {
+              prompt += " Include existing tags: " + tags.join(", ") + ".";
+            }
+          }
+          prompt += " Return only a comma-separated list of keywords, no explanations.";
+          if (minWordLength > 3) {
+            prompt += " Use keywords of at least " + minWordLength + " characters.";
+          }
           
-          const rawKeywords = theApp.extractKeywordsFrom(extractionParams);
+          const chatOptions = {};
+          chatOptions["engine"] = "ChatGPT";
+          chatOptions["temperature"] = 0.3;
+          chatOptions["as"] = "text";
+          chatOptions["record"] = [record];
+          chatOptions["mode"] = "context";
           
-          if (rawKeywords && rawKeywords.length > 0) {
+          const aiResponse = theApp.getChatResponseForMessage(prompt, chatOptions);
+          
+          if (aiResponse && aiResponse.length > 0) {
+            // Parse keywords from AI response
+            const keywordText = aiResponse.trim();
+            const rawKeywords = keywordText.split(",").map(kw => kw.trim()).filter(kw => kw.length > 0);
             extractedKeywords = rawKeywords;
           }
         } catch (extractionError) {
-          throw new Error("Failed to extract keywords: " + extractionError.toString());
+          throw new Error("Failed to extract keywords using AI: " + extractionError.toString());
         }
         
         // Process and filter keywords
@@ -250,7 +269,7 @@ const extractKeywords = async (input: ExtractKeywordsInput): Promise<ExtractKeyw
         if (minWordLength > 0) {
           const beforeLength = processedKeywords.length;
           processedKeywords = processedKeywords.filter(keyword => {
-            if (typeof keyword === 'string') {
+            if (typeof keyword === "string") {
               // Remove extra whitespace and check length
               const cleanKeyword = keyword.trim();
               return cleanKeyword.length >= minWordLength;
@@ -263,20 +282,20 @@ const extractKeywords = async (input: ExtractKeywordsInput): Promise<ExtractKeyw
         // Filter common words if enabled
         if (filterCommonWords) {
           const commonWords = [
-            'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by',
-            'from', 'up', 'about', 'into', 'through', 'during', 'before', 'after', 'above',
-            'below', 'between', 'among', 'around', 'this', 'that', 'these', 'those', 'a', 'an',
-            'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do',
-            'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must',
-            'can', 'shall', 'not', 'no', 'yes', 'if', 'when', 'where', 'why', 'how', 'what',
-            'which', 'who', 'whom', 'whose', 'i', 'you', 'he', 'she', 'it', 'we', 'they',
-            'me', 'him', 'her', 'us', 'them', 'my', 'your', 'his', 'her', 'its', 'our', 'their'
+            "the", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by",
+            "from", "up", "about", "into", "through", "during", "before", "after", "above",
+            "below", "between", "among", "around", "this", "that", "these", "those", "a", "an",
+            "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "do",
+            "does", "did", "will", "would", "could", "should", "may", "might", "must",
+            "can", "shall", "not", "no", "yes", "if", "when", "where", "why", "how", "what",
+            "which", "who", "whom", "whose", "i", "you", "he", "she", "it", "we", "they",
+            "me", "him", "her", "us", "them", "my", "your", "his", "her", "its", "our", "their"
           ];
           
           const beforeLength = processedKeywords.length;
           processedKeywords = processedKeywords.filter(keyword => {
             const lowerKeyword = keyword.toLowerCase().trim();
-            return !commonWords.includes(lowerKeyword);
+            return commonWords.indexOf(lowerKeyword) === -1;
           });
           filteredCount += beforeLength - processedKeywords.length;
         }
@@ -309,7 +328,7 @@ const extractKeywords = async (input: ExtractKeywordsInput): Promise<ExtractKeyw
             // Only add keywords that aren't already tags
             for (let i = 0; i < processedKeywords.length; i++) {
               const keyword = processedKeywords[i];
-              if (!existingTags.includes(keyword)) {
+              if (existingTags.indexOf(keyword) === -1) {
                 newTags.push(keyword);
               }
             }

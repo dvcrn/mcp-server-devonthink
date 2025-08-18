@@ -97,7 +97,7 @@ export const simpleAnalyzerTool = createAITool({
       try {
         // Parse AI response to add confidence scores
         const parsedResponse = JSON.parse(aiResponse);
-        if (parsedResponse && typeof parsedResponse === 'object') {
+        if (parsedResponse && typeof parsedResponse === "object") {
           result["analysis"] = parsedResponse;
           result["includeConfidence"] = true;
         }

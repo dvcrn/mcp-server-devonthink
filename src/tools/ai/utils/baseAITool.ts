@@ -267,7 +267,7 @@ export const AI_VALIDATORS = {
    * Validates that a prompt is provided
    */
   REQUIRES_PROMPT: (input: Record<string, any>): string[] => {
-    if (!input.prompt || input.prompt.trim() === '') {
+    if (!input.prompt || input.prompt.trim() === "") {
       return ['prompt is required for this operation'];
     }
     return [];

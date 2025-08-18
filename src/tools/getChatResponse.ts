@@ -158,7 +158,7 @@ const getChatResponse = async (
         const options = {};
         options["engine"] = pEngine;
         
-        if (pTemperature !== null && pTemperature !== undefined) {
+        if (pTemperature != null) {
           options["temperature"] = pTemperature;
         }
         
