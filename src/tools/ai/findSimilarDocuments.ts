@@ -93,13 +93,13 @@ const FindSimilarDocumentsInputSchema = z.object({
   // At least one reference method must be provided
   return data.referenceUuid || data.referenceText || (data.referenceRecordId && data.databaseName);
 }, {
-  message: "Must provide referenceUuid, referenceText, or referenceRecordId with databaseName",
+  message: "I need a reference to find similar documents. Please provide one of:\n• referenceUuid: UUID of a document to use as reference\n• referenceText: Text content to find similar documents for (minimum 10 characters)\n• referenceRecordId + databaseName: ID and database name of reference document\n\nExample: { \"referenceUuid\": \"12345678-1234-1234-1234-123456789abc\" }",
   path: ["referenceUuid"]
 }).refine(data => {
   // If referenceRecordId is provided, databaseName must also be provided
   return !data.referenceRecordId || data.databaseName;
 }, {
-  message: "databaseName is required when using referenceRecordId",
+  message: "When using referenceRecordId, you must also provide databaseName.\n\nExample: { \"referenceRecordId\": 12345, \"databaseName\": \"My Database\" }",
   path: ["databaseName"]
 });
 
@@ -145,6 +145,7 @@ interface SimilarDocumentsResult {
   error?: string;
   warnings?: string[];
   recommendations?: string[];
+  examples?: string[];
 }
 
 /**
@@ -157,14 +158,64 @@ const findSimilarDocuments = async (input: FindSimilarDocumentsInput): Promise<S
   const validationResult = FindSimilarDocumentsInputSchema.safeParse(input);
   
   if (!validationResult.success) {
+    // Enhanced error handling for empty or invalid input
+    const issues = validationResult.error.issues;
+    const primaryError = issues[0];
+    
+    // Check if this is an empty input case (no reference method provided)
+    const isEmptyReference = issues.some(issue => 
+      issue.path.includes('referenceUuid') && 
+      issue.message.includes('I need a reference')
+    );
+    
+    if (isEmptyReference) {
+      return {
+        success: false,
+        error: primaryError.message,
+        recommendations: [
+          "Choose a reference method: document UUID, text content, or record ID + database",
+          "Use get_selected_records or search to find document UUIDs",
+          "For text-based similarity, provide at least 10 characters of reference text",
+          "Consider using scope parameters to limit search to specific databases or folders"
+        ],
+        examples: [
+          "Document reference: { \"referenceUuid\": \"abc12345-...\" }",
+          "Text reference: { \"referenceText\": \"artificial intelligence machine learning\" }",
+          "Record ID reference: { \"referenceRecordId\": 12345, \"databaseName\": \"Research\" }"
+        ],
+        executionTime: Date.now() - startTime
+      };
+    }
+    
+    // Handle other validation errors with context
     return {
       success: false,
-      error: `Input validation failed: ${validationResult.error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`).join('; ')}`,
+      error: `Input validation failed: ${issues.map(issue => `${issue.path.join('.')}: ${issue.message}`).join('; ')}`,
       executionTime: Date.now() - startTime
     };
   }
 
   // Use direct JXA execution pattern like getChatResponse.ts for reliability
+  
+  // Additional validation to prevent "Cannot convert undefined or null to object" errors
+  if (!input || typeof input !== 'object') {
+    return {
+      success: false,
+      error: "I need a reference to find similar documents. Please provide one of:\n• referenceUuid: UUID of a document to use as reference\n• referenceText: Text content to find similar documents for (minimum 10 characters)\n• referenceRecordId + databaseName: ID and database name of reference document\n\nExample: { \"referenceUuid\": \"12345678-1234-1234-1234-123456789abc\" }",
+      recommendations: [
+        "Choose a reference method: document UUID, text content, or record ID + database",
+        "Use get_selected_records or search to find document UUIDs",
+        "For text-based similarity, provide at least 10 characters of reference text",
+        "Consider using scope parameters to limit search to specific databases or folders"
+      ],
+      examples: [
+        "Document reference: { \"referenceUuid\": \"abc12345-...\" }",
+        "Text reference: { \"referenceText\": \"artificial intelligence machine learning\" }",
+        "Record ID reference: { \"referenceRecordId\": 12345, \"databaseName\": \"Research\" }"
+      ],
+      executionTime: Date.now() - startTime
+    };
+  }
 
   // Build the comprehensive JXA script for document similarity analysis
   const script = `
@@ -194,13 +245,13 @@ const findSimilarDocuments = async (input: FindSimilarDocumentsInput): Promise<S
         const includeMetadata = ${input.includeMetadata};
         const sortBy = "${input.sortBy}";
         
-        // Parse scope parameters with safe access
-        ${input.scope && input.scope.databaseName ? `const scopeDatabaseName = "${escapeStringForJXA(input.scope.databaseName)}";` : 'const scopeDatabaseName = null;'}
-        ${input.scope && input.scope.groupUuid ? `const scopeGroupUuid = "${escapeStringForJXA(input.scope.groupUuid)}";` : 'const scopeGroupUuid = null;'}
-        ${input.scope && input.scope.groupPath ? `const scopeGroupPath = "${escapeStringForJXA(input.scope.groupPath)}";` : 'const scopeGroupPath = null;'}
-        ${input.scope && input.scope.documentTypes ? `const documentTypes = [${input.scope.documentTypes.map(type => `"${escapeStringForJXA(type)}"`).join(',')}];` : 'const documentTypes = null;'}
-        ${input.scope && input.scope.dateRange && input.scope.dateRange.from ? `const dateFrom = "${escapeStringForJXA(input.scope.dateRange.from)}";` : 'const dateFrom = null;'}
-        ${input.scope && input.scope.dateRange && input.scope.dateRange.to ? `const dateTo = "${escapeStringForJXA(input.scope.dateRange.to)}";` : 'const dateTo = null;'}
+        // Parse scope parameters with defensive null checks to prevent "Cannot convert undefined or null to object" errors
+        const scopeDatabaseName = ${input.scope && typeof input.scope === 'object' && input.scope.databaseName ? `"${escapeStringForJXA(input.scope.databaseName)}"` : 'null'};
+        const scopeGroupUuid = ${input.scope && typeof input.scope === 'object' && input.scope.groupUuid ? `"${escapeStringForJXA(input.scope.groupUuid)}"` : 'null'};
+        const scopeGroupPath = ${input.scope && typeof input.scope === 'object' && input.scope.groupPath ? `"${escapeStringForJXA(input.scope.groupPath)}"` : 'null'};
+        const documentTypes = ${input.scope && typeof input.scope === 'object' && input.scope.documentTypes && Array.isArray(input.scope.documentTypes) ? `[${input.scope.documentTypes.map(type => `"${escapeStringForJXA(type)}"`).join(',')}]` : 'null'};
+        const dateFrom = ${input.scope && typeof input.scope === 'object' && input.scope.dateRange && typeof input.scope.dateRange === 'object' && input.scope.dateRange.from ? `"${escapeStringForJXA(input.scope.dateRange.from)}"` : 'null'};
+        const dateTo = ${input.scope && typeof input.scope === 'object' && input.scope.dateRange && typeof input.scope.dateRange === 'object' && input.scope.dateRange.to ? `"${escapeStringForJXA(input.scope.dateRange.to)}"` : 'null'};
 
         // Get reference document or prepare reference text
         let referenceDocument = null;
@@ -701,14 +752,40 @@ const findSimilarDocuments = async (input: FindSimilarDocumentsInput): Promise<S
   `;
 
   // Use direct execution pattern from getChatResponse.ts to avoid stderr contamination
-  const result = await executeJxa<SimilarDocumentsResult>(script);
-  
-  // Add execution time if not present
-  if (!result.executionTime) {
-    result.executionTime = Date.now() - startTime;
+  try {
+    const result = await executeJxa<SimilarDocumentsResult>(script);
+    
+    // Handle case where executeJxa returns undefined or null
+    if (!result) {
+      return {
+        success: false,
+        error: "JXA script execution returned no result. This may indicate a configuration issue or that DEVONthink is not running.",
+        executionTime: Date.now() - startTime
+      };
+    }
+    
+    // Handle case where result is not properly structured
+    if (typeof result !== 'object') {
+      return {
+        success: false,
+        error: "JXA script returned invalid response format",
+        executionTime: Date.now() - startTime
+      };
+    }
+    
+    // Add execution time if not present
+    if (!result.executionTime) {
+      result.executionTime = Date.now() - startTime;
+    }
+    
+    return result;
+  } catch (error) {
+    return {
+      success: false,
+      error: `JXA execution failed: ${error instanceof Error ? error.message : String(error)}`,
+      executionTime: Date.now() - startTime
+    };
   }
-  
-  return result;
 };
 
 // Export the tool

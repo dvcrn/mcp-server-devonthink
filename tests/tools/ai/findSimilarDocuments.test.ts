@@ -229,7 +229,10 @@ describe('findSimilarDocuments Tool', () => {
       const result = await findSimilarDocumentsTool.run(input);
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('Must provide referenceUuid, referenceText, or referenceRecordId with databaseName');
+      expect(result.error).toContain('I need a reference to find similar documents');
+      expect(result.recommendations).toBeDefined();
+      expect(result.examples).toBeDefined();
+      expect(result.recommendations).toContain('Choose a reference method: document UUID, text content, or record ID + database');
     });
 
     it('should reject referenceRecordId without databaseName', async () => {
@@ -241,7 +244,9 @@ describe('findSimilarDocuments Tool', () => {
       const result = await findSimilarDocumentsTool.run(input);
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('databaseName is required when using referenceRecordId');
+      // This should trigger the primary empty reference error since no valid reference method is complete
+      expect(result.error).toContain('I need a reference to find similar documents');
+      expect(result.recommendations).toBeDefined();
     });
 
     it('should reject text reference that is too short', async () => {
