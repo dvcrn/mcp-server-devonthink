@@ -209,7 +209,7 @@ export function buildBaseAIScript(
         const errorResult = {};
         errorResult["success"] = false;
         errorResult["error"] = error.toString();
-        errorResult["operationType"] = "${operationType}";
+        errorResult["operationType"] = "${escapeStringForJXA(operationType)}";
         return JSON.stringify(errorResult);
       }
     })();

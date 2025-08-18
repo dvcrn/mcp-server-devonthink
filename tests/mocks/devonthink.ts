@@ -131,15 +131,15 @@ export function createMockJXAError(error: string): Promise<never> {
 }
 
 /**
- * Mock executeJxa function
+ * Mock executeJxa function - properly defined for Vitest hoisting
  */
 export const mockExecuteJxa = vi.fn();
 
 /**
  * Sets up default JXA mock behaviors
  */
-export function setupDefaultJXAMocks() {
-  mockExecuteJxa.mockImplementation((script: string) => {
+export function setupDefaultJXAMocks(mockFn = mockExecuteJxa) {
+  mockFn.mockImplementation((script: string) => {
     // Parse common DEVONthink operations from script content
     
     // Mock DEVONthink availability check
@@ -192,8 +192,39 @@ export function setupDefaultJXAMocks() {
 /**
  * Sets up mock for AI service unavailable
  */
-export function setupAIUnavailableMocks() {
-  mockExecuteJxa.mockImplementation((script: string) => {
+export function setupAIUnavailableMocks(mockFn = mockExecuteJxa) {
+  mockFn.mockImplementation((script: string) => {
+    // Check for the AI service availability script pattern
+    if (script.includes('devonthinkRunning') && script.includes('aiFeatureEnabled')) {
+      // AI service availability check - DEVONthink running but AI features disabled
+      return Promise.resolve({
+        isAvailable: false,
+        devonthinkRunning: true,
+        aiFeatureEnabled: false,
+        availableEngines: [],
+        defaultEngine: null,
+        engineDetails: {},
+        warnings: ['AI features are not enabled'],
+        lastChecked: new Date().toISOString(),
+        version: 'DEVONthink 3.9.0'
+      });
+    }
+    
+    if (script.includes('checkAIServiceAvailability')) {
+      // AI service availability check - DEVONthink running but AI features disabled
+      return Promise.resolve({
+        isAvailable: false,
+        devonthinkRunning: true,
+        aiFeatureEnabled: false,
+        availableEngines: [],
+        defaultEngine: null,
+        engineDetails: {},
+        warnings: ['AI features are not enabled'],
+        lastChecked: new Date().toISOString(),
+        version: 'DEVONthink 3.9.0'
+      });
+    }
+    
     if (script.includes('aiServiceAvailable')) {
       return createMockJXAResponse({
         chatgpt: { available: false, error: 'Service not available' },
@@ -216,8 +247,8 @@ export function setupAIUnavailableMocks() {
 /**
  * Sets up mock for DEVONthink not running
  */
-export function setupDevonThinkNotRunningMocks() {
-  mockExecuteJxa.mockImplementation((script: string) => {
+export function setupDevonThinkNotRunningMocks(mockFn = mockExecuteJxa) {
+  mockFn.mockImplementation((script: string) => {
     if (script.includes('Application("DEVONthink").running')) {
       return createMockJXAResponse({ success: true, isRunning: false });
     }
@@ -230,8 +261,8 @@ export function setupDevonThinkNotRunningMocks() {
 /**
  * Sets up mock for network/timeout errors
  */
-export function setupNetworkErrorMocks() {
-  mockExecuteJxa.mockImplementation(() => {
+export function setupNetworkErrorMocks(mockFn = mockExecuteJxa) {
+  mockFn.mockImplementation(() => {
     return createMockJXAError('Network timeout');
   });
 }

@@ -13,17 +13,15 @@ import {
   AI_TOOL_SCHEMAS,
   AI_VALIDATORS
 } from '@/tools/ai/utils/baseAITool.js';
+import { executeJxa } from '@/applescript/execute.js';
 import { 
-  mockExecuteJxa, 
   setupDefaultJXAMocks,
   MOCK_AI_RESPONSES 
 } from '@tests/mocks/devonthink.js';
 import { validateToolStructure, AI_TEST_PATTERNS } from '@tests/utils/test-helpers.js';
 
 // Mock the dependencies
-vi.mock('@/applescript/execute.js', () => ({
-  executeJxa: mockExecuteJxa
-}));
+vi.mock('@/applescript/execute.js');
 
 vi.mock('@/tools/ai/utils/aiAvailabilityChecker.js', () => ({
   validateAIPrerequisites: vi.fn().mockResolvedValue({
@@ -42,9 +40,37 @@ vi.mock('@/tools/ai/utils/aiAvailabilityChecker.js', () => ({
 }));
 
 describe('Base AI Tool Utilities', () => {
+  const mockExecuteJxa = vi.mocked(executeJxa);
+  
+  // Get references to the mocked functions
+  let mockValidateAIPrerequisites: any;
+  let mockCheckAIServiceAvailability: any;
+  
+  beforeAll(async () => {
+    const module = await import('@/tools/ai/utils/aiAvailabilityChecker.js');
+    mockValidateAIPrerequisites = vi.mocked(module.validateAIPrerequisites);
+    mockCheckAIServiceAvailability = vi.mocked(module.checkAIServiceAvailability);
+  });
+  
   beforeEach(() => {
     vi.clearAllMocks();
-    setupDefaultJXAMocks();
+    setupDefaultJXAMocks(mockExecuteJxa);
+    
+    // Reset AI prerequisites mock to default success state
+    mockValidateAIPrerequisites?.mockResolvedValue({
+      isValid: true,
+      errors: [],
+      warnings: [],
+      recommendations: []
+    });
+    
+    mockCheckAIServiceAvailability?.mockResolvedValue({
+      isAvailable: true,
+      devonthinkRunning: true,
+      aiFeatureEnabled: true,
+      availableEngines: ['ChatGPT', 'Claude'],
+      defaultEngine: 'ChatGPT'
+    });
   });
 
   describe('BaseAITool', () => {
@@ -117,8 +143,7 @@ describe('Base AI Tool Utilities', () => {
       });
 
       it('should fail prerequisites when AI is not available', async () => {
-        const { validateAIPrerequisites } = await import('@/tools/ai/utils/aiAvailabilityChecker.js');
-        (validateAIPrerequisites as any).mockResolvedValueOnce({
+        mockValidateAIPrerequisites.mockResolvedValueOnce({
           isValid: false,
           errors: ['DEVONthink is not running'],
           recommendations: ['Start DEVONthink application']
@@ -186,8 +211,7 @@ describe('Base AI Tool Utilities', () => {
       });
 
       it('should fail on prerequisites check', async () => {
-        const { validateAIPrerequisites } = await import('@/tools/ai/utils/aiAvailabilityChecker.js');
-        (validateAIPrerequisites as any).mockResolvedValueOnce({
+        mockValidateAIPrerequisites.mockResolvedValueOnce({
           isValid: false,
           errors: ['AI features not available'],
           recommendations: []
@@ -425,7 +449,7 @@ describe('Base AI Tool Utilities', () => {
       
       const validInput = {
         recordUuid: AI_TEST_PATTERNS.VALID_UUID,
-        targetRecordUuid: 'target-' + AI_TEST_PATTERNS.VALID_UUID,
+        targetRecordUuid: '223e4567-e89b-12d3-a456-426614174000', // Another valid UUID
         engine: 'ChatGPT',
         maxResults: 10
       };
@@ -509,7 +533,7 @@ describe('Base AI Tool Utilities', () => {
       it('should pass with valid UUIDs', () => {
         const input = {
           recordUuid: AI_TEST_PATTERNS.VALID_UUID,
-          targetRecordUuid: 'target-' + AI_TEST_PATTERNS.VALID_UUID
+          targetRecordUuid: '223e4567-e89b-12d3-a456-426614174000' // Another valid UUID
         };
         const errors = AI_VALIDATORS.VALID_RECORD_UUID(input);
         expect(errors).toHaveLength(0);

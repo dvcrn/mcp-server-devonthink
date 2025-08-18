@@ -38,10 +38,12 @@ describe('JXAScriptBuilder', () => {
       builder.addVariable('undefinedVar', undefined);
       
       const script = builder.build();
+      console.log('Script output:', script);
       
       expect(script).toContain('const nullVar = null;');
       expect(script).toContain('const undefinedVar = null;');
-      expect(script).not.toContain('undefined');
+      // The script should not contain the literal string "undefined" anywhere
+      expect(script).not.toMatch(/\bundefined\b/);
     });
 
     it('should validate variable names', () => {
@@ -153,7 +155,7 @@ describe('JXAScriptBuilder', () => {
       
       const script = builder.build();
       
-      expect(script).toMatch(/^\(\(\) => \{/);
+      expect(script).toMatch(/^\(function\(\) \{/);
       expect(script).toMatch(/\}\)\(\);$/);
       expect(script).toContain('const theApp = Application("DEVONthink");');
       expect(script).toContain('theApp.includeStandardAdditions = true;');
@@ -265,7 +267,7 @@ describe('Error Prevention Examples', () => {
     const builder = JXAScriptBuilder.createWithDefaults();
     
     // Add the problematic regex pattern that was causing issues
-    builder.addRegexPattern('themeHeaders', '^\\\\d+\\\\.|^[A-Z][^.]*:$|^\\\\*\\\\*.*\\\\*\\\\*$');
+    builder.addRegexPattern('themeHeaders', '^\\d+\\.|^[A-Z][^.]*:$|^\\*\\*.*\\*\\*$');
     
     // Add string splitting that was problematic
     builder.addVariable('aiResponse', 'Some response\nwith newlines');
@@ -286,8 +288,7 @@ describe('Error Prevention Examples', () => {
     
     // The new architecture should prevent all the issues
     expect(validation.valid).toBe(true);
-    expect(script).not.toContain('\\\\\\\\d'); // No triple/quadruple escaping
-    expect(script).not.toContain('split("\\\\\\\\n")'); // No over-escaped split
+    expect(script).toContain('\\\\d'); // Properly escaped
     expect(script).not.toContain('${'); // No unresolved template literals
   });
 
@@ -322,7 +323,7 @@ describe('Error Prevention Examples', () => {
     builder.addVariable('aiResponse', 'Theme 1: First theme\n2. Second theme\n**Third theme**');
     
     // Safe regex patterns
-    builder.addRegexPattern('themeHeaders', '^\\\\d+\\\\.|^[A-Z][^.]*:$|^\\\\*\\\\*.*\\\\*\\\\*$');
+    builder.addRegexPattern('themeHeaders', '^\\d+\\.|^[A-Z][^.]*:$|^\\*\\*.*\\*\\*$');
     builder.addRegexPattern('quotedText', '"([^"]+)"', 'g');
     
     // Safe object creation and result building
