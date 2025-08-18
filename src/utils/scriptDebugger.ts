@@ -5,8 +5,8 @@
  * inspect generated code, and validate scripts before execution.
  */
 
-import { JXAScriptBuilder } from './jxaScriptBuilder.js';
-import { JXAValidator, formatValidationResult, ValidationResult } from './jxaValidator.js';
+import type { JXAScriptBuilder } from './jxaScriptBuilder.js';
+import { JXAValidator, formatValidationResult, type ValidationResult } from './jxaValidator.js';
 import { writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
 
@@ -51,7 +51,7 @@ export class ScriptDebugger {
     builder: JXAScriptBuilder, 
     options: DebuggerOptions = {}
   ): ScriptDebugInfo {
-    const opts = { ...this.defaultOptions, ...options };
+    const opts = { ...ScriptDebugger.defaultOptions, ...options };
     const timestamp = new Date().toISOString();
     
     if (opts.verbose) {
@@ -85,16 +85,16 @@ export class ScriptDebugger {
     };
 
     // Save to history
-    this.debugHistory.push(debugInfo);
+    ScriptDebugger.debugHistory.push(debugInfo);
 
     // Save to file if requested
     if (opts.saveScripts) {
-      this.saveScript(debugInfo, opts.outputDir!);
+      ScriptDebugger.saveScript(debugInfo, opts.outputDir!);
     }
 
     // Output debug information
     if (opts.verbose) {
-      this.printDebugInfo(debugInfo, opts);
+      ScriptDebugger.printDebugInfo(debugInfo, opts);
     }
 
     return debugInfo;
@@ -164,14 +164,14 @@ export class ScriptDebugger {
    * Get debug history
    */
   static getHistory(): ScriptDebugInfo[] {
-    return [...this.debugHistory];
+    return [...ScriptDebugger.debugHistory];
   }
 
   /**
    * Clear debug history
    */
   static clearHistory(): void {
-    this.debugHistory = [];
+    ScriptDebugger.debugHistory = [];
   }
 
   /**
@@ -182,7 +182,7 @@ export class ScriptDebugger {
       new RegExp(namePattern, 'i') : 
       namePattern;
       
-    return this.debugHistory.filter(info => pattern.test(info.name));
+    return ScriptDebugger.debugHistory.filter(info => pattern.test(info.name));
   }
 
   /**
@@ -196,15 +196,15 @@ export class ScriptDebugger {
     commonErrors: { [key: string]: number };
     commonWarnings: { [key: string]: number };
   } {
-    const total = this.debugHistory.length;
-    const valid = this.debugHistory.filter(info => info.validation.valid).length;
+    const total = ScriptDebugger.debugHistory.length;
+    const valid = ScriptDebugger.debugHistory.filter(info => info.validation.valid).length;
     const invalid = total - valid;
     const errorRate = total > 0 ? invalid / total : 0;
     
     const commonErrors: { [key: string]: number } = {};
     const commonWarnings: { [key: string]: number } = {};
     
-    this.debugHistory.forEach(info => {
+    ScriptDebugger.debugHistory.forEach(info => {
       info.validation.errors.forEach(error => {
         commonErrors[error.message] = (commonErrors[error.message] || 0) + 1;
       });
@@ -280,7 +280,7 @@ export class ScriptDebugger {
     const functionCallPattern = /([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(/g;
     while ((match = functionCallPattern.exec(script)) !== null) {
       const funcName = match[1];
-      if (!this.isBuiltInFunction(funcName)) {
+      if (!ScriptDebugger.isBuiltInFunction(funcName)) {
         functionCalls.push(funcName);
       }
     }
@@ -322,7 +322,7 @@ export class ScriptDebugger {
    * Generate a comprehensive debug report
    */
   static generateReport(): string {
-    const summary = this.getValidationSummary();
+    const summary = ScriptDebugger.getValidationSummary();
     const lines = [
       '='.repeat(80),
       'JXA SCRIPT DEBUGGER REPORT',
@@ -358,7 +358,7 @@ export class ScriptDebugger {
     }
 
     lines.push('📋 RECENT SCRIPTS:');
-    this.debugHistory.slice(-10).forEach(info => {
+    ScriptDebugger.debugHistory.slice(-10).forEach(info => {
       const status = info.validation.valid ? '✅' : '❌';
       lines.push(`  ${status} ${info.name} (${info.size} bytes, ${info.lineCount} lines)`);
     });
@@ -371,7 +371,7 @@ export class ScriptDebugger {
  * Decorator function to automatically debug JXA script builders
  */
 export function debugScript(name?: string, options: DebuggerOptions = {}) {
-  return function<T extends JXAScriptBuilder>(builder: T): T {
+  return <T extends JXAScriptBuilder>(builder: T): T => {
     const scriptName = name || 'unnamed_script';
     ScriptDebugger.debug(scriptName, builder, options);
     return builder;

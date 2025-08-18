@@ -8,7 +8,7 @@
 
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { Tool } from "@modelcontextprotocol/sdk/types.js";
+import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../../applescript/execute.js";
 import { 
   checkAIServiceSimple,

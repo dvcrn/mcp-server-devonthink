@@ -9,7 +9,7 @@ import {
   createAITool,
   createSimpleAITool,
   TemplateAITool,
-  AIToolConfig,
+  type AIToolConfig,
   AI_TOOL_SCHEMAS,
   AI_VALIDATORS
 } from '@/tools/ai/utils/baseAITool.js';

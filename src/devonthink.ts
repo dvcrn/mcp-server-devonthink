@@ -7,7 +7,7 @@ import {
   ListPromptsRequestSchema,
   ListResourceTemplatesRequestSchema,
   McpError,
-  Tool,
+  type Tool,
 } from "@modelcontextprotocol/sdk/types.js";
 import { isRunningTool } from "./tools/isRunning.js";
 import { createRecordTool } from "./tools/createRecord.js";

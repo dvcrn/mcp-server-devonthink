@@ -8,7 +8,7 @@
 
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { Tool } from "@modelcontextprotocol/sdk/types.js";
+import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../../applescript/execute.js";
 import { 
   checkAIServiceSimple,
@@ -142,48 +142,20 @@ const analyzeDocumentThemes = async (input: AnalyzeDocumentThemesInput): Promise
     // Add variables with automatic escaping and validation - handle missing target
     const target = input.target || {};
     
-    if (target.uuid) {
-      builder.addVariable('recordUuid', target.uuid);
-    } else {
-      builder.addVariable('recordUuid', null);
-    }
-
-    if (target.recordId) {
-      builder.addVariable('recordId', target.recordId);
-    } else {
-      builder.addVariable('recordId', null);
-    }
-
-    if (target.databaseName) {
-      builder.addVariable('databaseName', target.databaseName);
-    } else {
-      builder.addVariable('databaseName', null);
-    }
-
-    if (target.recordPath) {
-      builder.addVariable('recordPath', target.recordPath);
-    } else {
-      builder.addVariable('recordPath', null);
-    }
-
+    // Add all variables - the templates expect them all to exist
+    builder.addVariable('recordUuid', target.uuid || null);
+    builder.addVariable('recordId', target.recordId || null);
+    builder.addVariable('databaseName', target.databaseName || null);
+    builder.addVariable('recordPath', target.recordPath || null);
+    builder.addVariable('groupUuid', target.groupUuid || null);
+    builder.addVariable('searchQuery', target.searchQuery || null);
+    
     if (target.uuids) {
       // Create array literal using safe approach
       const uuidArray = '[' + target.uuids.map(uuid => `"${uuid}"`).join(',') + ']';
       builder.addVariable('recordUuids', uuidArray, 'raw');
     } else {
       builder.addVariable('recordUuids', null);
-    }
-
-    if (target.searchQuery) {
-      builder.addVariable('searchQuery', target.searchQuery);
-    } else {
-      builder.addVariable('searchQuery', null);
-    }
-
-    if (target.groupUuid) {
-      builder.addVariable('groupUuid', target.groupUuid);
-    } else {
-      builder.addVariable('groupUuid', null);
     }
 
     // Add analysis configuration variables
@@ -329,7 +301,25 @@ const analyzeDocumentThemes = async (input: AnalyzeDocumentThemesInput): Promise
     }
 
     // Execute the validated script
-    const result = await executeJxa<ThemeAnalysisResult>(script);
+    let result: ThemeAnalysisResult;
+    try {
+      result = await executeJxa<ThemeAnalysisResult>(script);
+      
+      // Ensure result is valid
+      if (!result) {
+        throw new Error("JXA script returned undefined result");
+      }
+    } catch (executionError) {
+      return {
+        success: false,
+        error: `JXA script execution failed: ${executionError instanceof Error ? executionError.message : String(executionError)}`,
+        executionTime: Date.now() - startTime,
+        validation: {
+          scriptValid: false,
+          validationDetails: 'Script execution failed - check DEVONthink is running and AI services are available'
+        }
+      };
+    }
     
     // Add execution time and validation info
     if (!result.executionTime) {

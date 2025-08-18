@@ -8,7 +8,7 @@
 
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { Tool } from "@modelcontextprotocol/sdk/types.js";
+import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../../applescript/execute.js";
 import { escapeStringForJXA } from "../../utils/escapeString.js";
 // Removed AI utility imports to prevent stderr contamination - using self-contained pattern
@@ -464,8 +464,8 @@ const findSimilarDocuments = async (input: FindSimilarDocumentsInput): Promise<S
               // Use the AI response to help find similar documents by combining it with search
               // Extract key terms from AI response for targeted search
               const aiTerms = aiResponse.toLowerCase()
-                .replace(/[^a-zA-Z0-9\s]/g, ' ')
-                .split(/\s+/)
+                .replace(/[^a-zA-Z0-9s]/g, ' ')
+                .split(/s+/)
                 .filter(term => term.length > 3)
                 .slice(0, 10)
                 .join(' ');

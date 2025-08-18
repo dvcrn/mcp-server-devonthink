@@ -15,7 +15,7 @@ import {
   validateGenerationInput,
   AI_ENGINES,
   OUTPUT_FORMATS,
-  AIValidationError
+  type AIValidationError
 } from '@/tools/ai/utils/aiValidation.js';
 import { AI_TEST_PATTERNS } from '@tests/utils/test-helpers.js';
 

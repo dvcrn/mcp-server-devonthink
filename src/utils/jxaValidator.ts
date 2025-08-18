@@ -71,19 +71,19 @@ export class JXAValidator {
     const lines = script.split('\n');
 
     // Check for dangerous patterns
-    this.checkDangerousPatterns(script, lines, errors);
+    JXAValidator.checkDangerousPatterns(script, lines, errors);
     
     // Check for JXA incompatible features
-    this.checkJXACompatibility(script, lines, errors, warnings);
+    JXAValidator.checkJXACompatibility(script, lines, errors, warnings);
     
     // Check for escaping issues
-    this.checkEscapingIssues(script, lines, warnings);
+    JXAValidator.checkEscapingIssues(script, lines, warnings);
     
     // Check for common mistakes
-    this.checkCommonMistakes(script, lines, warnings, suggestions);
+    JXAValidator.checkCommonMistakes(script, lines, warnings, suggestions);
     
     // Check for performance issues
-    this.checkPerformanceIssues(script, lines, warnings, suggestions);
+    JXAValidator.checkPerformanceIssues(script, lines, warnings, suggestions);
 
     return {
       valid: errors.filter(e => e.severity === 'error').length === 0,
@@ -94,7 +94,7 @@ export class JXAValidator {
   }
 
   private static checkDangerousPatterns(script: string, lines: string[], errors: ValidationError[]): void {
-    this.DANGEROUS_PATTERNS.forEach(pattern => {
+    JXAValidator.DANGEROUS_PATTERNS.forEach(pattern => {
       if (pattern.test(script)) {
         errors.push({
           type: 'security',
@@ -123,7 +123,7 @@ export class JXAValidator {
     errors: ValidationError[], 
     warnings: ValidationWarning[]
   ): void {
-    this.JXA_INCOMPATIBLE_PATTERNS.forEach(({ pattern, message }) => {
+    JXAValidator.JXA_INCOMPATIBLE_PATTERNS.forEach(({ pattern, message }) => {
       const matches = script.match(pattern);
       if (matches) {
         // Find line number
@@ -156,7 +156,7 @@ export class JXAValidator {
     lines: string[], 
     warnings: ValidationWarning[]
   ): void {
-    this.ESCAPING_ISSUES.forEach(({ pattern, message }) => {
+    JXAValidator.ESCAPING_ISSUES.forEach(({ pattern, message }) => {
       lines.forEach((line, index) => {
         if (pattern.test(line)) {
           warnings.push({
@@ -202,7 +202,7 @@ export class JXAValidator {
     }
 
     // Check for missing function definitions - this was the core issue
-    this.checkFunctionDependencies(script, lines, warnings);
+    JXAValidator.checkFunctionDependencies(script, lines, warnings);
 
     // Check for missing error handling
     const hasTryCatch = /try\s*\{/.test(script);
@@ -236,14 +236,18 @@ export class JXAValidator {
     lines: string[],
     warnings: ValidationWarning[]
   ): void {
-    // Extract all function calls
+    // Extract all function calls - IMPROVED to exclude calls inside string literals
     const functionCalls = new Set<string>();
+    
+    // Split script into code and string parts to avoid false positives from string content
+    const codeWithoutStrings = JXAValidator.removeStringLiterals(script);
+    
     const functionCallPattern = /([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(/g;
     let match;
-    while ((match = functionCallPattern.exec(script)) !== null) {
+    while ((match = functionCallPattern.exec(codeWithoutStrings)) !== null) {
       const funcName = match[1];
       // Skip built-in JavaScript functions and DEVONthink methods
-      if (!this.isBuiltInFunction(funcName)) {
+      if (!JXAValidator.isBuiltInFunction(funcName)) {
         functionCalls.add(funcName);
       }
     }
@@ -276,6 +280,23 @@ export class JXAValidator {
         });
       }
     });
+  }
+
+  /**
+   * Remove string literals from script to avoid false positive function call detection
+   * This prevents the validator from detecting words inside strings as function calls
+   */
+  private static removeStringLiterals(script: string): string {
+    // Remove double-quoted strings while preserving structure
+    let result = script.replace(/"(?:[^"\\]|\\.)*"/g, '""');
+    
+    // Remove single-quoted strings while preserving structure  
+    result = result.replace(/'(?:[^'\\]|\\.)*'/g, "''");
+    
+    // Remove template literals while preserving structure
+    result = result.replace(/`(?:[^`\\]|\\.)*`/g, '``');
+    
+    return result;
   }
 
   /**

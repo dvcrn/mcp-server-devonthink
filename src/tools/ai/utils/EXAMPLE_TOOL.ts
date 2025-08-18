@@ -400,7 +400,7 @@ export const advancedDocumentComparatorTool = new AdvancedDocumentComparator().t
 /**
  * Quick document summarizer using convenience functions
  */
-export const quickSummarizerTool = (function() {
+export const quickSummarizerTool = (() => {
   // Import convenience utilities locally
   const { quickSetupAITool } = require('./index.js');
   const { buildSummarizeScript } = require('./aiScriptBuilder.js');

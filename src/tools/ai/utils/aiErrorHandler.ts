@@ -3,7 +3,7 @@
  * Provides categorization, recovery strategies, and user-friendly error messages
  */
 
-import { BaseAIResult, AIOperationType } from "./resultProcessor.js";
+import type { BaseAIResult, AIOperationType } from "./resultProcessor.js";
 import { checkAIServiceAvailability, AIServiceStatus } from "./aiAvailabilityChecker.js";
 
 /**
@@ -242,9 +242,9 @@ export class AIErrorHandler {
             timestamp: new Date().toISOString()
           };
 
-        case RecoveryStrategy.RETRY_WITH_BACKOFF:
+        case RecoveryStrategy.RETRY_WITH_BACKOFF: {
           const delay = Math.min(
-            this.config.baseRetryDelay * Math.pow(2, attemptNumber),
+            this.config.baseRetryDelay * 2 ** attemptNumber,
             this.config.maxRetryDelay
           );
           await this.delay(delay);
@@ -254,8 +254,9 @@ export class AIErrorHandler {
             duration: Date.now() - startTime,
             timestamp: new Date().toISOString()
           };
+        }
 
-        case RecoveryStrategy.ALTERNATIVE_ENGINE:
+        case RecoveryStrategy.ALTERNATIVE_ENGINE: {
           // Check if alternative engines are available
           const serviceStatus = await checkAIServiceAvailability();
           if (serviceStatus.availableEngines.length > 1) {
@@ -268,6 +269,7 @@ export class AIErrorHandler {
             };
           }
           break;
+        }
 
         case RecoveryStrategy.REDUCE_INPUT_SIZE:
           // This would require modifying the input, which needs to be handled by the caller

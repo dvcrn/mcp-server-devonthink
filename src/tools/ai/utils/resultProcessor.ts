@@ -3,7 +3,7 @@
  * Handles post-processing, formatting, and validation of AI operation results
  */
 
-import { AIOperationType, AIEngine, OutputFormat } from "./aiValidation.js";
+import { AIOperationType, type AIEngine, type OutputFormat } from "./aiValidation.js";
 
 // Re-export for other modules
 export { AIOperationType };
@@ -467,7 +467,7 @@ export function processAIError(error: string): ProcessedError {
 
   // Categorize error
   let category = AIErrorCategory.UNKNOWN;
-  let suggestions: string[] = [];
+  const suggestions: string[] = [];
   let retryable = false;
 
   if (lowerError.includes('not running') || lowerError.includes('devonthink')) {
@@ -546,33 +546,37 @@ function validateResultStructure(result: BaseAIResult, operationType: AIOperatio
 
   // Operation-specific validation
   switch (operationType) {
-    case 'chat':
+    case 'chat': {
       const chatResult = result as ChatResult;
       if (chatResult.success && !chatResult.response) {
         errors.push('Chat result missing response');
       }
       break;
+    }
 
-    case 'summarize':
+    case 'summarize': {
       const summaryResult = result as SummaryResult;
       if (summaryResult.success && !summaryResult.summaryUuid) {
         errors.push('Summary result missing summaryUuid');
       }
       break;
+    }
 
-    case 'classify':
+    case 'classify': {
       const classifyResult = result as ClassifyResult;
       if (classifyResult.success && !classifyResult.proposals) {
         errors.push('Classify result missing proposals');
       }
       break;
+    }
 
-    case 'compare':
+    case 'compare': {
       const compareResult = result as CompareResult;
       if (compareResult.success && !compareResult.results) {
         errors.push('Compare result missing results');
       }
       break;
+    }
   }
 
   return {

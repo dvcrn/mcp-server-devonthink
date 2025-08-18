@@ -5,7 +5,7 @@
 
 import { escapeStringForJXA, formatValueForJXA } from "../../../utils/escapeString.js";
 import { getRecordLookupHelpers, getDatabaseHelper } from "../../../utils/jxaHelpers.js";
-import { AIEngine, OutputFormat, AIMode } from "./aiValidation.js";
+import type { AIEngine, OutputFormat, AIMode } from "./aiValidation.js";
 
 /**
  * Options for building AI operation scripts

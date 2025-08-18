@@ -17,7 +17,7 @@ import {
   validateChatInput, 
   validateAnalysisInput,
   validateGenerationInput,
-  AIOperationType
+  type AIOperationType
 } from './aiValidation.js';
 
 import {

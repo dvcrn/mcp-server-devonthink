@@ -10,7 +10,7 @@ import {
   AIErrorType,
   ErrorSeverity,
   RecoveryStrategy,
-  ErrorHandlingConfig
+  type ErrorHandlingConfig
 } from '@/tools/ai/utils/aiErrorHandler.js';
 import { BaseAIResult } from '@/tools/ai/utils/resultProcessor.js';
 

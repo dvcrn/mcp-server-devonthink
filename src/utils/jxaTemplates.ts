@@ -5,7 +5,7 @@
  * that can be safely combined to create complex JXA scripts.
  */
 
-import { JXAScriptFragment } from './jxaScriptBuilder.js';
+import type { JXAScriptFragment } from './jxaScriptBuilder.js';
 
 /**
  * Common regex patterns used in document analysis

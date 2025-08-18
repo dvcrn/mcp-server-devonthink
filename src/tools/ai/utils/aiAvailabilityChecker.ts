@@ -4,7 +4,7 @@
  */
 
 import { executeJxa } from "../../../applescript/execute.js";
-import { AIEngine } from "./aiValidation.js";
+import type { AIEngine } from "./aiValidation.js";
 
 /**
  * AI service availability status
@@ -74,7 +74,7 @@ const statusCache = new AIStatusCache();
 /**
  * Checks if DEVONthink AI services are available and properly configured
  */
-export async function checkAIServiceAvailability(forceRefresh: boolean = false): Promise<AIServiceStatus> {
+export async function checkAIServiceAvailability(forceRefresh: boolean = false, skipTesting: boolean = false): Promise<AIServiceStatus> {
   // Return cached result if available and not expired
   if (!forceRefresh) {
     const cached = statusCache.get();
@@ -85,6 +85,8 @@ export async function checkAIServiceAvailability(forceRefresh: boolean = false):
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
+      
+      const skipTesting = ${skipTesting ? "true" : "false"};
       
       const result = {};
       result["devonthinkRunning"] = false;
@@ -135,13 +137,79 @@ export async function checkAIServiceAvailability(forceRefresh: boolean = false):
             
             for (const engine of testEngines) {
               try {
-                // Use DEVONthink's getChatModelsForEngine to actually test if engine is configured
+                // First check if models are available
                 const models = theApp.getChatModelsForEngine(engine);
                 if (models && models.length > 0) {
-                  availableEngines.push(engine);
+                  
+                  if (skipTesting) {
+                    // Skip actual testing - just report based on model availability
+                    availableEngines.push(engine);
+                    engineDetails[engine] = {
+                      "models": models,
+                      "isConfigured": true,
+                      "tested": false,
+                      "warning": "Configuration not verified - API key may be invalid"
+                    };
+                  } else {
+                    // ENHANCED: Actually test the engine with a minimal operation
+                    // This will fail if API key is invalid or engine isn't truly configured
+                    let isReallyConfigured = false;
+                    let actualError = null;
+                    
+                    try {
+                      // Create a minimal test prompt that won't consume significant credits
+                      // Use a very short input to minimize API costs
+                      // Add timeout to prevent long delays
+                      const testResult = theApp.chatWithAI({
+                        "engine": engine,
+                        "model": models[0], // Use first available model
+                        "prompt": "Hi", // Minimal test
+                        "maxTokens": 1, // Absolute minimum to reduce cost and time
+                        "timeout": 5 // 5 second timeout to prevent delays
+                      });
+                      
+                      // If we get here without error, the engine is truly configured
+                      isReallyConfigured = true;
+                      
+                    } catch (testError) {
+                      actualError = testError.toString();
+                      // Common error patterns that indicate misconfiguration:
+                      if (actualError.includes("API key") || 
+                          actualError.includes("authentication") ||
+                          actualError.includes("invalid key") ||
+                          actualError.includes("unauthorized") ||
+                          actualError.includes("401") ||
+                          actualError.includes("403")) {
+                        isReallyConfigured = false;
+                      } else {
+                        // Other errors might be temporary - assume configured
+                        isReallyConfigured = true;
+                      }
+                    }
+                    
+                    if (isReallyConfigured) {
+                      availableEngines.push(engine);
+                      engineDetails[engine] = {
+                        "models": models,
+                        "isConfigured": true,
+                        "tested": true
+                      };
+                    } else {
+                      engineDetails[engine] = {
+                        "models": models,
+                        "isConfigured": false,
+                        "tested": true,
+                        "error": actualError || "Engine appears configured but authentication failed"
+                      };
+                    }
+                  }
+                  
+                } else {
+                  // No models available
                   engineDetails[engine] = {
-                    "models": models,
-                    "isConfigured": true
+                    "models": [],
+                    "isConfigured": false,
+                    "error": "No models available for this engine"
                   };
                 }
               } catch (engineError) {
@@ -241,36 +309,71 @@ export async function checkEngineAvailability(engine: AIEngine): Promise<EngineA
         try {
           const models = theApp.getChatModelsForEngine("${engine}");
           if (models && models.length > 0) {
-            result["isAvailable"] = true;
-            result["isConfigured"] = true;
             result["models"] = models;
+            result["model"] = models[0];
             
-            // Set the first model as default
-            if (models.length > 0) {
-              result["model"] = models[0];
+            // ENHANCED: Actually test the engine with a minimal operation
+            let isReallyConfigured = false;
+            let actualError = null;
+            
+            try {
+              // Test with minimal prompt to verify authentication works
+              const testResult = theApp.chatWithAI({
+                "engine": "${engine}",
+                "model": models[0],
+                "prompt": "Hi",
+                "maxTokens": 5
+              });
+              isReallyConfigured = true;
+              
+            } catch (testError) {
+              actualError = testError.toString();
+              // Check for authentication/API key errors
+              if (actualError.includes("API key") || 
+                  actualError.includes("authentication") ||
+                  actualError.includes("invalid key") ||
+                  actualError.includes("unauthorized") ||
+                  actualError.includes("401") ||
+                  actualError.includes("403")) {
+                isReallyConfigured = false;
+              } else {
+                // Other errors might be temporary - assume configured
+                isReallyConfigured = true;
+              }
             }
             
-            // Add engine-specific capabilities based on what's actually configured
-            const capabilities = ["chat", "analyze", "generate"];
-            
-            switch ("${engine}") {
-              case "ChatGPT":
-                capabilities.push("summarize", "reasoning");
-                break;
-              case "Claude":
-                capabilities.push("reasoning", "long-form");
-                break;
-              case "Gemini":
-                capabilities.push("multimodal");
-                break;
-              case "GPT4All":
-              case "LM Studio":
-              case "Ollama":
-                capabilities.push("local", "offline");
-                break;
+            if (isReallyConfigured) {
+              result["isAvailable"] = true;
+              result["isConfigured"] = true;
+              result["tested"] = true;
+              
+              // Add engine-specific capabilities based on what's actually configured
+              const capabilities = ["chat", "analyze", "generate"];
+              
+              switch ("${engine}") {
+                case "ChatGPT":
+                  capabilities.push("summarize", "reasoning");
+                  break;
+                case "Claude":
+                  capabilities.push("reasoning", "long-form");
+                  break;
+                case "Gemini":
+                  capabilities.push("multimodal");
+                  break;
+                case "GPT4All":
+                case "LM Studio":
+                case "Ollama":
+                  capabilities.push("local", "offline");
+                  break;
+              }
+              
+              result["capabilities"] = capabilities;
+            } else {
+              result["isAvailable"] = false;
+              result["isConfigured"] = false;
+              result["tested"] = true;
+              result["error"] = actualError || "Engine appears configured but authentication failed";
             }
-            
-            result["capabilities"] = capabilities;
             
           } else {
             result["isAvailable"] = false;
@@ -321,11 +424,11 @@ export async function checkEngineAvailability(engine: AIEngine): Promise<EngineA
 /**
  * Gets comprehensive AI service information
  */
-export async function getAIServiceInfo(): Promise<{
+export async function getAIServiceInfo(forceRefresh: boolean = false, skipTesting: boolean = false): Promise<{
   status: AIServiceStatus;
   engines: EngineAvailability[];
 }> {
-  const status = await checkAIServiceAvailability();
+  const status = await checkAIServiceAvailability(forceRefresh, skipTesting);
   
   // Check each available engine
   const enginePromises = status.availableEngines.map(engine => 

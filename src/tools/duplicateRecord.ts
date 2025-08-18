@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { Tool, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
+import { type Tool, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../applescript/execute.js";
 import {
   escapeStringForJXA,

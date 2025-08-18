@@ -241,7 +241,7 @@ theApp.includeStandardAdditions = true;
     if (this.functions.size > 0) {
       parts.push(this.indent('// Functions'));
       this.functions.forEach((fragment, name) => {
-        parts.push(this.indent(`// ${name}`));
+        // Add the actual function code, not just comments
         parts.push(this.indent(fragment.code));
         parts.push('');
       });

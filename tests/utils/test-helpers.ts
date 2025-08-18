@@ -4,7 +4,7 @@
  */
 
 import { vi } from 'vitest';
-import { Tool } from '@modelcontextprotocol/sdk/types.js';
+import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 
 // Test data generators
 export function generateTestUUID(): string {
