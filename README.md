@@ -1,4 +1,4 @@
-# Devonthink MCP Server
+# DEVONthink MCP Server
 
 This MCP server provides access to DEVONthink functionality via the Model Context Protocol (MCP). It enables listing, searching, creating, modifying, and managing records and databases in DEVONthink Pro on macOS.
 
