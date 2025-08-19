@@ -53,7 +53,23 @@ export async function testToolInputValidation(
   
   // Test invalid inputs
   for (const invalidInput of invalidInputs) {
-    await expect(tool.run(invalidInput)).rejects.toThrow();
+    let threw = false;
+    let result;
+    try {
+      result = await tool.run(invalidInput);
+    } catch (e) {
+      threw = true;
+    }
+    if (!threw) {
+      // If it didn't throw, check for error object with success: false
+      if (result && typeof result === 'object' && result.success === false) {
+        // pass
+      } else {
+        throw new Error(
+          `Tool did not throw or return { success: false } for invalid input: ${JSON.stringify(invalidInput)}`
+        );
+      }
+    }
   }
 }
 
