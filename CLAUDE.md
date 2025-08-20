@@ -67,6 +67,7 @@ npm run build         # Verify the build works
   - **`updateRecordContent.ts`**: Updates the content of existing records while preserving UUID
   - **`importFile.ts`**: Imports individual files from the filesystem using DEVONthink's native import functionality
   - **`importDirectory.ts`**: Imports entire directory structures with filtering and recursive options
+  - **`importWithOptions.ts`**: Advanced import tool with comprehensive configuration options and batch processing
   - **`ai/`**: AI-powered tools leveraging DEVONthink's native AI capabilities
     - **`askAiAboutDocuments.ts`**: Ask AI questions about specific documents for analysis
     - **`checkAIHealth.ts`**: Check AI service availability and configuration
@@ -109,6 +110,7 @@ The MCP server currently provides the following tools:
 23. **`update_record_content`** - Update the content of existing records while preserving UUID and metadata
 24. **`import_file`** - Import individual files from the filesystem, preserving file type and metadata using DEVONthink's native import
 25. **`import_directory`** - Import entire directory structures with recursive processing, file filtering, and path preservation options
+26. **`import_with_options`** - Advanced batch import with comprehensive options including duplicate handling, tagging, and custom configurations
 24. **`ask_ai_about_documents`** - Ask AI questions about specific documents for analysis, comparison, or extraction
 25. **`check_ai_health`** - Check if DEVONthink's AI services are available and working properly
 26. **`create_summary_document`** - Create AI-generated summaries from multiple documents
@@ -734,7 +736,7 @@ search({ query: "name:foo kind:pdf" })
 
 ### Enhanced File Import Capabilities
 
-The MCP server includes powerful import tools that use DEVONthink's native import functionality, solving previous encoding and file type issues:
+The MCP server now includes three powerful import tools that use DEVONthink's native import functionality, solving previous encoding and file type issues:
 
 ### `import_file` - Single File Import
 - **Purpose**: Import individual files with proper metadata preservation
@@ -777,6 +779,32 @@ mcp_client.call("import_directory", {
 })
 ```
 
+### `import_with_options` - Advanced Batch Import
+- **Purpose**: Comprehensive import with advanced configuration
+- **Benefits**: Duplicate handling, batch tagging, multiple sources
+- **Parameters**:
+  - `sourcePaths`: Array of file/directory paths
+  - `parentGroupUuid`: Target group UUID (optional)
+  - `databaseName`: Target database name (optional)
+  - `importOptions`: Comprehensive configuration object
+    - `duplicateDetection`: "skip", "rename", or "replace"
+    - `addTags`: Array of tags to apply to all imported records
+    - `preserveCreationDate`: Maintain original file dates
+    - `recursive`, `fileFilter`, `excludeHidden`: Directory processing options
+
+**Example Usage:**
+```javascript
+// Import with comprehensive options
+mcp_client.call("import_with_options", {
+  "sourcePaths": ["/archive/project1", "/archive/project2"],
+  "importOptions": {
+    "duplicateDetection": "rename",
+    "addTags": ["archived", "legacy"],
+    "fileFilter": "*.{md,txt,js,sh}"
+  }
+})
+```
+
 ### Key Advantages Over Content-Based Creation
 
 1. **Encoding Safety**: DEVONthink handles all character encodings internally
@@ -790,10 +818,12 @@ mcp_client.call("import_directory", {
 
 - **Single File**: Use `import_file` for importing individual files with optional renaming
 - **Directory Structure**: Use `import_directory` for importing folder hierarchies with filtering
+- **Complex Batch**: Use `import_with_options` for advanced scenarios with duplicate handling and tagging
 
 ### Response Format
 
-Both import tools return detailed responses including:
+All import tools return detailed responses including:
 - `importedRecords`: Array of successfully imported records with UUIDs and metadata
 - `skippedFiles`: Files that couldn't be imported with reasons
+- `duplicateFiles`: Duplicate handling results (for `import_with_options`)
 - `totalFiles`, `importedCount`, `skippedCount`: Summary statistics
