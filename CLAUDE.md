@@ -66,6 +66,7 @@ npm run build         # Verify the build works
   - **`convertRecord.ts`**: Converts records to different formats
   - **`updateRecordContent.ts`**: Updates the content of existing records while preserving UUID
   - **`importFile.ts`**: Imports individual files from the filesystem using DEVONthink's native import functionality
+  - **`importDirectory.ts`**: Imports entire directory structures with filtering and recursive options
   - **`ai/`**: AI-powered tools leveraging DEVONthink's native AI capabilities
     - **`askAiAboutDocuments.ts`**: Ask AI questions about specific documents for analysis
     - **`checkAIHealth.ts`**: Check AI service availability and configuration
@@ -107,6 +108,7 @@ The MCP server currently provides the following tools:
 22. **`convert_record`** - Convert records to different formats (plain text, rich text, markdown, HTML, PDF, etc.)
 23. **`update_record_content`** - Update the content of existing records while preserving UUID and metadata
 24. **`import_file`** - Import individual files from the filesystem, preserving file type and metadata using DEVONthink's native import
+25. **`import_directory`** - Import entire directory structures with recursive processing, file filtering, and path preservation options
 24. **`ask_ai_about_documents`** - Ask AI questions about specific documents for analysis, comparison, or extraction
 25. **`check_ai_health`** - Check if DEVONthink's AI services are available and working properly
 26. **`create_summary_document`** - Create AI-generated summaries from multiple documents
@@ -732,7 +734,7 @@ search({ query: "name:foo kind:pdf" })
 
 ### Enhanced File Import Capabilities
 
-The MCP server includes a powerful import tool that uses DEVONthink's native import functionality, solving previous encoding and file type issues:
+The MCP server includes powerful import tools that use DEVONthink's native import functionality, solving previous encoding and file type issues:
 
 ### `import_file` - Single File Import
 - **Purpose**: Import individual files with proper metadata preservation
@@ -753,17 +755,45 @@ mcp_client.call("import_file", {
 })
 ```
 
+### `import_directory` - Directory Structure Import
+- **Purpose**: Import entire directory hierarchies with filtering
+- **Benefits**: Batch processing, file filtering, structure preservation
+- **Parameters**:
+  - `directoryPath`: Absolute path to directory
+  - `parentGroupUuid`: Target group UUID (optional)
+  - `databaseName`: Target database name (optional)
+  - `recursive`: Import subdirectories (default: true)
+  - `fileFilter`: Glob pattern (e.g., "*.{md,txt}")
+  - `excludeHidden`: Skip hidden files (default: true)
+  - `preservePath`: Maintain directory structure (default: true)
+
+**Example Usage:**
+```javascript
+// Import project documentation
+mcp_client.call("import_directory", {
+  "directoryPath": "/path/to/project/docs",
+  "fileFilter": "*.{md,txt,pdf}",
+  "preservePath": true
+})
+```
+
 ### Key Advantages Over Content-Based Creation
 
 1. **Encoding Safety**: DEVONthink handles all character encodings internally
 2. **File Type Preservation**: Maintains proper file types and associations
 3. **Metadata Preservation**: Keeps creation dates, file sizes, and other metadata
 4. **Binary File Support**: Handles images, PDFs, executables, and other binary formats
-5. **Error Recovery**: Graceful handling of problematic files with detailed reporting
+5. **Batch Processing**: Efficiently imports multiple files and directories
+6. **Error Recovery**: Graceful handling of problematic files with detailed reporting
+
+### Import Tool Selection Guide
+
+- **Single File**: Use `import_file` for importing individual files with optional renaming
+- **Directory Structure**: Use `import_directory` for importing folder hierarchies with filtering
 
 ### Response Format
 
-The import tool returns detailed responses including:
-- `importedRecord`: Successfully imported record with UUID and metadata
-- `success`: Boolean indicating operation success
-- `error`: Error message if import failed
+Both import tools return detailed responses including:
+- `importedRecords`: Array of successfully imported records with UUIDs and metadata
+- `skippedFiles`: Files that couldn't be imported with reasons
+- `totalFiles`, `importedCount`, `skippedCount`: Summary statistics
