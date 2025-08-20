@@ -65,6 +65,7 @@ npm run build         # Verify the build works
   - **`duplicateRecord.ts`**: Duplicates records to any database (creates independent copies)
   - **`convertRecord.ts`**: Converts records to different formats
   - **`updateRecordContent.ts`**: Updates the content of existing records while preserving UUID
+  - **`importFile.ts`**: Imports individual files from the filesystem using DEVONthink's native import functionality
   - **`ai/`**: AI-powered tools leveraging DEVONthink's native AI capabilities
     - **`askAiAboutDocuments.ts`**: Ask AI questions about specific documents for analysis
     - **`checkAIHealth.ts`**: Check AI service availability and configuration
@@ -105,6 +106,7 @@ The MCP server currently provides the following tools:
 21. **`duplicate_record`** - Duplicate records to any database (creates independent copies)
 22. **`convert_record`** - Convert records to different formats (plain text, rich text, markdown, HTML, PDF, etc.)
 23. **`update_record_content`** - Update the content of existing records while preserving UUID and metadata
+24. **`import_file`** - Import individual files from the filesystem, preserving file type and metadata using DEVONthink's native import
 24. **`ask_ai_about_documents`** - Ask AI questions about specific documents for analysis, comparison, or extraction
 25. **`check_ai_health`** - Check if DEVONthink's AI services are available and working properly
 26. **`create_summary_document`** - Create AI-generated summaries from multiple documents
@@ -725,3 +727,43 @@ search({ query: "name:foo kind:pdf" })
 - Always validate that paths are DEVONthink location paths, not filesystem paths
 - Use proper date syntax for search queries
 - Prefer UUID or ID+Database over path-based lookups when possible
+
+## Native File Import Tools (2025-08)
+
+### Enhanced File Import Capabilities
+
+The MCP server includes a powerful import tool that uses DEVONthink's native import functionality, solving previous encoding and file type issues:
+
+### `import_file` - Single File Import
+- **Purpose**: Import individual files with proper metadata preservation
+- **Benefits**: Handles all file types (text, binary, scripts, images), preserves file metadata
+- **Parameters**:
+  - `filePath`: Absolute filesystem path to the file
+  - `parentGroupUuid`: Target group UUID (optional, defaults to inbox)
+  - `databaseName`: Target database name (optional, defaults to current)
+  - `customName`: Override the imported record name (optional)
+
+**Example Usage:**
+```javascript
+// Import a shell script
+mcp_client.call("import_file", {
+  "filePath": "/path/to/script.sh",
+  "parentGroupUuid": "scripts-folder-uuid",
+  "customName": "Deployment Script"
+})
+```
+
+### Key Advantages Over Content-Based Creation
+
+1. **Encoding Safety**: DEVONthink handles all character encodings internally
+2. **File Type Preservation**: Maintains proper file types and associations
+3. **Metadata Preservation**: Keeps creation dates, file sizes, and other metadata
+4. **Binary File Support**: Handles images, PDFs, executables, and other binary formats
+5. **Error Recovery**: Graceful handling of problematic files with detailed reporting
+
+### Response Format
+
+The import tool returns detailed responses including:
+- `importedRecord`: Successfully imported record with UUID and metadata
+- `success`: Boolean indicating operation success
+- `error`: Error message if import failed

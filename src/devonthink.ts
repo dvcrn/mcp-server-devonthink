@@ -32,6 +32,7 @@ import { replicateRecordTool } from "./tools/replicateRecord.js";
 import { duplicateRecordTool } from "./tools/duplicateRecord.js";
 import { convertRecordTool } from "./tools/convertRecord.js";
 import { updateRecordContentTool } from "./tools/updateRecordContent.js";
+import { importFileTool } from "./tools/importFile.js";
 import { setRecordPropertiesTool } from "./tools/setRecordProperties.js";
 import { askAiAboutDocumentsTool } from "./tools/ai/askAiAboutDocuments.js";
 import { checkAIHealthTool } from "./tools/ai/checkAIHealth.js";
@@ -53,36 +54,38 @@ export const createServer = async () => {
 		},
 	);
 
-	const tools: Tool[] = [
-		isRunningTool,
-		createRecordTool,
-		deleteRecordTool,
-		moveRecordTool,
-		getRecordPropertiesTool,
-		getRecordByIdentifierTool,
-		searchTool,
-		lookupRecordTool,
-		createFromUrlTool,
-		getOpenDatabasesTool,
-		currentDatabaseTool,
-		selectedRecordsTool,
-		listGroupContentTool,
-		getRecordContentTool,
-		renameRecordTool,
-		addTagsTool,
-		removeTagsTool,
-		classifyTool,
-		compareTool,
-		replicateRecordTool,
-		duplicateRecordTool,
-		convertRecordTool,
-		updateRecordContentTool,
-		setRecordPropertiesTool,
-		askAiAboutDocumentsTool,
-		checkAIHealthTool,
-		createSummaryDocumentTool,
-		getToolDocumentationTool,
-	];
+  const tools: Tool[] = [
+    isRunningTool,
+    createRecordTool,
+    deleteRecordTool,
+    moveRecordTool,
+    getRecordPropertiesTool,
+    getRecordByIdentifierTool,
+    searchTool,
+    lookupRecordTool,
+    createFromUrlTool,
+    getOpenDatabasesTool,
+    currentDatabaseTool,
+    selectedRecordsTool,
+    listGroupContentTool,
+    getRecordContentTool,
+    renameRecordTool,
+    addTagsTool,
+    removeTagsTool,
+    classifyTool,
+    compareTool,
+    replicateRecordTool,
+    duplicateRecordTool,
+    convertRecordTool,
+    updateRecordContentTool,
+    importFileTool,
+    setRecordPropertiesTool,
+	askAiAboutDocumentsTool,
+	checkAIHealthTool,
+	createSummaryDocumentTool,
+    getToolDocumentationTool,
+  ];
+
 
 	server.setRequestHandler(ListToolsRequestSchema, async () => {
 		return { tools };
