@@ -126,7 +126,6 @@ Returns:
 
 1. **DEVONthink Pro** - The DEVONthink application must be installed and running
 2. **Node.js** (v18 or later) - Required to run the MCP server
-3. **Claude Desktop or Claude Code** - To use the MCP server
 
 ### Installation
 
