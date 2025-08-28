@@ -399,8 +399,14 @@ const importWithOptions = async (input: ImportWithOptionsInput): Promise<ImportW
               importGroup = currentGroup;
             }
             
-            // Check for duplicates
+            // Check for duplicates and build import options
             const duplicateRecord = findDuplicateRecord(fileInfo.name, importGroup);
+
+            const importJxaOptions = {};
+            importJxaOptions["to"] = importGroup;
+            importJxaOptions["asIndexed"] = pCreateIndex;
+            importJxaOptions["preserveCreationDate"] = pPreserveCreationDate;
+
             if (duplicateRecord) {
               const dupInfo = {};
               dupInfo["path"] = fileInfo.path;
@@ -417,14 +423,15 @@ const importWithOptions = async (input: ImportWithOptionsInput): Promise<ImportW
                 duplicateFiles.push(dupInfo);
               } else { // rename
                 const uniqueName = generateUniqueName(fileInfo.name, importGroup);
+                importJxaOptions["name"] = uniqueName;
                 dupInfo["action"] = "renamed to " + uniqueName;
                 dupInfo["existingRecord"] = duplicateRecord.uuid();
                 duplicateFiles.push(dupInfo);
               }
             }
             
-            // Import the file
-            const importedRecord = theApp.importPath(fileInfo.path, { to: importGroup });
+            // Import the file using the more powerful import method
+            const importedRecord = theApp.import(fileInfo.path, importJxaOptions);
             
             if (importedRecord) {
               // Apply tags if specified

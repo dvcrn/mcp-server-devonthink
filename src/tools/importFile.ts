@@ -114,19 +114,22 @@ const importFile = async (input: ImportFileInput): Promise<ImportFileResult> => 
           targetGroup = targetDatabase.incomingGroup();
         }
         
-        // Import the file
-        const importedRecord = theApp.importPath(pFilePath, { to: targetGroup });
+        // Build import options
+        const importJxaOptions = {};
+        importJxaOptions["to"] = targetGroup;
+        importJxaOptions["asIndexed"] = true; // Default to creating index entries
+        if (pCustomName) {
+          importJxaOptions["name"] = pCustomName;
+        }
+
+        // Import the file using the more powerful import method
+        const importedRecord = theApp.import(pFilePath, importJxaOptions);
         
         if (!importedRecord) {
           const errorResponse = {};
           errorResponse["success"] = false;
           errorResponse["error"] = "Failed to import file: " + pFilePath;
           return JSON.stringify(errorResponse);
-        }
-        
-        // Apply custom name if provided
-        if (pCustomName) {
-          importedRecord.name = pCustomName;
         }
         
         // Build response object
