@@ -299,8 +299,13 @@ const importDirectory = async (input: ImportDirectoryInput): Promise<ImportDirec
               importGroup = currentGroup;
             }
             
-            // Import the file
-            const importedRecord = theApp.importPath(fileInfo.path, { to: importGroup });
+            // Build import options
+            const importJxaOptions = {};
+            importJxaOptions["to"] = importGroup;
+            importJxaOptions["asIndexed"] = true; // Default to creating index entries
+
+            // Import the file using the more powerful import method
+            const importedRecord = theApp.import(fileInfo.path, importJxaOptions);
             
             if (importedRecord) {
               const recordInfo = {};

@@ -787,10 +787,14 @@ mcp_client.call("import_directory", {
   - `parentGroupUuid`: Target group UUID (optional)
   - `databaseName`: Target database name (optional)
   - `importOptions`: Comprehensive configuration object
-    - `duplicateDetection`: "skip", "rename", or "replace"
+    - `createIndex`: Boolean (default: true) - Create index entries for imported files
+    - `duplicateDetection`: "skip", "rename", or "replace" - How to handle duplicate files
+    - `preserveCreationDate`: Boolean (default: true) - Maintain original file dates
     - `addTags`: Array of tags to apply to all imported records
-    - `preserveCreationDate`: Maintain original file dates
-    - `recursive`, `fileFilter`, `excludeHidden`: Directory processing options
+    - `recursive`: Boolean (default: true) - Import subdirectories recursively (applies to directory sources)
+    - `fileFilter`: Glob pattern to filter files (e.g., "*.md", "*.{txt,md}")
+    - `excludeHidden`: Boolean (default: true) - Whether to exclude hidden files and directories
+    - `preservePath`: Boolean (default: true) - Whether to preserve directory structure
 
 **Example Usage:**
 ```javascript
@@ -798,9 +802,12 @@ mcp_client.call("import_directory", {
 mcp_client.call("import_with_options", {
   "sourcePaths": ["/archive/project1", "/archive/project2"],
   "importOptions": {
+    "createIndex": true,
     "duplicateDetection": "rename",
+    "preserveCreationDate": true,
     "addTags": ["archived", "legacy"],
-    "fileFilter": "*.{md,txt,js,sh}"
+    "fileFilter": "*.{md,txt,js,sh}",
+    "preservePath": true
   }
 })
 ```
