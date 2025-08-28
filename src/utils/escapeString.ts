@@ -89,5 +89,24 @@ export function isJXASafeString(input: string): boolean {
 		return false;
 	}
 
-	return true;
+  // Check for patterns that could cause JXA syntax errors even when escaped
+  // These patterns are known to cause "Unexpected EOF" and similar syntax errors
+  const dangerousPatterns = [
+    // Complex quote patterns that confuse JXA parser
+    /['"]{2,}/,  // Multiple consecutive quotes
+    /['"].*Application\s*\(/,  // Quote followed by Application call
+    /['"].*doScript/,  // Quote followed by doScript
+    /['"].*theApp\./,  // Quote followed by theApp
+    // Unmatched quote patterns that could break string parsing
+    /^[^'"]*'[^']*$/,  // Single quote without matching quote
+    /^[^'"]*"[^"]*$/,  // Double quote without matching quote
+  ];
+
+  for (const pattern of dangerousPatterns) {
+    if (pattern.test(input)) {
+      return false;
+    }
+  }
+
+  return true;
 }

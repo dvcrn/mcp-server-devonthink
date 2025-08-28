@@ -2,7 +2,8 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { type Tool, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../applescript/execute.js";
-import { escapeStringForJXA } from "../utils/escapeString.js";
+import { escapeStringForJXA, isJXASafeString } from "../utils/escapeString.js";
+import { validateFilePath, createSecurityMessage } from "../utils/pathSecurity.js";
 
 const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
@@ -44,6 +45,35 @@ interface ImportFileResult {
 
 const importFile = async (input: ImportFileInput): Promise<ImportFileResult> => {
   const { filePath, parentGroupUuid, databaseName, customName } = input;
+
+  // Security validation - check file path for security risks
+  const pathValidation = validateFilePath(filePath, {
+    allowUserHome: true,
+    allowTempFiles: true, // Allow temp files for legitimate use cases
+    allowRelativePaths: false
+  });
+
+  if (!pathValidation.isValid) {
+    return {
+      success: false,
+      error: createSecurityMessage(pathValidation)
+    };
+  }
+
+  // Additional validation for user inputs that go into JXA scripts
+  if (customName && !isJXASafeString(customName)) {
+    return {
+      success: false,
+      error: "Security: Custom name contains patterns that could cause script execution issues"
+    };
+  }
+
+  if (databaseName && !isJXASafeString(databaseName)) {
+    return {
+      success: false,
+      error: "Security: Database name contains unsafe characters"
+    };
+  }
 
   const script = `
     (() => {

@@ -3,6 +3,7 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import { type Tool, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../applescript/execute.js";
 import { escapeStringForJXA } from "../utils/escapeString.js";
+import { validateFilePath, createSecurityMessage } from "../utils/pathSecurity.js";
 
 const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
@@ -66,6 +67,20 @@ interface ImportDirectoryResult {
 
 const importDirectory = async (input: ImportDirectoryInput): Promise<ImportDirectoryResult> => {
   const { directoryPath, parentGroupUuid, databaseName, recursive, fileFilter, excludeHidden, preservePath } = input;
+
+  // Security validation - check directory path for security risks
+  const pathValidation = validateFilePath(directoryPath, {
+    allowUserHome: true,
+    allowTempFiles: true,
+    allowRelativePaths: false
+  });
+
+  if (!pathValidation.isValid) {
+    return {
+      success: false,
+      error: createSecurityMessage(pathValidation)
+    };
+  }
 
   const script = `
     (() => {
