@@ -71,6 +71,7 @@ const importDirectory = async (input: ImportDirectoryInput): Promise<ImportDirec
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
+      const sysEvents = Application("System Events");
       
       try {
         const pDirectoryPath = ${directoryPath ? `"${escapeStringForJXA(directoryPath)}"` : "null"};
@@ -88,26 +89,19 @@ const importDirectory = async (input: ImportDirectoryInput): Promise<ImportDirec
           return JSON.stringify(errorResponse);
         }
         
-        // Check if the source directory exists
-        const sysEvents = Application("System Events");
-        if (!sysEvents.folders[pDirectoryPath].exists()) {
-          const errorResponse = {};
-          errorResponse["success"] = false;
-          errorResponse["error"] = "Directory does not exist: " + pDirectoryPath;
-          return JSON.stringify(errorResponse);
-        }
+        // Let DEVONthink handle directory existence checking during import
         
         // Determine which database to import into
         let targetDatabase;
         if (pDatabaseName) {
-          const databases = theApp.databases.whose({ _match: [ObjectSpecifier().name, pDatabaseName] })();
-          if (databases.length === 0) {
+          const databases = theApp.databases();
+          targetDatabase = databases.find(db => db.name() === pDatabaseName);
+          if (!targetDatabase) {
             const errorResponse = {};
             errorResponse["success"] = false;
             errorResponse["error"] = "Database not found: " + pDatabaseName;
             return JSON.stringify(errorResponse);
           }
-          targetDatabase = databases[0];
         } else {
           targetDatabase = theApp.currentDatabase();
           if (!targetDatabase) {
@@ -279,15 +273,13 @@ const importDirectory = async (input: ImportDirectoryInput): Promise<ImportDirec
                 const folderName = pathParts[j];
                 
                 // Check if group already exists
-                const existingGroups = currentGroup.children.whose({ 
-                  _and: [
-                    [ObjectSpecifier().recordType, "group"],
-                    [ObjectSpecifier().name, folderName]
-                  ]
-                })();
+                const children = currentGroup.children();
+                const existingGroup = children.find(child =>
+                  child.recordType() === "group" && child.name() === folderName
+                );
                 
-                if (existingGroups.length > 0) {
-                  currentGroup = existingGroups[0];
+                if (existingGroup) {
+                  currentGroup = existingGroup;
                 } else {
                   // Create new group
                   currentGroup = theApp.createRecordWith({
@@ -304,8 +296,8 @@ const importDirectory = async (input: ImportDirectoryInput): Promise<ImportDirec
             importJxaOptions["to"] = importGroup;
             importJxaOptions["asIndexed"] = true; // Default to creating index entries
 
-            // Import the file using the more powerful import method
-            const importedRecord = theApp.import(fileInfo.path, importJxaOptions);
+            // Import the file using DEVONthink's importPath method
+            const importedRecord = theApp.importPath(fileInfo.path, importJxaOptions);
             
             if (importedRecord) {
               const recordInfo = {};
