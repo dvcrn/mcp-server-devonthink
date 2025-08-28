@@ -3,6 +3,7 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import { type Tool, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../applescript/execute.js";
 import { escapeStringForJXA } from "../utils/escapeString.js";
+import { validateFilePaths, createSecurityMessage } from "../utils/pathSecurity.js";
 
 const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
@@ -100,6 +101,24 @@ interface ImportWithOptionsResult {
 const importWithOptions = async (input: ImportWithOptionsInput): Promise<ImportWithOptionsResult> => {
   const { sourcePaths, parentGroupUuid, databaseName, importOptions } = input;
   
+  // Security validation - check all source paths for security risks
+  const pathValidation = validateFilePaths(sourcePaths, {
+    allowUserHome: true,
+    allowTempFiles: true,
+    allowRelativePaths: false
+  });
+
+  if (pathValidation.invalid.length > 0) {
+    const blockedPaths = pathValidation.invalid.map(item =>
+      `${item.path}: ${createSecurityMessage(item.result)}`
+    ).join('; ');
+
+    return {
+      success: false,
+      error: `Security validation failed for paths - ${blockedPaths}`
+    };
+  }
+
   // Extract import options with defaults
   const createIndex = importOptions?.createIndex ?? true;
   const duplicateDetection = importOptions?.duplicateDetection ?? "rename";
