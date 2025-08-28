@@ -63,26 +63,19 @@ const importFile = async (input: ImportFileInput): Promise<ImportFileResult> => 
           return JSON.stringify(errorResponse);
         }
         
-        // Check if file exists using System Events
-        const sysEvents = Application("System Events");
-        if (!sysEvents.files[pFilePath].exists()) {
-          const errorResponse = {};
-          errorResponse["success"] = false;
-          errorResponse["error"] = "File does not exist: " + pFilePath;
-          return JSON.stringify(errorResponse);
-        }
+        // Let DEVONthink handle file existence checking during import
         
         // Get target database
         let targetDatabase;
         if (pDatabaseName) {
-          const databases = theApp.databases.whose({ _match: [ObjectSpecifier().name, pDatabaseName] })();
-          if (databases.length === 0) {
+          const databases = theApp.databases();
+          targetDatabase = databases.find(db => db.name() === pDatabaseName);
+          if (!targetDatabase) {
             const errorResponse = {};
             errorResponse["success"] = false;
             errorResponse["error"] = "Database not found: " + pDatabaseName;
             return JSON.stringify(errorResponse);
           }
-          targetDatabase = databases[0];
         } else {
           targetDatabase = theApp.currentDatabase();
           if (!targetDatabase) {
@@ -114,16 +107,18 @@ const importFile = async (input: ImportFileInput): Promise<ImportFileResult> => 
           targetGroup = targetDatabase.incomingGroup();
         }
         
-        // Build import options
+        // Build import options for importPath
         const importJxaOptions = {};
         importJxaOptions["to"] = targetGroup;
         importJxaOptions["asIndexed"] = true; // Default to creating index entries
-        if (pCustomName) {
-          importJxaOptions["name"] = pCustomName;
-        }
 
-        // Import the file using the more powerful import method
-        const importedRecord = theApp.import(pFilePath, importJxaOptions);
+        // Import the file using DEVONthink's importPath method
+        const importedRecord = theApp.importPath(pFilePath, importJxaOptions);
+        
+        // Apply custom name after import if provided (importPath doesn't support name option)
+        if (importedRecord && pCustomName) {
+          importedRecord.name = pCustomName;
+        }
         
         if (!importedRecord) {
           const errorResponse = {};

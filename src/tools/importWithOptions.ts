@@ -141,14 +141,14 @@ const importWithOptions = async (input: ImportWithOptionsInput): Promise<ImportW
         // Get target database
         let targetDatabase;
         if (pDatabaseName) {
-          const databases = theApp.databases.whose({ _match: [ObjectSpecifier().name, pDatabaseName] })();
-          if (databases.length === 0) {
+          const databases = theApp.databases();
+          targetDatabase = databases.find(db => db.name() === pDatabaseName);
+          if (!targetDatabase) {
             const errorResponse = {};
             errorResponse["success"] = false;
             errorResponse["error"] = "Database not found: " + pDatabaseName;
             return JSON.stringify(errorResponse);
           }
-          targetDatabase = databases[0];
         } else {
           targetDatabase = theApp.currentDatabase();
           if (!targetDatabase) {
@@ -230,8 +230,8 @@ const importWithOptions = async (input: ImportWithOptionsInput): Promise<ImportW
         // Helper function to check for duplicates
         function findDuplicateRecord(filename, parentGroup) {
           try {
-            const existingRecords = parentGroup.children.whose({ _match: [ObjectSpecifier().name, filename] })();
-            return existingRecords.length > 0 ? existingRecords[0] : null;
+            const children = parentGroup.children();
+            return children.find(record => record.name() === filename) || null;
           } catch (e) {
             return null;
           }
@@ -261,12 +261,28 @@ const importWithOptions = async (input: ImportWithOptionsInput): Promise<ImportW
         function getFilesFromPath(sourcePath, basePath) {
           const files = [];
           
-          if (!sysEvents.files[sourcePath].exists() && !sysEvents.folders[sourcePath].exists()) {
+          // Safer existence check using try-catch
+          let isFile = false;
+          let isFolder = false;
+          
+          try {
+            isFile = sysEvents.files[sourcePath].exists();
+          } catch (e) {
+            isFile = false;
+          }
+          
+          try {
+            isFolder = sysEvents.folders[sourcePath].exists();
+          } catch (e) {
+            isFolder = false;
+          }
+          
+          if (!isFile && !isFolder) {
             return files;
           }
           
           // Check if it is a file
-          if (sysEvents.files[sourcePath].exists()) {
+          if (isFile) {
             const fileName = sysEvents.files[sourcePath].name();
             
             // Skip hidden files if requested
@@ -341,7 +357,16 @@ const importWithOptions = async (input: ImportWithOptionsInput): Promise<ImportW
         let allFiles = [];
         for (let i = 0; i < pSourcePaths.length; i++) {
           const sourcePath = pSourcePaths[i];
-          const files = getFilesFromPath(sourcePath, sysEvents.folders[sourcePath].exists() ? sourcePath : null);
+          
+          // Safer check for folder existence
+          let isSourceFolder = false;
+          try {
+            isSourceFolder = sysEvents.folders[sourcePath].exists();
+          } catch (e) {
+            isSourceFolder = false;
+          }
+          
+          const files = getFilesFromPath(sourcePath, isSourceFolder ? sourcePath : null);
           allFiles.push(...files);
         }
         
@@ -379,15 +404,13 @@ const importWithOptions = async (input: ImportWithOptionsInput): Promise<ImportW
                 const folderName = pathParts[j];
                 
                 // Check if group already exists
-                const existingGroups = currentGroup.children.whose({ 
-                  _and: [
-                    [ObjectSpecifier().recordType, "group"],
-                    [ObjectSpecifier().name, folderName]
-                  ]
-                })();
+                const children = currentGroup.children();
+                const existingGroup = children.find(child => 
+                  child.recordType() === "group" && child.name() === folderName
+                );
                 
-                if (existingGroups.length > 0) {
-                  currentGroup = existingGroups[0];
+                if (existingGroup) {
+                  currentGroup = existingGroup;
                 } else {
                   // Create new group
                   currentGroup = theApp.createRecordWith({
@@ -430,8 +453,8 @@ const importWithOptions = async (input: ImportWithOptionsInput): Promise<ImportW
               }
             }
             
-            // Import the file using the more powerful import method
-            const importedRecord = theApp.import(fileInfo.path, importJxaOptions);
+            // Import the file using DEVONthink's importPath method
+            const importedRecord = theApp.importPath(fileInfo.path, importJxaOptions);
             
             if (importedRecord) {
               // Apply tags if specified
