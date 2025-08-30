@@ -440,7 +440,7 @@ export class JXAValidator {
    */
   static extractRegexPatterns(script: string): { name: string; pattern: string; flags?: string }[] {
     const patterns: { name: string; pattern: string; flags?: string }[] = [];
-    const regexMatches = script.match(/const\s+(\w+)\s*=\s*new\s+RegExp\("([^"]+)"(?:,\s*"([^"]*)")?\)/g);
+    const regexMatches = script.match(/const\s+(\w+)\s*=\s*new\s+RegExp\("((?:[^"\\]|\\.)*)"(?:,\s*"([^"]*)")?\)/g);
     
     if (regexMatches) {
       regexMatches.forEach(match => {
