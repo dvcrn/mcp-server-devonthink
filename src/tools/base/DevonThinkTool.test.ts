@@ -118,6 +118,67 @@ describe("DevonThinkTool", () => {
 
         // Test arrays
         expect(capturedHelpers.formatValue([1, "two", true])).toBe('[1, "two", true]');
+
+        // Test objects - should use bracket notation to avoid JXA issues
+        const testObject = { name: "test", count: 42, active: true };
+        const formattedObject = capturedHelpers.formatValue(testObject);
+        expect(formattedObject).toContain('const obj = {};');
+        expect(formattedObject).toContain('obj["name"] = "test";');
+        expect(formattedObject).toContain('obj["count"] = 42;');
+        expect(formattedObject).toContain('obj["active"] = true;');
+        expect(formattedObject).toContain('return obj;');
+        expect(formattedObject).toMatch(/^\(function\(\) \{.*\}\)\(\)$/);
+
+        // Test nested object with special characters
+        const nestedObject = { 
+          "key with spaces": "value with 'quotes'", 
+          nested: { inner: true } 
+        };
+        const formattedNested = capturedHelpers.formatValue(nestedObject);
+        expect(formattedNested).toContain('obj["key with spaces"] = "value with \\\'quotes\\\'";');
+        expect(formattedNested).toContain('obj["nested"] = (function() {');
+      });
+
+      it("should handle edge cases in object formatting", async () => {
+        const TestSchema = z.object({}).strict();
+
+        let capturedHelpers: any;
+        const tool = createDevonThinkTool({
+          name: "test_tool",
+          description: "Test",
+          inputSchema: TestSchema,
+          buildScript: (_input, helpers) => {
+            capturedHelpers = helpers;
+            return 'return JSON.stringify({success: true});';
+          },
+        });
+
+        vi.mocked(executeModule.executeJxa).mockResolvedValueOnce({ success: true });
+        await tool.run({});
+
+        // Empty object
+        const emptyObj = capturedHelpers.formatValue({});
+        expect(emptyObj).toContain('const obj = {};');
+        expect(emptyObj).toContain('return obj;');
+
+        // Object with null/undefined values
+        const objWithNulls = capturedHelpers.formatValue({ a: null, b: undefined });
+        expect(objWithNulls).toContain('obj["a"] = null;');
+        expect(objWithNulls).toContain('obj["b"] = null;');
+
+        // Object with array values
+        const objWithArray = capturedHelpers.formatValue({ items: [1, 2, "three"] });
+        expect(objWithArray).toContain('obj["items"] = [1, 2, "three"];');
+
+        // Object with problematic key names
+        const problematicKeys = capturedHelpers.formatValue({ 
+          "key-with-dashes": "value1",
+          "key with spaces": "value2",
+          "key\"with\"quotes": "value3"
+        });
+        expect(problematicKeys).toContain('obj["key-with-dashes"] = "value1";');
+        expect(problematicKeys).toContain('obj["key with spaces"] = "value2";');
+        expect(problematicKeys).toContain('obj["key\\"with\\"quotes"] = "value3";');
       });
     });
 
