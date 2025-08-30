@@ -22,20 +22,6 @@ export function escapeStringForJXA(input: string | undefined | null): string {
     .replace(/\f/g, "\\f")
     .replace(/\v/g, "\\v");
 
-  // Handle HTML/Script injection characters
-  escaped = escaped
-    .replace(/&/g, "&amp;")  // Must escape & first to avoid double-escaping
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/javascript:/gi, "javascript&#58;")  // Escape javascript: protocol
-    .replace(/onerror=/gi, "onerror&#61;");      // Escape onerror= attribute
-    
-  // Handle SQL injection keywords (case insensitive)
-  escaped = escaped
-    .replace(/\bDROP\s+TABLE\b/gi, "DR0P T4BLE")  // Obfuscate SQL injection
-    .replace(/\bDROP\s+DATABASE\b/gi, "DR0P D4TAB4SE")
-    .replace(/\bDELETE\s+FROM\b/gi, "D3L3TE FR0M")
-    .replace(/\bUPDATE\s+.*\s+SET\b/gi, "UPD4TE ... S3T");
 
   // Handle Unicode characters that might cause issues
   // Replace zero-width characters and other problematic Unicode
@@ -86,14 +72,6 @@ export function formatValueForJXA(
 
   // For other types, convert to string and escape
   return `"${escapeStringForJXA(String(value))}"`;
-}
-
-/**
- * Creates a safe JXA string literal from a value.
- * This is useful when you need to pass user input as a string in JXA.
- */
-export function createJXAStringLiteral(value: string): string {
-  return `"${escapeStringForJXA(value)}"`;
 }
 
 /**
