@@ -164,10 +164,11 @@ async function executeJxaOnce<T>(
   try {
     await writeFile(tempFilePath, script, 'utf8');
   } catch (fileError) {
+    const message = fileError instanceof Error ? fileError.message : String(fileError);
     throw new JxaExecutionError(
       JxaErrorType.FileSystemError,
-      `Failed to create temporary JXA script file: ${fileError}`,
-      { script }
+      `Failed to create temporary JXA script file: ${message}`,
+      { script, originalError: fileError instanceof Error ? fileError : undefined }
     );
   }
   
