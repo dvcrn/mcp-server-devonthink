@@ -85,23 +85,26 @@ describe("DevonThinkTool", () => {
   });
 
   describe("ScriptHelpers", () => {
+    let capturedHelpers: any;
+
+    beforeEach(async () => {
+      const TestSchema = z.object({}).strict();
+      const tool = createDevonThinkTool({
+        name: "test_tool",
+        description: "Test",
+        inputSchema: TestSchema,
+        buildScript: (_input, helpers) => {
+          capturedHelpers = helpers;
+          return 'return JSON.stringify({success: true});';
+        },
+      });
+
+      vi.mocked(executeModule.executeJxa).mockResolvedValueOnce({ success: true });
+      await tool.run({});
+    });
+
     describe("formatValue", () => {
-      it("should format different value types correctly", async () => {
-        const TestSchema = z.object({}).strict();
-
-        let capturedHelpers: any;
-        const tool = createDevonThinkTool({
-          name: "test_tool",
-          description: "Test",
-          inputSchema: TestSchema,
-          buildScript: (_input, helpers) => {
-            capturedHelpers = helpers;
-            return 'return JSON.stringify({success: true});';
-          },
-        });
-
-        vi.mocked(executeModule.executeJxa).mockResolvedValueOnce({ success: true });
-        await tool.run({});
+      it("should format different value types correctly", () => {
 
         // Test null and undefined
         expect(capturedHelpers.formatValue(null)).toBe("null");
@@ -139,22 +142,7 @@ describe("DevonThinkTool", () => {
         expect(formattedNested).toContain('obj["nested"] = (function() {');
       });
 
-      it("should handle edge cases in object formatting", async () => {
-        const TestSchema = z.object({}).strict();
-
-        let capturedHelpers: any;
-        const tool = createDevonThinkTool({
-          name: "test_tool",
-          description: "Test",
-          inputSchema: TestSchema,
-          buildScript: (_input, helpers) => {
-            capturedHelpers = helpers;
-            return 'return JSON.stringify({success: true});';
-          },
-        });
-
-        vi.mocked(executeModule.executeJxa).mockResolvedValueOnce({ success: true });
-        await tool.run({});
+      it("should handle edge cases in object formatting", () => {
 
         // Empty object
         const emptyObj = capturedHelpers.formatValue({});
@@ -183,22 +171,7 @@ describe("DevonThinkTool", () => {
     });
 
     describe("wrapInTryCatch", () => {
-      it("should wrap code in try-catch block", async () => {
-        const TestSchema = z.object({}).strict();
-
-        let capturedHelpers: any;
-        const tool = createDevonThinkTool({
-          name: "test_tool",
-          description: "Test",
-          inputSchema: TestSchema,
-          buildScript: (_input, helpers) => {
-            capturedHelpers = helpers;
-            return 'return JSON.stringify({success: true});';
-          },
-        });
-
-        vi.mocked(executeModule.executeJxa).mockResolvedValueOnce({ success: true });
-        await tool.run({});
+      it("should wrap code in try-catch block", () => {
 
         const wrapped = capturedHelpers.wrapInTryCatch("const x = 1;");
         expect(wrapped).toContain("try {");
@@ -207,22 +180,7 @@ describe("DevonThinkTool", () => {
         expect(wrapped).toContain('errorResponse["success"] = false');
       });
 
-      it("should use custom error handler if provided", async () => {
-        const TestSchema = z.object({}).strict();
-
-        let capturedHelpers: any;
-        const tool = createDevonThinkTool({
-          name: "test_tool",
-          description: "Test",
-          inputSchema: TestSchema,
-          buildScript: (_input, helpers) => {
-            capturedHelpers = helpers;
-            return 'return JSON.stringify({success: true});';
-          },
-        });
-
-        vi.mocked(executeModule.executeJxa).mockResolvedValueOnce({ success: true });
-        await tool.run({});
+      it("should use custom error handler if provided", () => {
 
         const wrapped = capturedHelpers.wrapInTryCatch(
           "const x = 1;",
@@ -234,43 +192,13 @@ describe("DevonThinkTool", () => {
     });
 
     describe("buildDatabaseLookup", () => {
-      it("should return current database lookup when no name provided", async () => {
-        const TestSchema = z.object({}).strict();
-
-        let capturedHelpers: any;
-        const tool = createDevonThinkTool({
-          name: "test_tool",
-          description: "Test",
-          inputSchema: TestSchema,
-          buildScript: (_input, helpers) => {
-            capturedHelpers = helpers;
-            return 'return JSON.stringify({success: true});';
-          },
-        });
-
-        vi.mocked(executeModule.executeJxa).mockResolvedValueOnce({ success: true });
-        await tool.run({});
+      it("should return current database lookup when no name provided", () => {
 
         const lookup = capturedHelpers.buildDatabaseLookup();
         expect(lookup).toBe("const targetDatabase = theApp.currentDatabase();");
       });
 
-      it("should build database lookup with name", async () => {
-        const TestSchema = z.object({}).strict();
-
-        let capturedHelpers: any;
-        const tool = createDevonThinkTool({
-          name: "test_tool",
-          description: "Test",
-          inputSchema: TestSchema,
-          buildScript: (_input, helpers) => {
-            capturedHelpers = helpers;
-            return 'return JSON.stringify({success: true});';
-          },
-        });
-
-        vi.mocked(executeModule.executeJxa).mockResolvedValueOnce({ success: true });
-        await tool.run({});
+      it("should build database lookup with name", () => {
 
         const lookup = capturedHelpers.buildDatabaseLookup("Test DB");
         expect(lookup).toContain("const databases = theApp.databases();");
@@ -280,44 +208,14 @@ describe("DevonThinkTool", () => {
     });
 
     describe("buildRecordLookup", () => {
-      it("should build UUID lookup", async () => {
-        const TestSchema = z.object({}).strict();
-
-        let capturedHelpers: any;
-        const tool = createDevonThinkTool({
-          name: "test_tool",
-          description: "Test",
-          inputSchema: TestSchema,
-          buildScript: (_input, helpers) => {
-            capturedHelpers = helpers;
-            return 'return JSON.stringify({success: true});';
-          },
-        });
-
-        vi.mocked(executeModule.executeJxa).mockResolvedValueOnce({ success: true });
-        await tool.run({});
+      it("should build UUID lookup", () => {
 
         const lookup = capturedHelpers.buildRecordLookup("uuid-123");
         expect(lookup).toContain('theApp.getRecordWithUuid("uuid-123")');
         expect(lookup).toContain("Record not found with UUID: uuid-123");
       });
 
-      it("should build ID lookup with database", async () => {
-        const TestSchema = z.object({}).strict();
-
-        let capturedHelpers: any;
-        const tool = createDevonThinkTool({
-          name: "test_tool",
-          description: "Test",
-          inputSchema: TestSchema,
-          buildScript: (_input, helpers) => {
-            capturedHelpers = helpers;
-            return 'return JSON.stringify({success: true});';
-          },
-        });
-
-        vi.mocked(executeModule.executeJxa).mockResolvedValueOnce({ success: true });
-        await tool.run({});
+      it("should build ID lookup with database", () => {
 
         const lookup = capturedHelpers.buildRecordLookup(undefined, 123, undefined, "Test DB");
         expect(lookup).toContain("const databases = theApp.databases();");
@@ -325,44 +223,14 @@ describe("DevonThinkTool", () => {
         expect(lookup).toContain("Record not found with ID: 123");
       });
 
-      it("should build path lookup", async () => {
-        const TestSchema = z.object({}).strict();
-
-        let capturedHelpers: any;
-        const tool = createDevonThinkTool({
-          name: "test_tool",
-          description: "Test",
-          inputSchema: TestSchema,
-          buildScript: (_input, helpers) => {
-            capturedHelpers = helpers;
-            return 'return JSON.stringify({success: true});';
-          },
-        });
-
-        vi.mocked(executeModule.executeJxa).mockResolvedValueOnce({ success: true });
-        await tool.run({});
+      it("should build path lookup", () => {
 
         const lookup = capturedHelpers.buildRecordLookup(undefined, undefined, "/test/path");
         expect(lookup).toContain('targetDatabase.getRecordAt("/test/path")');
         expect(lookup).toContain("Record not found at path: /test/path");
       });
 
-      it("should throw error when no identifier provided", async () => {
-        const TestSchema = z.object({}).strict();
-
-        let capturedHelpers: any;
-        const tool = createDevonThinkTool({
-          name: "test_tool",
-          description: "Test",
-          inputSchema: TestSchema,
-          buildScript: (_input, helpers) => {
-            capturedHelpers = helpers;
-            return 'return JSON.stringify({success: true});';
-          },
-        });
-
-        vi.mocked(executeModule.executeJxa).mockResolvedValueOnce({ success: true });
-        await tool.run({});
+      it("should throw error when no identifier provided", () => {
 
         const lookup = capturedHelpers.buildRecordLookup();
         expect(lookup).toContain("No record identifier provided");
@@ -371,10 +239,11 @@ describe("DevonThinkTool", () => {
   });
 
   describe("String escaping", () => {
-    it("should escape strings properly in formatValue", async () => {
-      const TestSchema = z.object({}).strict();
+    let capturedHelpers: any;
 
-      let capturedHelpers: any;
+    beforeEach(async () => {
+      vi.clearAllMocks(); // Clear previous mock calls
+      const TestSchema = z.object({}).strict();
       const tool = createDevonThinkTool({
         name: "test_tool",
         description: "Test",
@@ -387,6 +256,9 @@ describe("DevonThinkTool", () => {
 
       vi.mocked(executeModule.executeJxa).mockResolvedValueOnce({ success: true });
       await tool.run({});
+    });
+
+    it("should escape strings properly in formatValue", () => {
 
       // Test escaping quotes
       expect(capturedHelpers.formatValue('test"with"quotes')).toBe('"test\\"with\\"quotes"');
@@ -397,22 +269,7 @@ describe("DevonThinkTool", () => {
       expect(capturedHelpers.formatValue("test\twith\ttabs")).toBe('"test\\twith\\ttabs"');
     });
 
-    it("should use escapeString helper directly", async () => {
-      const TestSchema = z.object({}).strict();
-
-      let capturedHelpers: any;
-      const tool = createDevonThinkTool({
-        name: "test_tool",
-        description: "Test",
-        inputSchema: TestSchema,
-        buildScript: (_input, helpers) => {
-          capturedHelpers = helpers;
-          return 'return JSON.stringify({success: true});';
-        },
-      });
-
-      vi.mocked(executeModule.executeJxa).mockResolvedValueOnce({ success: true });
-      await tool.run({});
+    it("should use escapeString helper directly", () => {
 
       // Test the escapeString helper
       expect(capturedHelpers.escapeString('test"string')).toBe('test\\"string');
@@ -420,7 +277,9 @@ describe("DevonThinkTool", () => {
       expect(capturedHelpers.escapeString("test\\string")).toBe("test\\\\string");
     });
 
-    it("should prevent executeJxa fragility with single quotes", async () => {
+    it("should handle single quotes correctly with stdin execution", async () => {
+      vi.clearAllMocks(); // Clear mocks from beforeEach since this test creates its own tool
+      
       const TestSchema = z.object({
         problematicString: z.string(),
       }).strict();
