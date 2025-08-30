@@ -157,7 +157,7 @@ async function executeJxaOnce<T>(
   options: { timeout: number; debug: boolean }
 ): Promise<T> {
   // Generate unique temporary file name
-  const tempFileName = `jxa_script_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.js`;
+  const tempFileName = `jxa_script_${Date.now()}_${Math.random().toString(36).substring(2, 11)}.js`;
   const tempFilePath = join(tmpdir(), tempFileName);
   
   // Write script to temporary file - only this should throw FileSystemError
