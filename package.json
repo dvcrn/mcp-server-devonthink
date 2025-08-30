@@ -24,7 +24,11 @@
         "format": "biome format --write",
         "lint:fix": "biome lint --fix",
         "start": "node dist/index.js",
-        "type-check": "tsc --noEmit"
+        "type-check": "tsc --noEmit",
+        "test": "vitest",
+        "test:ui": "vitest --ui",
+        "test:run": "vitest run",
+        "test:coverage": "vitest run --coverage"
     },
     "dependencies": {
         "@modelcontextprotocol/sdk": "1.0.1",
