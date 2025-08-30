@@ -160,70 +160,9 @@ async function executeJxaOnce<T>(
   const tempFileName = `jxa_script_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.js`;
   const tempFilePath = join(tmpdir(), tempFileName);
   
+  // Write script to temporary file - only this should throw FileSystemError
   try {
-    // Write script to temporary file
     await writeFile(tempFilePath, script, 'utf8');
-    
-    // Execute using file path with timeout
-    const command = `osascript -l JavaScript "${tempFilePath}"`;
-    
-    return await new Promise<T>((resolve, reject) => {
-      const proc = exec(command, (error, stdout, stderr) => {
-        // Clean up temporary file (unless in debug mode)
-        if (!options.debug) {
-          unlink(tempFilePath).catch(() => {
-            // Ignore cleanup errors
-          });
-        } else {
-          console.log(`Debug mode: Script preserved at ${tempFilePath}`);
-        }
-        
-        // Handle execution errors
-        if (error) {
-          const errorType = classifyError(error, stderr);
-          return reject(new JxaExecutionError(
-            errorType,
-            `JXA execution failed: ${error.message}`,
-            { script, stdout, stderr, originalError: error }
-          ));
-        }
-        
-        if (stderr && !stdout) {
-          const errorType = classifyError(stderr);
-          return reject(new JxaExecutionError(
-            errorType,
-            `JXA error: ${stderr}`,
-            { script, stdout, stderr }
-          ));
-        }
-        
-        // Parse and return result
-        try {
-          const result = JSON.parse(stdout.trim());
-          resolve(result as T);
-        } catch (parseError) {
-          reject(new JxaExecutionError(
-            JxaErrorType.ParseError,
-            `Failed to parse JXA output: ${parseError}`,
-            { script, stdout, stderr }
-          ));
-        }
-      });
-      
-      // Set up timeout
-      const timeoutHandle = setTimeout(() => {
-        proc.kill('SIGTERM');
-        reject(new JxaExecutionError(
-          JxaErrorType.Timeout,
-          `JXA execution timed out after ${options.timeout}ms`,
-          { script }
-        ));
-      }, options.timeout);
-      
-      // Clear timeout if process completes
-      proc.on('exit', () => clearTimeout(timeoutHandle));
-    });
-    
   } catch (fileError) {
     throw new JxaExecutionError(
       JxaErrorType.FileSystemError,
@@ -231,6 +170,66 @@ async function executeJxaOnce<T>(
       { script }
     );
   }
+  
+  // Execute using file path with timeout - errors here should be properly classified
+  const command = `osascript -l JavaScript "${tempFilePath}"`;
+  
+  return new Promise<T>((resolve, reject) => {
+    const proc = exec(command, (error, stdout, stderr) => {
+      // Clean up temporary file (unless in debug mode)
+      if (!options.debug) {
+        unlink(tempFilePath).catch(() => {
+          // Ignore cleanup errors
+        });
+      } else {
+        console.log(`Debug mode: Script preserved at ${tempFilePath}`);
+      }
+      
+      // Handle execution errors
+      if (error) {
+        const errorType = classifyError(error, stderr);
+        return reject(new JxaExecutionError(
+          errorType,
+          `JXA execution failed: ${error.message}`,
+          { script, stdout, stderr, originalError: error }
+        ));
+      }
+      
+      if (stderr && !stdout) {
+        const errorType = classifyError(stderr);
+        return reject(new JxaExecutionError(
+          errorType,
+          `JXA error: ${stderr}`,
+          { script, stdout, stderr }
+        ));
+      }
+      
+      // Parse and return result
+      try {
+        const result = JSON.parse(stdout.trim());
+        resolve(result as T);
+      } catch (parseError) {
+        reject(new JxaExecutionError(
+          JxaErrorType.ParseError,
+          `Failed to parse JXA output: ${parseError}`,
+          { script, stdout, stderr }
+        ));
+      }
+    });
+    
+    // Set up timeout
+    const timeoutHandle = setTimeout(() => {
+      proc.kill('SIGTERM');
+      reject(new JxaExecutionError(
+        JxaErrorType.Timeout,
+        `JXA execution timed out after ${options.timeout}ms`,
+        { script }
+      ));
+    }, options.timeout);
+    
+    // Clear timeout if process completes
+    proc.on('exit', () => clearTimeout(timeoutHandle));
+  });
 }
 
 /**
