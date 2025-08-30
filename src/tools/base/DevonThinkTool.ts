@@ -79,7 +79,19 @@ export abstract class DevonThinkTool<TInput = any, TResult extends DevonThinkRes
     // Wrap in IIFE if not already wrapped
     const wrappedScript = script.trim().startsWith('(') ? script : `(() => { ${script} })();`;
     
-    // Execute and return result
+    // CRITICAL WARNING: executeJxa has a fragility with single quotes (')
+    // It escapes scripts for shell execution by replacing all single quotes with ''
+    // This can corrupt valid JavaScript containing single quotes like: const str = "it's an example";
+    // 
+    // ALWAYS use the provided helper functions when building scripts:
+    // - helpers.formatValue() for any user input or string literals
+    // - helpers.escapeString() for manual string escaping  
+    // - helpers.wrapInTryCatch() for error handling
+    // 
+    // DO NOT manually construct scripts with single quotes or unescaped user input!
+    // This will likely cause script execution failures.
+    //
+    // Long-term solution: Modify executeJxa to pass scripts via stdin to avoid shell escaping entirely.
     return await executeJxa<TResult>(wrappedScript);
   }
   

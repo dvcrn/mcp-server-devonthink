@@ -358,5 +358,48 @@ describe("DevonThinkTool", () => {
       expect(capturedHelpers.escapeString("test\nstring")).toBe("test\\nstring");
       expect(capturedHelpers.escapeString("test\\string")).toBe("test\\\\string");
     });
+
+    it("should prevent executeJxa fragility with single quotes", async () => {
+      const TestSchema = z.object({
+        problematicString: z.string(),
+      }).strict();
+
+      const tool = createDevonThinkTool({
+        name: "fragility_test",
+        description: "Test single quote handling",
+        inputSchema: TestSchema,
+        buildScript: (input, helpers) => {
+          // This would be problematic if not using helpers:
+          // const badScript = `const str = "${input.problematicString}";` // DON'T DO THIS
+          
+          // This is safe because formatValue properly escapes:
+          return helpers.wrapInTryCatch(`
+            const str = ${helpers.formatValue(input.problematicString)};
+            const result = {};
+            result["success"] = true;
+            result["processedString"] = str;
+            return JSON.stringify(result);
+          `);
+        },
+      });
+
+      vi.mocked(executeModule.executeJxa).mockResolvedValueOnce({ 
+        success: true, 
+        processedString: "it's working properly" 
+      });
+
+      const result = await tool.run({ 
+        problematicString: "it's working properly" 
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.processedString).toBe("it's working properly");
+      expect(executeModule.executeJxa).toHaveBeenCalledTimes(1);
+      
+      // Verify the generated script doesn't have unescaped single quotes
+      const calledScript = vi.mocked(executeModule.executeJxa).mock.calls[0][0];
+      expect(calledScript).toContain(`"it\\'s working properly"`);
+      expect(calledScript).not.toMatch(/[^\\]'[^']/); // No unescaped single quotes
+    });
   });
 });
