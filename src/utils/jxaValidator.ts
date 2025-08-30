@@ -357,9 +357,13 @@ export class JXAValidator {
     warnings: ValidationWarning[], 
     suggestions: string[]
   ): void {
-    // Check for nested loops
+    // Remove string literals to avoid false positives
+    const scriptWithoutStrings = JXAValidator.removeStringLiterals(script);
+    const linesWithoutStrings = lines.map(line => JXAValidator.removeStringLiterals(line));
+    
+    // Check for nested loops (using cleaned lines to avoid strings)
     let nestedLoopDepth = 0;
-    lines.forEach((line, index) => {
+    linesWithoutStrings.forEach((line, index) => {
       if (/for\s*\(/.test(line)) {
         nestedLoopDepth++;
         if (nestedLoopDepth > 2) {
@@ -376,19 +380,24 @@ export class JXAValidator {
       }
     });
 
-    // Check for large document processing
-    if (script.includes('searchResults') || script.includes('children()')) {
+    // Check for large document processing (using cleaned script)
+    if (scriptWithoutStrings.includes('searchResults') || scriptWithoutStrings.includes('children()')) {
       suggestions.push('Consider limiting document collection size for better performance');
     }
 
-    // Check for string concatenation in loops
-    lines.forEach((line, index) => {
-      if (line.includes('+=') && line.includes('"')) {
-        warnings.push({
-          type: 'performance',
-          message: 'String concatenation in loops can be slow - consider using array.join()',
-          line: index + 1
-        });
+    // Check for string concatenation in loops (using cleaned lines)
+    linesWithoutStrings.forEach((line, index) => {
+      // Only flag if += is present and we're actually dealing with strings
+      // Check the original line for quotes to confirm it's string concatenation
+      if (line.includes('+=') && lines[index].includes('"')) {
+        // But only if the += is not inside a string literal itself
+        if (line.includes('+=')) {
+          warnings.push({
+            type: 'performance',
+            message: 'String concatenation in loops can be slow - consider using array.join()',
+            line: index + 1
+          });
+        }
       }
     });
   }
