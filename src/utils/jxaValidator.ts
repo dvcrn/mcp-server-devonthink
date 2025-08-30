@@ -48,9 +48,10 @@ export class JXAValidator {
     { pattern: /let\s+\{[^}]+\}\s*=/, message: 'Destructuring assignment is not supported in JXA' },
     { pattern: /class\s+[a-zA-Z_]/, message: 'ES6 classes are not supported in JXA' },
     
-    // Object literal patterns that cause issues
-    { pattern: /\{\s*[a-zA-Z_$][a-zA-Z0-9_$]*\s*:/, message: 'Use bracket notation instead of object literal syntax for JXA compatibility' },
-    { pattern: /\{\s*\[[^\]]+\]\s*:/, message: 'Computed property names in object literals are not supported in JXA' }
+    // Object literal patterns that cause issues - more specific patterns to avoid false positives
+    // Target object literals in assignments and returns, not labeled statements
+    { pattern: /(?:=\s*|return\s+|:\s*)\{\s*[a-zA-Z_$][a-zA-Z0-9_$]*\s*:/, message: 'Use bracket notation instead of object literal syntax for JXA compatibility' },
+    { pattern: /(?:=\s*|return\s+|:\s*)\{\s*\[[^\]]+\]\s*:/, message: 'Computed property names in object literals are not supported in JXA' }
   ];
 
   private static readonly ESCAPING_ISSUES = [
