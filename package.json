@@ -28,7 +28,8 @@
         "test": "vitest",
         "test:ui": "vitest --ui",
         "test:run": "vitest run",
-        "test:coverage": "vitest run --coverage"
+        "test:coverage": "vitest run --coverage",
+        "test:integration": "npm run build && node test-tools-integration.js"
     },
     "dependencies": {
         "@modelcontextprotocol/sdk": "1.0.1",

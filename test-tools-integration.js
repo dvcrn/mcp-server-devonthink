@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * Test script for PR2 - Enhanced Error Handling + Tool Migration
+ * Integration tests for DEVONthink MCP tools
+ * Tests the actual tools with real JXA execution
  */
 
 import { isRunningTool } from './dist/tools/isRunning.js';
