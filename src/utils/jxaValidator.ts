@@ -61,6 +61,49 @@ export class JXAValidator {
     { pattern: /split\("[^"]*\\{2,}/, message: 'Complex escaping in split() call may cause issues' }
   ];
 
+  // Built-in functions Set for O(1) lookup performance
+  private static readonly BUILT_IN_FUNCTIONS = new Set([
+    // JavaScript built-ins
+    'Array', 'Object', 'String', 'Number', 'Boolean', 'Function', 'Date', 'RegExp',
+    'Math', 'JSON', 'parseInt', 'parseFloat', 'isNaN', 'isFinite', 'decodeURI',
+    'encodeURI', 'decodeURIComponent', 'encodeURIComponent', 'eval',
+    'console', 'setTimeout', 'setInterval', 'clearTimeout', 'clearInterval',
+    
+    // Array methods
+    'push', 'pop', 'shift', 'unshift', 'slice', 'splice', 'join', 'concat',
+    'reverse', 'sort', 'filter', 'map', 'forEach', 'reduce', 'find', 'indexOf',
+    'lastIndexOf', 'includes', 'some', 'every',
+    
+    // String methods  
+    'charAt', 'charCodeAt', 'concat', 'indexOf', 'lastIndexOf', 'match',
+    'replace', 'search', 'slice', 'split', 'substr', 'substring', 'toLowerCase',
+    'toUpperCase', 'trim', 'includes', 'startsWith', 'endsWith',
+    
+    // Object methods
+    'hasOwnProperty', 'toString', 'valueOf',
+    
+    // DEVONthink Application methods
+    'Application', 'running', 'getRecordWithUuid', 'getRecordWithId', 'getRecordAt',
+    'search', 'databases', 'currentDatabase', 'getChatResponseForMessage',
+    
+    // DEVONthink record methods (these will be called on record objects)
+    'uuid', 'name', 'type', 'recordType', 'location', 'path', 'children',
+    'creationDate', 'modificationDate', 'size', 'wordCount', 'database',
+    'tags', 'comment', 'rating', 'flagged', 'unread', 'locking',
+    
+    // Common utility functions we might define
+    'Error', 'test', 'exec', 'match',
+    
+    // JavaScript keywords that look like function calls in regex
+    'if', 'else', 'while', 'for', 'do', 'switch', 'try', 'catch', 'finally',
+    'throw', 'return', 'break', 'continue', 'function', 'var', 'let', 'const',
+    'new', 'this', 'typeof', 'instanceof', 'in', 'of', 'delete', 'void',
+    
+    // Common method names that are called on objects
+    'stringify', 'parse', 'now', 'max', 'min', 'floor', 'ceil', 'round',
+    'abs', 'random', 'sqrt', 'pow'
+  ]);
+
   /**
    * Validate a JXA script for common issues
    */
@@ -302,51 +345,10 @@ export class JXAValidator {
 
   /**
    * Check if a function name is a built-in JavaScript or DEVONthink function
+   * Uses a Set for O(1) lookup performance instead of Array.includes O(n)
    */
   private static isBuiltInFunction(funcName: string): boolean {
-    const builtInFunctions = [
-      // JavaScript built-ins
-      'Array', 'Object', 'String', 'Number', 'Boolean', 'Function', 'Date', 'RegExp',
-      'Math', 'JSON', 'parseInt', 'parseFloat', 'isNaN', 'isFinite', 'decodeURI',
-      'encodeURI', 'decodeURIComponent', 'encodeURIComponent', 'eval',
-      'console', 'setTimeout', 'setInterval', 'clearTimeout', 'clearInterval',
-      
-      // Array methods
-      'push', 'pop', 'shift', 'unshift', 'slice', 'splice', 'join', 'concat',
-      'reverse', 'sort', 'filter', 'map', 'forEach', 'reduce', 'find', 'indexOf',
-      'lastIndexOf', 'includes', 'some', 'every',
-      
-      // String methods  
-      'charAt', 'charCodeAt', 'concat', 'indexOf', 'lastIndexOf', 'match',
-      'replace', 'search', 'slice', 'split', 'substr', 'substring', 'toLowerCase',
-      'toUpperCase', 'trim', 'includes', 'startsWith', 'endsWith',
-      
-      // Object methods
-      'hasOwnProperty', 'toString', 'valueOf',
-      
-      // DEVONthink Application methods
-      'Application', 'running', 'getRecordWithUuid', 'getRecordWithId', 'getRecordAt',
-      'search', 'databases', 'currentDatabase', 'getChatResponseForMessage',
-      
-      // DEVONthink record methods (these will be called on record objects)
-      'uuid', 'name', 'type', 'recordType', 'location', 'path', 'children',
-      'creationDate', 'modificationDate', 'size', 'wordCount', 'database',
-      'tags', 'comment', 'rating', 'flagged', 'unread', 'locking',
-      
-      // Common utility functions we might define
-      'Error', 'test', 'exec', 'match',
-      
-      // JavaScript keywords that look like function calls in regex
-      'if', 'else', 'while', 'for', 'do', 'switch', 'try', 'catch', 'finally',
-      'throw', 'return', 'break', 'continue', 'function', 'var', 'let', 'const',
-      'new', 'this', 'typeof', 'instanceof', 'in', 'of', 'delete', 'void',
-      
-      // Common method names that are called on objects
-      'stringify', 'parse', 'now', 'max', 'min', 'floor', 'ceil', 'round',
-      'abs', 'random', 'sqrt', 'pow'
-    ];
-    
-    return builtInFunctions.includes(funcName);
+    return JXAValidator.BUILT_IN_FUNCTIONS.has(funcName);
   }
 
   private static checkPerformanceIssues(
