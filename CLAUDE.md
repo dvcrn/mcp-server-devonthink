@@ -597,7 +597,3 @@ search({ query: "name:foo kind:pdf" })
 - Always validate that paths are DEVONthink location paths, not filesystem paths
 - Use proper date syntax for search queries
 - Prefer UUID or ID+Database over path-based lookups when possible
-
-## Task Master AI Instructions
-**Import Task Master's development workflow commands and guidelines, treat as if import is in the main CLAUDE.md file.**
-@./.taskmaster/CLAUDE.md
