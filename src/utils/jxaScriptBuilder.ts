@@ -272,15 +272,5 @@ theApp.includeStandardAdditions = true;
       .join('\n');
   }
 
-  /**
-   * Create a new builder with common DEVONthink setup
-   */
-  static createWithDefaults(): JXAScriptBuilder {
-    const builder = new JXAScriptBuilder();
-    
-    // No default dependencies needed - setup is handled in build()
-    
-    return builder;
-  }
 }
 

@@ -27,7 +27,7 @@ const script = `
 ```typescript
 import { JXAScriptBuilder } from '../utils/jxaScriptBuilder.js';
 
-const builder = JXAScriptBuilder.createWithDefaults();
+const builder = new JXAScriptBuilder();
 builder
   .addCodeBlock(`
     const isRunning = theApp.running();
@@ -57,7 +57,7 @@ const script = `
 
 ### After (Automatic Escaping)
 ```typescript
-const builder = JXAScriptBuilder.createWithDefaults();
+const builder = new JXAScriptBuilder();
 builder
   .addVariable('name', name)
   .addVariable('content', content)
