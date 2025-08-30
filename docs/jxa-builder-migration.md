@@ -61,7 +61,7 @@ const builder = JXAScriptBuilder.createWithDefaults();
 builder
   .addVariable('name', name)
   .addVariable('content', content)
-  .addVariable('tags', tags || [], 'raw')
+  .addVariable('tags', JSON.stringify(tags || []), 'raw')
   .addCodeBlock(`
     // Use variables directly - they're already escaped
     const record = theApp.createRecord({
