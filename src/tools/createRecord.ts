@@ -79,7 +79,7 @@ const createRecord = async (
   }
 
   // Build script using JXA Script Builder
-  const builder = JXAScriptBuilder.createWithDefaults();
+  const builder = new JXAScriptBuilder();
   
   // Add variables with automatic escaping
   builder

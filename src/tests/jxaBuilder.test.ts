@@ -5,7 +5,7 @@ import { JXAValidator } from '../utils/jxaValidator.js';
 describe('JXAScriptBuilder', () => {
   describe('Variable Handling', () => {
     it('should escape string variables correctly', () => {
-      const builder = JXAScriptBuilder.createWithDefaults();
+      const builder = new JXAScriptBuilder();
       builder.addVariable('testString', 'Hello "World" with \'quotes\'');
       
       const script = builder.build();
@@ -13,7 +13,7 @@ describe('JXAScriptBuilder', () => {
     });
 
     it('should handle null and undefined values', () => {
-      const builder = JXAScriptBuilder.createWithDefaults();
+      const builder = new JXAScriptBuilder();
       builder
         .addVariable('nullVar', null)
         .addVariable('undefinedVar', undefined);
@@ -24,7 +24,7 @@ describe('JXAScriptBuilder', () => {
     });
 
     it('should handle different types correctly', () => {
-      const builder = JXAScriptBuilder.createWithDefaults();
+      const builder = new JXAScriptBuilder();
       builder
         .addVariable('stringVar', 'test')
         .addVariable('numberVar', 42)
@@ -37,14 +37,14 @@ describe('JXAScriptBuilder', () => {
     });
 
     it('should reject invalid variable names', () => {
-      const builder = JXAScriptBuilder.createWithDefaults();
+      const builder = new JXAScriptBuilder();
       expect(() => {
         builder.addVariable('123invalid', 'value');
       }).toThrow('Invalid JXA variable name');
     });
 
     it('should reject unsafe strings', () => {
-      const builder = JXAScriptBuilder.createWithDefaults();
+      const builder = new JXAScriptBuilder();
       const unsafeString = 'test\x00null';
       expect(() => {
         builder.addVariable('test', unsafeString);
@@ -54,7 +54,7 @@ describe('JXAScriptBuilder', () => {
 
   describe('Object Creation', () => {
     it('should create objects using bracket notation', () => {
-      const builder = JXAScriptBuilder.createWithDefaults();
+      const builder = new JXAScriptBuilder();
       builder.createObject('testObj', [
         { key: 'name', value: 'Test' },
         { key: 'count', value: 5 },
@@ -69,7 +69,7 @@ describe('JXAScriptBuilder', () => {
     });
 
     it('should handle null values in objects', () => {
-      const builder = JXAScriptBuilder.createWithDefaults();
+      const builder = new JXAScriptBuilder();
       builder.createObject('testObj', [
         { key: 'nullProp', value: null }
       ]);
@@ -81,7 +81,7 @@ describe('JXAScriptBuilder', () => {
 
   describe('Error Handling', () => {
     it('should add try-catch blocks', () => {
-      const builder = JXAScriptBuilder.createWithDefaults();
+      const builder = new JXAScriptBuilder();
       builder.addTryCatch('const result = doSomething();');
       
       const script = builder.build();
@@ -91,7 +91,7 @@ describe('JXAScriptBuilder', () => {
     });
 
     it('should use custom error handlers', () => {
-      const builder = JXAScriptBuilder.createWithDefaults();
+      const builder = new JXAScriptBuilder();
       builder.addTryCatch(
         'const result = doSomething();',
         'return "Custom error: " + error;'
@@ -104,7 +104,7 @@ describe('JXAScriptBuilder', () => {
 
   describe('Script Validation', () => {
     it('should detect object literal syntax issues', () => {
-      const builder = JXAScriptBuilder.createWithDefaults();
+      const builder = new JXAScriptBuilder();
       builder.addCodeBlock('const obj = { key: "value" };');
       
       const validation = builder.validate();
@@ -118,7 +118,7 @@ describe('JXAScriptBuilder', () => {
     });
 
     it('should validate safe scripts', () => {
-      const builder = JXAScriptBuilder.createWithDefaults();
+      const builder = new JXAScriptBuilder();
       builder.addCodeBlock(`
         const obj = {};
         obj["key"] = "value";
@@ -131,7 +131,7 @@ describe('JXAScriptBuilder', () => {
     });
 
     it('should detect template literals', () => {
-      const builder = JXAScriptBuilder.createWithDefaults();
+      const builder = new JXAScriptBuilder();
       
       // addCodeBlock throws an error for template literals, it doesn't just validate
       expect(() => {
@@ -142,7 +142,7 @@ describe('JXAScriptBuilder', () => {
 
   describe('Regex Patterns', () => {
     it('should add regex patterns correctly', () => {
-      const builder = JXAScriptBuilder.createWithDefaults();
+      const builder = new JXAScriptBuilder();
       builder.addRegexPattern('emailPattern', '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}', 'g');
       
       const script = builder.build();
@@ -152,7 +152,7 @@ describe('JXAScriptBuilder', () => {
 
   describe('Conditional Blocks', () => {
     it('should add if-else blocks', () => {
-      const builder = JXAScriptBuilder.createWithDefaults();
+      const builder = new JXAScriptBuilder();
       builder.addConditional(
         'value > 10',
         'result = "large";',

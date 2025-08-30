@@ -11,7 +11,7 @@ const IsRunningSchema = z.object({}).strict();
 
 const isRunning = async (): Promise<{ isRunning: boolean }> => {
   // Use JXA Script Builder for clean, validated script generation
-  const builder = JXAScriptBuilder.createWithDefaults();
+  const builder = new JXAScriptBuilder();
   
   builder.addCodeBlock(`
     // Check if DEVONthink is running
