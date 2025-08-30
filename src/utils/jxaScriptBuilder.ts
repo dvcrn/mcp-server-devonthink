@@ -29,15 +29,9 @@ export interface JXAObjectProperty {
   value: string | number | boolean | null;
 }
 
-export interface JXAScriptFragment {
-  code: string;
-  variables?: JXAVariable[];
-}
-
 // Core script builder class
 export class JXAScriptBuilder {
   private variables: Map<string, JXAVariable> = new Map();
-  private functions: Map<string, JXAScriptFragment> = new Map();
   private mainCode: string[] = [];
   private regexPatterns: Map<string, JXARegexPattern> = new Map();
 
@@ -129,21 +123,6 @@ export class JXAScriptBuilder {
   }
 
   /**
-   * Add a reusable function/code fragment
-   */
-  addFunction(name: string, fragment: JXAScriptFragment): this {
-    // Add variables
-    if (fragment.variables) {
-      fragment.variables.forEach(v => {
-        this.addVariable(v.name, v.value, v.type);
-      });
-    }
-
-    this.functions.set(name, fragment);
-    return this;
-  }
-
-  /**
    * Add a block of code with automatic formatting
    */
   addCodeBlock(code: string): this {
@@ -208,8 +187,6 @@ const theApp = Application("DEVONthink");
 theApp.includeStandardAdditions = true;
     `.trim()));
 
-    // Functions are added directly, not as separate dependency blocks
-
     // Add variables
     if (this.variables.size > 0) {
       parts.push(this.indent('// Variables'));
@@ -227,16 +204,6 @@ theApp.includeStandardAdditions = true;
         parts.push(this.indent(`const ${name} = new RegExp("${pattern.pattern}"${flags});`));
       });
       parts.push('');
-    }
-
-    // Add functions
-    if (this.functions.size > 0) {
-      parts.push(this.indent('// Functions'));
-      this.functions.forEach((fragment, name) => {
-        // Add the actual function code, not just comments
-        parts.push(this.indent(fragment.code));
-        parts.push('');
-      });
     }
 
     // Add main code
