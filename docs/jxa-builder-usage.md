@@ -20,11 +20,14 @@ import { JXAScriptBuilder } from './utils/jxaScriptBuilder.js';
 // Create a new builder instance
 const builder = new JXAScriptBuilder();
 
-// Add variables with automatic escaping
+// Add variables and code that uses them
 builder
-  .addVariable('uuid', '12345-67890-abcdef')
   .addVariable('searchQuery', 'invoice "Q4 2024"')
-  .addVariable('maxResults', 100);
+  .addVariable('maxResults', 100)
+  .addCodeBlock(`
+    const results = theApp.search(searchQuery, { limit: maxResults });
+    return JSON.stringify(results.map(r => r.name()));
+  `);
 
 // Build and validate the script
 const script = builder.build();
