@@ -2,6 +2,7 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { Tool, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../applescript/execute.js";
+import { JXAScriptBuilder } from "../utils/jxaScriptBuilder.js";
 
 const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
@@ -9,12 +10,34 @@ type ToolInput = z.infer<typeof ToolInputSchema>;
 const IsRunningSchema = z.object({}).strict();
 
 const isRunning = async (): Promise<{ isRunning: boolean }> => {
-  const script = `
-    const app = Application("DEVONthink");
-    const isRunning = app.running();
-    JSON.stringify({ isRunning });
-  `;
-  return await executeJxa<{ isRunning: boolean }>(script);
+  // Use JXA Script Builder for clean, validated script generation
+  const builder = JXAScriptBuilder.createWithDefaults();
+  
+  builder.addCodeBlock(`
+    // Check if DEVONthink is running
+    const isRunning = theApp.running();
+    
+    // Build result using safe bracket notation
+    const result = {};
+    result["isRunning"] = isRunning;
+    
+    return JSON.stringify(result);
+  `);
+
+  // Validate the script before execution
+  const validation = builder.validate();
+  if (!validation.valid) {
+    // In production, we might want to log this
+    console.warn("Script validation warnings:", validation.warnings);
+  }
+
+  const script = builder.build();
+  
+  // Execute with enhanced error handling
+  return await executeJxa<{ isRunning: boolean }>(script, {
+    timeout: 5000, // 5 second timeout for simple check
+    retries: 1 // One retry for network/temp issues
+  });
 };
 
 export const isRunningTool: Tool = {
