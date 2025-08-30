@@ -30,7 +30,6 @@ export interface JXAObjectProperty {
 }
 
 export interface JXAScriptFragment {
-  dependencies?: string[];
   code: string;
   variables?: JXAVariable[];
 }
@@ -40,7 +39,6 @@ export class JXAScriptBuilder {
   private variables: Map<string, JXAVariable> = new Map();
   private functions: Map<string, JXAScriptFragment> = new Map();
   private mainCode: string[] = [];
-  private dependencies: Set<string> = new Set();
   private regexPatterns: Map<string, JXARegexPattern> = new Map();
 
   /**
@@ -134,11 +132,6 @@ export class JXAScriptBuilder {
    * Add a reusable function/code fragment
    */
   addFunction(name: string, fragment: JXAScriptFragment): this {
-    // Add dependencies
-    if (fragment.dependencies) {
-      fragment.dependencies.forEach(dep => this.dependencies.add(dep));
-    }
-
     // Add variables
     if (fragment.variables) {
       fragment.variables.forEach(v => {
@@ -215,8 +208,7 @@ const theApp = Application("DEVONthink");
 theApp.includeStandardAdditions = true;
     `.trim()));
 
-    // Dependencies are now handled as functions, not separate code blocks
-    // This section is disabled to prevent undefined function calls
+    // Functions are added directly, not as separate dependency blocks
 
     // Add variables
     if (this.variables.size > 0) {
