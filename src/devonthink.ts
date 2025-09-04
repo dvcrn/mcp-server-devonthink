@@ -32,11 +32,9 @@ import { replicateRecordTool } from "./tools/replicateRecord.js";
 import { duplicateRecordTool } from "./tools/duplicateRecord.js";
 import { convertRecordTool } from "./tools/convertRecord.js";
 import { updateRecordContentTool } from "./tools/updateRecordContent.js";
-import { askAiAboutDocumentsTool } from "./tools/ai/askAiAboutRecords.js";
+import { askAiAboutDocumentsTool } from "./tools/ai/askAiAboutDocuments.js";
 import { checkAIHealthTool } from "./tools/ai/checkAIHealth.js";
-import { classifyDocumentTool } from "./tools/ai/classifyRecord.js";
 import { createSummaryDocumentTool } from "./tools/ai/createSummaryDocument.js";
-import { findSimilarTool } from "./tools/ai/findSimilar.js";
 import { getToolDocumentationTool } from "./tools/ai/getToolDocumentation.js";
 
 export const createServer = async () => {
@@ -80,9 +78,7 @@ export const createServer = async () => {
 		updateRecordContentTool,
 		askAiAboutDocumentsTool,
 		checkAIHealthTool,
-		classifyDocumentTool,
 		createSummaryDocumentTool,
-		findSimilarTool,
 		getToolDocumentationTool,
 	];
 
