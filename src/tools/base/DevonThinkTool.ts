@@ -24,7 +24,6 @@ export interface DevonThinkToolConfig<TInput, TResult extends DevonThinkResult> 
   description: string;
   inputSchema: ZodSchema<TInput>;
   buildScript: (input: TInput, helpers: ScriptHelpers) => string;
-  resultType?: new () => TResult;
 }
 
 /**

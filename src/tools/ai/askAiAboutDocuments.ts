@@ -1,12 +1,13 @@
 import { z } from "zod";
 import { createDevonThinkTool } from "../base/DevonThinkTool.js";
+import { AI_ENGINES } from "./constants.js";
 
 const AskAiAboutDocumentsSchema = z.object({
   documentUuids: z.array(z.string()).min(1).describe("UUIDs of documents to analyze"),
   question: z.string().min(1).max(10000).describe("The question to ask about the records"),
   temperature: z.number().min(0).max(2).default(0.7).describe("Response creativity (0-2, default: 0.7)"),
   model: z.string().optional().describe("Specific AI model to use"),
-  engine: z.enum(["ChatGPT", "Claude", "Mistral AI", "GPT4All", "LM Studio", "Ollama", "Gemini"]).optional().default("ChatGPT").describe("AI engine to use (default: ChatGPT)"),
+  engine: z.enum(AI_ENGINES).optional().default("ChatGPT").describe("AI engine to use (default: ChatGPT)"),
 }).strict();
 
 export const askAiAboutDocumentsTool = createDevonThinkTool({
@@ -63,8 +64,8 @@ export const askAiAboutDocumentsTool = createDevonThinkTool({
       const chatOptions = {};
       chatOptions["record"] = recordObjects;
       chatOptions["temperature"] = ${temperature};
-      // Default to ChatGPT engine if not specified - API requires this
-      chatOptions["engine"] = ${engine ? helpers.formatValue(engine) : '"ChatGPT"'};
+      // Engine is REQUIRED for API to work (default already applied by Zod)
+      chatOptions["engine"] = ${helpers.formatValue(engine)};
       chatOptions["mode"] = "context"; // Required when passing records
       ${model ? `chatOptions["model"] = ${helpers.formatValue(model)};` : ''}
       

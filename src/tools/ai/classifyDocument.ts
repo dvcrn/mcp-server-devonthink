@@ -17,9 +17,9 @@ export const classifyDocumentTool = createDevonThinkTool({
     const { 
       documentUuid, 
       databaseName, 
-      comparisonType = 'data comparison', 
-      proposeTags = false, 
-      maxSuggestions = 10 
+      comparisonType, 
+      proposeTags, 
+      maxSuggestions 
     } = input;
 
     return helpers.wrapInTryCatch(`

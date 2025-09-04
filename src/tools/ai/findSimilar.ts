@@ -44,7 +44,9 @@ export const findSimilarTool = createDevonThinkTool({
         if (compareResults && compareResults.length > 0) {
           // Process and score the results
           // DEVONthink returns them in order of relevance
-          for (let i = 0; i < Math.min(compareResults.length, ${maxResults} * 2); i++) {
+          // Fetch up to 2x the requested results to account for filtering (duplicates, low scores)
+          const RESULT_FETCH_MULTIPLIER = 2;
+          for (let i = 0; i < Math.min(compareResults.length, ${maxResults} * RESULT_FETCH_MULTIPLIER); i++) {
             const item = compareResults[i];
             
             // Calculate a normalized score based on position (first = highest score)
