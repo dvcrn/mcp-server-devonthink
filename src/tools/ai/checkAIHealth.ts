@@ -1,17 +1,11 @@
 import { z } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
-import { Tool, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import { createDevonThinkTool } from "../base/DevonThinkTool.js";
-
-const ToolInputSchema = ToolSchema.shape.inputSchema;
-type ToolInput = z.infer<typeof ToolInputSchema>;
+import { TEST_AI_ENGINES } from "./constants.js";
 
 /**
  * Input schema for the AI health check tool
  */
 const CheckAIHealthSchema = z.object({}).strict();
-
-type CheckAIHealthInput = z.infer<typeof CheckAIHealthSchema>;
 
 interface AIHealthResult {
   success: boolean;
@@ -59,7 +53,7 @@ export const checkAIHealthTool = createDevonThinkTool({
       result["devonthinkRunning"] = true;
       
       // Test engines using DEVONthink's actual API (following ai-support pattern)
-      const testEngines = ["ChatGPT", "Claude", "Gemini", "Mistral AI", "GPT4All", "LM Studio", "Ollama"];
+      const testEngines = ${helpers.formatValue(TEST_AI_ENGINES)};
       const configuredEngines = [];
       const workingEngines = [];
       
@@ -72,7 +66,6 @@ export const checkAIHealthTool = createDevonThinkTool({
             configuredEngines.push(engine);
             
             // Second pass: Actually test the engine with minimal request
-            let isWorking = false;
             let testError = null;
             
             try {
@@ -85,7 +78,6 @@ export const checkAIHealthTool = createDevonThinkTool({
               const testResponse = theApp.getChatResponseForMessage("Hi", testOptions);
               
               if (testResponse && testResponse.length > 0) {
-                isWorking = true;
                 const engineResult = {};
                 engineResult["engine"] = engine;
                 engineResult["status"] = "working";
@@ -144,5 +136,3 @@ export const checkAIHealthTool = createDevonThinkTool({
     `);
   }
 });
-
-export { CheckAIHealthSchema };

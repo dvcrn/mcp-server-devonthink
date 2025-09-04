@@ -7,6 +7,7 @@ type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const GetToolDocumentationSchema = z.object({
   toolName: z.enum([
+    "get_ai_tool_documentation",
     "classify_document",
     "check_ai_health", 
     "ask_ai_about_documents",
@@ -34,11 +35,40 @@ interface ToolDocumentation {
 
 interface GetToolDocumentationResult {
   success: boolean;
-  documentation: ToolDocumentation | ToolDocumentation[];
+  documentation?: ToolDocumentation[];
   error?: string;
 }
 
 const toolDocs: Record<string, ToolDocumentation> = {
+  get_ai_tool_documentation: {
+    name: "get_ai_tool_documentation",
+    summary: "Get detailed documentation for DEVONthink AI tools including examples and use cases",
+    description: `Provides comprehensive documentation for all AI-powered tools available in the DEVONthink MCP server. Returns detailed information about parameters, examples, use cases, and implementation notes for each tool.`,
+    examples: [
+      "Show me documentation for the classify_document tool",
+      "What AI tools are available?",
+      "How do I use the ask_ai_about_documents tool?",
+      "List all AI tool documentation"
+    ],
+    parameters: {
+      toolName: {
+        type: "enum",
+        description: "Specific AI tool to get documentation for (returns all if not specified)",
+        required: false
+      }
+    },
+    useCases: [
+      "Learning how to use specific AI tools",
+      "Understanding tool parameters and options",
+      "Discovering available AI capabilities",
+      "Getting implementation examples"
+    ],
+    notes: [
+      "Returns all tool documentation if no specific tool is requested",
+      "Documentation includes parameter details, examples, and use cases"
+    ]
+  },
+
   classify_document: {
     name: "classify_document",
     summary: "Get AI-powered classification suggestions for a DEVONthink document",
@@ -275,13 +305,12 @@ const getToolDocumentation = async (input: GetToolDocumentationInput): Promise<G
       if (!doc) {
         return {
           success: false,
-          documentation: [] as any,
           error: `Documentation not found for tool: ${input.toolName}`
         };
       }
       return {
         success: true,
-        documentation: doc
+        documentation: [doc]
       };
     } else {
       // Return all tool documentation
@@ -293,7 +322,6 @@ const getToolDocumentation = async (input: GetToolDocumentationInput): Promise<G
   } catch (error) {
     return {
       success: false,
-      documentation: [] as any,
       error: error instanceof Error ? error.message : "Unknown error"
     };
   }
