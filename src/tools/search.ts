@@ -256,7 +256,7 @@ const search = async (input: SearchInput): Promise<SearchResult> => {
           } catch (e) {
             return JSON.stringify({ success: false, error: "Error checking if record is a group: " + e.toString() });
           }
-        } else if (targetDatabase) {
+        } else if (pDatabaseName) {
           // If a specific database was provided, use its root group to scope the search
           searchScope = targetDatabase.root();
         } else {
