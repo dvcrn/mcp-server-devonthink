@@ -20,3 +20,8 @@ export const AI_ENGINES = [
  */
 export type AIEngine = typeof AI_ENGINES[number];
 
+/**
+ * Test engines for health check (alias for AI_ENGINES for compatibility)
+ */
+export const TEST_AI_ENGINES = AI_ENGINES;
+
