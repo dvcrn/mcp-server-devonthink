@@ -199,7 +199,7 @@ const moveRecord = async (
 export const moveRecordTool: Tool = {
   name: "moveRecord",
   title: "Move Record",
-  description: "Move a record to a different group in DEVONthink.\n\nExample:\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\",\n  \"destinationGroupUuid\": \"FEDC-BA09-8765-4321\"\n}",
+  description: "Move a record to a different group in DEVONthink. To move to root, use database UUID as destinationGroupUuid.\n\nExample:\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\",\n  \"destinationGroupUuid\": \"FEDC-BA09-8765-4321\"\n}",
   inputSchema: zodToJsonSchema(MoveRecordSchema) as ToolInput,
   run: moveRecord,
 };
