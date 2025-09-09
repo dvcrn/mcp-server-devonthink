@@ -232,19 +232,20 @@ export abstract class DevonThinkTool<TInput = any, TResult extends DevonThinkRes
       }
       
       if (records.length === 0) {
-        ${this.returnError("No valid records found: " + "errors.join(', ')")}
+        ${this.returnError('"No valid records found: " + errors.join(", ")')}
       }
     `;
   }
   
   /**
    * Generate consistent error return statement for JXA scripts
+   * @param messageExpression - Pre-formatted JXA expression for the error message
    */
-  protected returnError(message: string): string {
+  protected returnError(messageExpression: string): string {
     return `
       const result = {};
       result["success"] = false;
-      result["error"] = ${typeof message === 'string' ? this.formatValue(message) : message};
+      result["error"] = ${messageExpression};
       return JSON.stringify(result);
     `;
   }

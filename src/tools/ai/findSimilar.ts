@@ -22,10 +22,7 @@ export const findSimilarTool = createDevonThinkTool({
       // Get the source record
       const sourceRecord = theApp.getRecordWithUuid(${helpers.formatValue(recordUuid)});
       if (!sourceRecord) {
-        const result = {};
-        result["success"] = false;
-        result["error"] = "Record not found: " + ${helpers.formatValue(recordUuid)};
-        return JSON.stringify(result);
+        ${helpers.returnError('"Record not found: " + ' + helpers.formatValue(recordUuid))}
       }
       
       // Get target database
@@ -70,10 +67,7 @@ export const findSimilarTool = createDevonThinkTool({
           }
         }
       } catch (compareError) {
-        const result = {};
-        result["success"] = false;
-        result["error"] = "Compare failed: " + compareError.toString();
-        return JSON.stringify(result);
+        ${helpers.returnError('"Compare failed: " + compareError.toString()')}
       }
       
       const result = {};

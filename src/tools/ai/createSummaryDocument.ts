@@ -25,7 +25,7 @@ export const createSummaryDocumentTool = createDevonThinkTool({
       
       // Check if DEVONthink is running
       if (!theApp.running()) {
-        ${helpers.returnError("DEVONthink is not running")}
+        ${helpers.returnError('"DEVONthink is not running"')}
       }
       
       ${helpers.buildRecordCollectionScript(documentUuids)}
@@ -77,10 +77,7 @@ export const createSummaryDocumentTool = createDevonThinkTool({
         }
         
       } catch (aiError) {
-        const result = {};
-        result["success"] = false;
-        result["error"] = "Document creation failed: " + aiError.toString();
-        return JSON.stringify(result);
+        ${helpers.returnError('"Document creation failed: " + aiError.toString()')}
       }
       
       const result = {};
