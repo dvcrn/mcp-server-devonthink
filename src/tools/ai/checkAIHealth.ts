@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createDevonThinkTool } from "../base/DevonThinkTool.js";
-import { TEST_AI_ENGINES } from "./constants.js";
+import { AI_ENGINES } from "./constants.js";
 
 /**
  * Input schema for the AI health check tool
@@ -53,7 +53,7 @@ export const checkAIHealthTool = createDevonThinkTool({
       result["devonthinkRunning"] = true;
       
       // Test engines using DEVONthink's actual API (following ai-support pattern)
-      const testEngines = ${helpers.formatValue(TEST_AI_ENGINES)};
+      const testEngines = ${helpers.formatValue(AI_ENGINES)};
       const configuredEngines = [];
       const workingEngines = [];
       
@@ -66,8 +66,6 @@ export const checkAIHealthTool = createDevonThinkTool({
             configuredEngines.push(engine);
             
             // Second pass: Actually test the engine with minimal request
-            let testError = null;
-            
             try {
               // Build options object using bracket notation (JXA requirement)
               const testOptions = {};
@@ -83,13 +81,19 @@ export const checkAIHealthTool = createDevonThinkTool({
                 engineResult["status"] = "working";
                 engineResult["model"] = models[0];
                 workingEngines.push(engineResult);
+              } else {
+                // Handle empty AI service responses as failures
+                const engineResult = {};
+                engineResult["engine"] = engine;
+                engineResult["status"] = "failed";
+                engineResult["error"] = "AI service returned empty response";
+                workingEngines.push(engineResult);
               }
             } catch (testErr) {
-              testError = testErr.toString();
               const engineResult = {};
               engineResult["engine"] = engine;
               engineResult["status"] = "failed";
-              engineResult["error"] = testError;
+              engineResult["error"] = testErr.toString();
               workingEngines.push(engineResult);
             }
           }

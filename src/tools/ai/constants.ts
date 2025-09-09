@@ -20,15 +20,3 @@ export const AI_ENGINES = [
  */
 export type AIEngine = typeof AI_ENGINES[number];
 
-/**
- * Test engines for health check (includes additional engines)
- */
-export const TEST_AI_ENGINES = [
-  "ChatGPT",
-  "Claude",
-  "Gemini",
-  "Mistral AI",
-  "GPT4All",
-  "LM Studio",
-  "Ollama"
-] as const;
