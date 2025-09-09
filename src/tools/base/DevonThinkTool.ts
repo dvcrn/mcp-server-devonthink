@@ -35,6 +35,8 @@ export interface ScriptHelpers {
   wrapInTryCatch: (code: string, errorHandler?: string) => string;
   buildDatabaseLookup: (databaseName?: string) => string;
   buildRecordLookup: (uuid?: string, id?: number, path?: string, databaseName?: string) => string;
+  buildRecordCollectionScript: (documentUuids: string[]) => string;
+  returnError: (message: string) => string;
 }
 
 /**
@@ -92,6 +94,8 @@ export abstract class DevonThinkTool<TInput = any, TResult extends DevonThinkRes
       wrapInTryCatch: this.wrapInTryCatch.bind(this),
       buildDatabaseLookup: this.buildDatabaseLookup.bind(this),
       buildRecordLookup: this.buildRecordLookup.bind(this),
+      buildRecordCollectionScript: this.buildRecordCollectionScript.bind(this),
+      returnError: this.returnError.bind(this),
     };
   }
   
@@ -196,6 +200,53 @@ export abstract class DevonThinkTool<TInput = any, TResult extends DevonThinkRes
     }
     
     return lines.join('\n');
+  }
+  
+  /**
+   * Build record collection script for multiple UUIDs
+   * Extracts the common pattern used in askAiAboutDocuments and createSummaryDocument
+   */
+  protected buildRecordCollectionScript(documentUuids: string[]): string {
+    return `
+      const records = [];
+      const recordObjects = [];
+      const errors = [];
+      
+      // Collect all records using modern for...of loop
+      for (const uuid of ${this.formatValue(documentUuids)}) {
+        try {
+          const record = theApp.getRecordWithUuid(uuid);
+          if (record) {
+            recordObjects.push(record);
+            records.push({
+              uuid: record.uuid(),
+              name: record.name(),
+              type: record.type()
+            });
+          } else {
+            errors.push("Record not found: " + uuid);
+          }
+        } catch (e) {
+          errors.push("Error accessing record " + uuid + ": " + e.toString());
+        }
+      }
+      
+      if (records.length === 0) {
+        ${this.returnError("No valid records found: " + "errors.join(', ')")}
+      }
+    `;
+  }
+  
+  /**
+   * Generate consistent error return statement for JXA scripts
+   */
+  protected returnError(message: string): string {
+    return `
+      const result = {};
+      result["success"] = false;
+      result["error"] = ${typeof message === 'string' ? this.formatValue(message) : message};
+      return JSON.stringify(result);
+    `;
   }
 }
 

@@ -24,41 +24,10 @@ export const askAiAboutDocumentsTool = createDevonThinkTool({
       
       // Check if DEVONthink is running
       if (!theApp.running()) {
-        const result = {};
-        result["success"] = false;
-        result["error"] = "DEVONthink is not running";
-        return JSON.stringify(result);
+        ${helpers.returnError("DEVONthink is not running")}
       }
       
-      const records = [];
-      const recordObjects = [];
-      const errors = [];
-      
-      // Collect all records
-      for (const uuid of ${helpers.formatValue(documentUuids)}) {
-        try {
-          const record = theApp.getRecordWithUuid(uuid);
-          if (record) {
-            recordObjects.push(record);
-            records.push({
-              uuid: record.uuid(),
-              name: record.name(),
-              type: record.type()
-            });
-          } else {
-            errors.push("Record not found: " + uuid);
-          }
-        } catch (e) {
-          errors.push("Error accessing record " + uuid + ": " + e.toString());
-        }
-      }
-      
-      if (records.length === 0) {
-        const result = {};
-        result["success"] = false;
-        result["error"] = "No valid records found: " + errors.join(", ");
-        return JSON.stringify(result);
-      }
+      ${helpers.buildRecordCollectionScript(documentUuids)}
       
       // Build chat options - engine is REQUIRED for API to work
       const chatOptions = {};
@@ -79,10 +48,7 @@ export const askAiAboutDocumentsTool = createDevonThinkTool({
         }
         
       } catch (aiError) {
-        const result = {};
-        result["success"] = false;
-        result["error"] = "AI analysis failed: " + aiError.toString();
-        return JSON.stringify(result);
+        ${helpers.returnError("AI analysis failed: " + "aiError.toString()")}
       }
       
       const result = {};
