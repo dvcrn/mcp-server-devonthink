@@ -5,40 +5,7 @@ import { Tool, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
 
-const GetToolDocumentationSchema = z.object({
-  toolName: z.enum([
-    "get_ai_tool_documentation",
-    "classify_document",
-    "check_ai_health", 
-    "ask_ai_about_documents",
-    "create_summary_document",
-    "find_similar"
-  ]).optional().describe("Specific AI tool to get documentation for (returns all if not specified)")
-}).strict();
-
-type GetToolDocumentationInput = z.infer<typeof GetToolDocumentationSchema>;
-
-interface ToolDocumentation {
-  name: string;
-  summary: string;
-  description: string;
-  examples?: string[];
-  parameters: Record<string, {
-    type: string;
-    description: string;
-    required: boolean;
-    default?: any;
-  }>;
-  useCases?: string[];
-  notes?: string[];
-}
-
-interface GetToolDocumentationResult {
-  success: boolean;
-  documentation?: ToolDocumentation[];
-  error?: string;
-}
-
+// Dynamic tool documentation section
 const toolDocs: Record<string, ToolDocumentation> = {
   get_ai_tool_documentation: {
     name: "get_ai_tool_documentation",
@@ -297,6 +264,36 @@ This goes beyond simple keyword matching to find conceptually related content, m
     ]
   }
 };
+
+// Generate tool names dynamically from toolDocs keys
+const toolNames = Object.keys(toolDocs) as [string, ...string[]];
+
+const GetToolDocumentationSchema = z.object({
+  toolName: z.enum(toolNames).optional().describe("Specific AI tool to get documentation for (returns all if not specified)")
+}).strict();
+
+type GetToolDocumentationInput = z.infer<typeof GetToolDocumentationSchema>;
+
+interface ToolDocumentation {
+  name: string;
+  summary: string;
+  description: string;
+  examples?: string[];
+  parameters: Record<string, {
+    type: string;
+    description: string;
+    required: boolean;
+    default?: any;
+  }>;
+  useCases?: string[];
+  notes?: string[];
+}
+
+interface GetToolDocumentationResult {
+  success: boolean;
+  documentation?: ToolDocumentation[];
+  error?: string;
+}
 
 const getToolDocumentation = async (input: GetToolDocumentationInput): Promise<GetToolDocumentationResult> => {
   try {

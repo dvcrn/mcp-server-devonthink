@@ -86,6 +86,7 @@ export const classifyDocumentTool = createDevonThinkTool({
           suggestion["group"] = proposal.name();
           suggestion["location"] = proposal.location();
           suggestion["uuid"] = proposal.uuid();
+          suggestion["type"] = proposal.type();
           suggestion["score"] = proposal.score ? proposal.score() : 0;
         }
         
