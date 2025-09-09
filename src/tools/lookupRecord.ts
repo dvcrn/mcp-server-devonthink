@@ -10,30 +10,30 @@ const LookupRecordSchema = z
   .object({
     lookupType: z
       .enum(["filename", "path", "url", "tags", "comment", "contentHash"])
-      .describe("The type of lookup to perform"),
-    value: z.string().describe("The value to search for"),
+      .describe("Type of lookup to perform"),
+    value: z.string().describe("Value to search for"),
     tags: z
       .array(z.string())
       .optional()
       .describe(
-        "Array of tags to search for (only used when lookupType is 'tags')"
+        "Tags to search for (for lookupType 'tags')"
       ),
     matchAnyTag: z
       .boolean()
       .optional()
       .describe(
-        "Whether to match any tag instead of all tags (only used when lookupType is 'tags')"
+        "Match any tag instead of all (for lookupType 'tags')"
       ),
     databaseName: z
       .string()
       .optional()
       .describe(
-        "The name of the database to search in (searches current database if not provided)"
+        "Database to search in (optional)"
       ),
     limit: z
       .number()
       .optional()
-      .describe("Maximum number of results to return (default: 50)"),
+      .describe("Maximum results to return (optional)"),
   })
   .strict();
 
@@ -186,9 +186,9 @@ const lookupRecord = async (
 };
 
 export const lookupRecordTool: Tool = {
-  name: "lookup_record",
-  description:
-    "Look up records in DEVONthink by a specific attribute. This tool is ideal for finding records when you have an exact value to match, such as a filename, URL, or tag. It does not support wildcards or partial matches.\n\nExamples:\n- Find by filename: lookupType='filename', value='report.pdf'\n- Find by URL: lookupType='url', value='https://example.com'\n- Find by single tag: lookupType='tags', value='important' (or tags=['important'])\n- Find by multiple tags (all): lookupType='tags', tags=['work', 'project']\n- Find by multiple tags (any): lookupType='tags', tags=['work', 'project'], matchAnyTag=true\n- Find by path: lookupType='path', value='/Documents/Research'\n- Find by comment: lookupType='comment', value='Meeting notes'\n- Find by content hash: lookupType='contentHash', value='abc123...'\n\nFor tag lookups, you can either use the 'tags' parameter for an array of tags, or use the 'value' parameter for a single tag.",
+  name: "lookupRecord",
+  title: "Lookup Record",
+  description: "Look up records in DEVONthink by a specific attribute.\n\nExample:\n{\n  \"lookupType\": \"filename\",\n  \"value\": \"report.pdf\"\n}",
   inputSchema: zodToJsonSchema(LookupRecordSchema) as ToolInput,
   run: lookupRecord,
 };

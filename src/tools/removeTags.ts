@@ -14,13 +14,13 @@ type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const RemoveTagsSchema = z
   .object({
-    uuid: z.string().describe("The UUID of the record to remove tags from"),
-    tags: z.array(z.string()).describe("An array of tags to remove"),
+    uuid: z.string().describe("UUID of the record to remove tags from"),
+    tags: z.array(z.string()).describe("Tags to remove"),
     databaseName: z
       .string()
       .optional()
       .describe(
-        "The name of the database to remove tags from the record in (optional)"
+        "Database to remove tags from the record in (optional)"
       ),
   })
   .strict();
@@ -105,8 +105,9 @@ const removeTags = async (
 };
 
 export const removeTagsTool: Tool = {
-  name: "remove_tags",
-  description: "Removes tags from a specific record in DEVONthink.",
+  name: "removeTags",
+  title: "Remove Tags",
+  description: "Removes tags from a specific record in DEVONthink.\n\nExample:\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\",\n  \"tags\": [\"old-tag\"]\n}",
   inputSchema: zodToJsonSchema(RemoveTagsSchema) as ToolInput,
   run: removeTags,
 };

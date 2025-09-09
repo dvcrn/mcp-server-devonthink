@@ -14,17 +14,17 @@ type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const DeleteRecordSchema = z
   .object({
-    uuid: z.string().optional().describe("The UUID of the record"),
-    recordId: z.number().optional().describe("The ID of the record to delete"),
+    uuid: z.string().optional().describe("UUID of the record to delete"),
+    recordId: z.number().optional().describe("ID of the record to delete"),
     recordPath: z
       .string()
       .optional()
-      .describe("The DEVONthink location path of the record (e.g., '/Inbox/My Document'), NOT the filesystem path"),
+      .describe("DEVONthink location path of the record (e.g., '/Inbox/My Document')"),
     databaseName: z
       .string()
       .optional()
       .describe(
-        "The name of the database to delete the record from (defaults to current database)"
+        "Database to delete the record from (optional, defaults to current)"
       ),
   })
   .strict()
@@ -125,9 +125,9 @@ const deleteRecord = async (
 };
 
 export const deleteRecordTool: Tool = {
-  name: "delete_record",
-  description:
-    "Delete a record from DEVONthink. This tool will permanently delete the record and its contents if it's a group.\n\nRecord identification methods (in order of reliability):\n1. **UUID** (recommended): Globally unique identifier that works across all databases\n2. **ID + Database**: Database-specific ID requires specifying the database name\n3. **DEVONthink Path**: Internal DEVONthink location path like '/Inbox/My Document' (NOT filesystem paths like '/Users/.../')\n\n**Important Path Note**: Use DEVONthink's internal location paths (shown in the 'Path' column in DEVONthink), not filesystem paths. Example: '/Projects/2024/Report.pdf' not '/Users/david/Databases/MyDB.dtBase2/Files.noindex/...'",
+  name: "deleteRecord",
+  title: "Delete Record",
+  description: "Delete a record from DEVONthink.\n\nExample:\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\"\n}",
   inputSchema: zodToJsonSchema(DeleteRecordSchema) as ToolInput,
   run: deleteRecord,
 };

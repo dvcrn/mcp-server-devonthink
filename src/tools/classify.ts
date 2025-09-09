@@ -14,21 +14,19 @@ type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const ClassifySchema = z
   .object({
-    recordUuid: z.string().describe("The UUID of the record to classify"),
+    recordUuid: z.string().describe("UUID of the record to classify"),
     databaseName: z
       .string()
       .optional()
-      .describe(
-        "The name of the database to search in (defaults to current database)"
-      ),
+      .describe("Database name to search in (optional)"),
     comparison: z
       .enum(["data comparison", "tags comparison"])
       .optional()
-      .describe("The comparison type for classification"),
+      .describe("Comparison type for classification (optional)"),
     tags: z
       .boolean()
       .optional()
-      .describe("Whether to propose tags instead of groups"),
+      .describe("Propose tags instead of groups (optional)"),
   })
   .strict();
 
@@ -158,9 +156,9 @@ const classify = async (input: ClassifyInput): Promise<ClassifyResult> => {
 };
 
 export const classifyTool: Tool = {
-  name: "classify",
-  description:
-    "Get classification proposals for a DEVONthink record. This tool uses DEVONthink's AI to suggest appropriate groups or tags for organizing the record. Use the `recordUuid` to specify which record to classify.",
+  name: "classifyRecord",
+  title: "Classify Record",
+  description: "Get classification proposals for a DEVONthink record.\n\nExample:\n{\n  \"recordUuid\": \"1234-5678-90AB-CDEF\"\n}",
   inputSchema: zodToJsonSchema(ClassifySchema) as ToolInput,
   run: classify,
 };

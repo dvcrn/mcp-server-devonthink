@@ -14,22 +14,22 @@ type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const GetRecordPropertiesSchema = z
   .object({
-    uuid: z.string().optional().describe("The UUID of the record"),
+    uuid: z.string().optional().describe("UUID of the record"),
     recordId: z
       .number()
       .optional()
-      .describe("The ID of the record to get properties for"),
+      .describe("ID of the record to get properties for"),
     recordPath: z
       .string()
       .optional()
       .describe(
-        "The DEVONthink location path of the record (e.g., '/Inbox/My Document'), NOT the filesystem path"
+        "DEVONthink location path of the record (e.g., '/Inbox/My Document')"
       ),
     databaseName: z
       .string()
       .optional()
       .describe(
-        "The name of the database to get the record properties from (defaults to current database)"
+        "Database to get the record properties from (optional)"
       ),
   })
   .strict()
@@ -186,9 +186,9 @@ const getRecordProperties = async (
 };
 
 export const getRecordPropertiesTool: Tool = {
-  name: "get_record_properties",
-  description:
-    "Get detailed properties and metadata for a DEVONthink record. This tool returns a comprehensive set of properties, including dates, size, tags, and more.\n\nRecord identification methods (in order of reliability):\n1. **UUID** (recommended): Globally unique identifier that works across all databases\n2. **ID + Database**: Database-specific ID requires specifying the database name\n3. **DEVONthink Path**: Internal DEVONthink location path like '/Inbox/My Document' (NOT filesystem paths like '/Users/.../')\n\n**Important Path Note**: Use DEVONthink's internal location paths (shown in the 'Path' column in DEVONthink), not filesystem paths. Example: '/Projects/2024/Report.pdf' not '/Users/david/Databases/MyDB.dtBase2/Files.noindex/...'\n\nWhen using ID, always specify the database name for accurate results. The tool will search recursively through all groups to find records by ID.\n\nReturns both UUID and ID in the result for future reference.",
+  name: "getRecordProperties",
+  title: "Get Record Properties",
+  description: "Get detailed properties and metadata for a DEVONthink record.\n\nExample:\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\"\n}",
   inputSchema: zodToJsonSchema(GetRecordPropertiesSchema) as ToolInput,
   run: getRecordProperties,
 };

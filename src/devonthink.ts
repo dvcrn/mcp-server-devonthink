@@ -26,8 +26,8 @@ import { addTagsTool } from "./tools/addTags.js";
 import { removeTagsTool } from "./tools/removeTags.js";
 import { classifyTool } from "./tools/classify.js";
 import { compareTool } from "./tools/compare.js";
-import { currentDatabaseTool } from "./tools/getCurrentDatabase.js";
-import { selectedRecordsTool } from "./tools/getSelectedRecords.js";
+import { getCurrentDatabaseTool } from "./tools/getCurrentDatabase.js";
+import { getSelectedRecordsTool } from "./tools/getSelectedRecords.js";
 import { replicateRecordTool } from "./tools/replicateRecord.js";
 import { duplicateRecordTool } from "./tools/duplicateRecord.js";
 import { convertRecordTool } from "./tools/convertRecord.js";
@@ -59,8 +59,8 @@ export const createServer = async () => {
     lookupRecordTool,
     createFromUrlTool,
     getOpenDatabasesTool,
-    currentDatabaseTool,
-    selectedRecordsTool,
+    getCurrentDatabaseTool,
+    getSelectedRecordsTool,
     listGroupContentTool,
     getRecordContentTool,
     renameRecordTool,

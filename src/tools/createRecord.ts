@@ -8,28 +8,28 @@ type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const CreateRecordSchema = z
   .object({
-    name: z.string().describe("The name of the record to create"),
+    name: z.string().describe("Name of the new record"),
     type: z
       .string()
       .describe(
-        "The record type (e.g., 'markdown', 'formatted note', 'bookmark', 'group')"
+        "Record type (e.g., 'markdown', 'formatted note', 'bookmark', 'group')"
       ),
     content: z
       .string()
       .optional()
-      .describe("The content of the record (for text-based records)"),
-    url: z.string().optional().describe("The URL for bookmark records"),
+      .describe("Content for text-based records (optional)"),
+    url: z.string().optional().describe("URL for bookmark records (optional)"),
     parentGroupUuid: z
       .string()
       .optional()
       .describe(
-        "The UUID of the parent group (defaults to the database's incoming group)"
+        "UUID of the parent group (optional, defaults to incoming group)"
       ),
     databaseName: z
       .string()
       .optional()
       .describe(
-        "The name of the database to create the record in (defaults to current database)"
+        "Database to create the record in (optional, defaults to current)"
       ),
   })
   .strict();
@@ -126,9 +126,9 @@ const createRecord = async (
 };
 
 export const createRecordTool: Tool = {
-  name: "create_record",
-  description:
-    "Create a new record in DEVONthink. This tool can create various record types, including groups, markdown files, and bookmarks. Use the `parentGroupUuid` to specify a location, otherwise it will be created in the database's incoming group. The tool returns the `uuid` of the new record, which can be used in other tools.\n\nIMPORTANT - Database Root vs Inbox:\n- No parentGroupUuid = creates in database's Inbox (incoming group)\n- To create at database root: use parentGroupUuid with the database UUID\n- Get database UUID first using get_open_databases tool\n\nExample workflow for root creation:\n1. Use get_open_databases to get database UUID (e.g., '5E47D6F2-5E0C-4E30-A6ED-2AC92116C3E1')\n2. Use create_record with parentGroupUuid: '5E47D6F2-5E0C-4E30-A6ED-2AC92116C3E1'",
+  name: "createRecord",
+  title: "Create Record",
+  description: "Create a new record in DEVONthink.\n\nExample:\n{\n  \"name\": \"New Note\",\n  \"type\": \"markdown\",\n  \"content\": \"# Hello World\"\n}",
   inputSchema: zodToJsonSchema(CreateRecordSchema) as ToolInput,
   run: createRecord,
 };
