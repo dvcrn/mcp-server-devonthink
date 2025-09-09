@@ -34,10 +34,7 @@ export const classifyDocumentTool = createDevonThinkTool({
       // Get the record to classify
       const targetRecord = theApp.getRecordWithUuid(${helpers.formatValue(documentUuid)});
       if (!targetRecord) {
-        const result = {};
-        result["success"] = false;
-        result["error"] = "Document not found: " + ${helpers.formatValue(documentUuid)};
-        return JSON.stringify(result);
+        ${helpers.returnError('"Document not found: " + ' + helpers.formatValue(documentUuid))}
       }
       
       // Determine database scope
