@@ -77,7 +77,10 @@ export const createSummaryDocumentTool = createDevonThinkTool({
         }
         
       } catch (aiError) {
-        ${helpers.returnError("Document creation failed: " + "aiError.toString()")}
+        const result = {};
+        result["success"] = false;
+        result["error"] = "Document creation failed: " + aiError.toString();
+        return JSON.stringify(result);
       }
       
       const result = {};
