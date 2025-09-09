@@ -67,7 +67,10 @@ export const findSimilarTool = createDevonThinkTool({
           }
         }
       } catch (compareError) {
-        ${helpers.returnError("Compare failed: " + "compareError.toString()")}
+        const result = {};
+        result["success"] = false;
+        result["error"] = "Compare failed: " + compareError.toString();
+        return JSON.stringify(result);
       }
       
       const result = {};
