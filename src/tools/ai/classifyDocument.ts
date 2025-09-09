@@ -28,10 +28,7 @@ export const classifyDocumentTool = createDevonThinkTool({
       
       // Check if DEVONthink is running
       if (!theApp.running()) {
-        const result = {};
-        result["success"] = false;
-        result["error"] = "DEVONthink is not running";
-        return JSON.stringify(result);
+        ${helpers.returnError('"DEVONthink is not running"')}
       }
       
       // Get the record to classify
