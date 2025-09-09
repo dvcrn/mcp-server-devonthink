@@ -22,10 +22,7 @@ export const findSimilarTool = createDevonThinkTool({
       // Get the source record
       const sourceRecord = theApp.getRecordWithUuid(${helpers.formatValue(recordUuid)});
       if (!sourceRecord) {
-        const result = {};
-        result["success"] = false;
-        result["error"] = "Record not found: " + ${helpers.formatValue(recordUuid)};
-        return JSON.stringify(result);
+        ${helpers.returnError("Record not found: " + helpers.formatValue(recordUuid))}
       }
       
       // Get target database
@@ -44,14 +41,12 @@ export const findSimilarTool = createDevonThinkTool({
         if (compareResults && compareResults.length > 0) {
           // Process and score the results
           // DEVONthink returns them in order of relevance
-          // Fetch up to 2x the requested results to account for filtering (duplicates, low scores)
-          const RESULT_FETCH_MULTIPLIER = 2;
-          for (let i = 0; i < Math.min(compareResults.length, ${maxResults} * RESULT_FETCH_MULTIPLIER); i++) {
-            const item = compareResults[i];
-            
+          const maxFetchResults = Math.min(compareResults.length, ${maxResults} * 2);
+          
+          for (const [index, item] of compareResults.slice(0, maxFetchResults).entries()) {
             // Calculate a normalized score based on position (first = highest score)
             // DEVONthink returns best matches first
-            const score = 1.0 - (i / compareResults.length);
+            const score = 1.0 - (index / compareResults.length);
             
             if (score >= ${minScore} && item.uuid() !== sourceRecord.uuid()) {
               similarRecords.push({
@@ -72,11 +67,7 @@ export const findSimilarTool = createDevonThinkTool({
           }
         }
       } catch (compareError) {
-        // If compare fails, return empty results with error info
-        const result = {};
-        result["success"] = false;
-        result["error"] = "Compare failed: " + compareError.toString();
-        return JSON.stringify(result);
+        ${helpers.returnError("Compare failed: " + "compareError.toString()")}
       }
       
       const result = {};

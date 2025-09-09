@@ -73,8 +73,7 @@ export const classifyDocumentTool = createDevonThinkTool({
       const suggestions = [];
       const limit = Math.min(proposals.length, ${maxSuggestions});
       
-      for (let i = 0; i < limit; i++) {
-        const proposal = proposals[i];
+      for (const [index, proposal] of proposals.slice(0, limit).entries()) {
         const suggestion = {};
         
         if (${proposeTags}) {

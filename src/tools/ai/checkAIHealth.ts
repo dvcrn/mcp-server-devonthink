@@ -58,8 +58,7 @@ export const checkAIHealthTool = createDevonThinkTool({
       const workingEngines = [];
       
       // First pass: Check which engines have models configured
-      for (let i = 0; i < testEngines.length; i++) {
-        const engine = testEngines[i];
+      for (const engine of testEngines) {
         try {
           const models = theApp.getChatModelsForEngine(engine);
           if (models && models.length > 0) {
