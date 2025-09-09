@@ -48,7 +48,10 @@ export const askAiAboutDocumentsTool = createDevonThinkTool({
         }
         
       } catch (aiError) {
-        ${helpers.returnError("AI analysis failed: " + "aiError.toString()")}
+        const result = {};
+        result["success"] = false;
+        result["error"] = "AI analysis failed: " + aiError.toString();
+        return JSON.stringify(result);
       }
       
       const result = {};
