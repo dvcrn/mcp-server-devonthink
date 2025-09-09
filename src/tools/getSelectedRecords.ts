@@ -97,10 +97,10 @@ const getSelectedRecords = async (): Promise<GetSelectedRecordsResult> => {
   return await executeJxa<GetSelectedRecordsResult>(script);
 };
 
-export const selectedRecordsTool: Tool = {
-  name: "selected_records",
-  description:
-    "Get information about currently selected records in DEVONthink. This tool returns detailed properties of all records that are currently selected in the DEVONthink interface, including their UUIDs, names, paths, types, and metadata. Returns an empty array if no records are selected. Useful for batch operations on user's current selection.",
+export const getSelectedRecordsTool: Tool = {
+  name: "getSelectedRecords",
+  title: "Get Selected Records",
+  description: "Get information about currently selected records in DEVONthink.\n\nExample:\n{}",
   inputSchema: zodToJsonSchema(GetSelectedRecordsSchema) as ToolInput,
   run: getSelectedRecords,
 };

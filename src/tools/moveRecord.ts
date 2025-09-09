@@ -18,25 +18,25 @@ type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const MoveRecordSchema = z
   .object({
-    uuid: z.string().optional().describe("The UUID of the record"),
-    recordId: z.number().optional().describe("The ID of the record to move"),
+    uuid: z.string().optional().describe("UUID of the record to move"),
+    recordId: z.number().optional().describe("ID of the record to move"),
     recordName: z
       .string()
       .optional()
-      .describe("The name of the record to move (if ID not provided)"),
+      .describe("Name of the record to move"),
     recordPath: z
       .string()
       .optional()
-      .describe("The path of the record to move (if ID not provided)"),
+      .describe("Path of the record to move"),
     destinationGroupUuid: z
       .string()
       .optional()
-      .describe("The UUID of the destination group"),
+      .describe("UUID of the destination group"),
     databaseName: z
       .string()
       .optional()
       .describe(
-        "The name of the database to move the record in (defaults to current database)"
+        "Database to move the record in (optional)"
       ),
   })
   .strict()
@@ -197,9 +197,9 @@ const moveRecord = async (
 };
 
 export const moveRecordTool: Tool = {
-  name: "move_record",
-  description:
-    "Move a record to a different group in DEVONthink. It's highly recommended to use the `uuid` for the record and `destinationGroupUuid` for the destination to ensure accurate moving.\n\nIMPORTANT - Moving to Database Root:\n- Cannot use '/' as destinationGroupUuid (tool limitation)\n- To move to database root: use destinationGroupUuid with the database UUID\n- Get database UUID first using get_open_databases tool\n\nExample workflow for root move:\n1. Use get_open_databases to get database UUID (e.g., '5E47D6F2-5E0C-4E30-A6ED-2AC92116C3E1')\n2. Use move_record with destinationGroupUuid: '5E47D6F2-5E0C-4E30-A6ED-2AC92116C3E1'",
+  name: "moveRecord",
+  title: "Move Record",
+  description: "Move a record to a different group in DEVONthink.\n\nExample:\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\",\n  \"destinationGroupUuid\": \"FEDC-BA09-8765-4321\"\n}",
   inputSchema: zodToJsonSchema(MoveRecordSchema) as ToolInput,
   run: moveRecord,
 };

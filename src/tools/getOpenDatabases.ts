@@ -86,9 +86,9 @@ const getOpenDatabases = async (): Promise<GetOpenDatabasesResult> => {
 };
 
 export const getOpenDatabasesTool: Tool = {
-  name: "get_open_databases",
-  description:
-    "Get a list of all currently open databases in DEVONthink. This tool is useful for discovering available databases and their properties, such as name, path, and encryption status. The returned database names can be used in other tools.\n\nIMPORTANT - Database UUIDs for Claude Codet Operations:\nThe UUID field in the results is ESSENTIAL for database root operations:\n- Use the database UUID as parentGroupUuid in create_record to create at database root\n- Use the database UUID as destinationGroupUuid in move_record to move to database root\n- Use the database UUID as parentGroupUuid in create_from_url to create at database root\n\nExample: Database UUID '5E47D6F2-5E0C-4E30-A6ED-2AC92116C3E1' represents the true root level of that database.",
+  name: "getOpenDatabases",
+  title: "Get Open Databases",
+  description: "Get a list of all currently open databases in DEVONthink.\n\nExample:\n{}",
   inputSchema: zodToJsonSchema(GetOpenDatabasesSchema) as ToolInput,
   run: getOpenDatabases,
 };

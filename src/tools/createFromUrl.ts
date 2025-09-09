@@ -8,49 +8,49 @@ type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const CreateFromUrlSchema = z
   .object({
-    url: z.string().url().describe("The URL to create a record from"),
+    url: z.string().url().describe("URL to create a record from"),
     format: z
       .enum(["formatted_note", "markdown", "pdf", "web_document"])
-      .describe("The format to create the record in"),
+      .describe("Format for the new record"),
     name: z
       .string()
       .optional()
-      .describe("Custom name for the record (auto-generated if not provided)"),
+      .describe("Custom name for the record (optional)"),
     parentGroupUuid: z
       .string()
       .optional()
       .describe(
-        "The UUID of the parent group (defaults to the database's incoming group)"
+        "UUID of the parent group (optional, defaults to incoming group)"
       ),
     readability: z
       .boolean()
       .optional()
       .describe(
-        "Whether to use readability mode to declutter the page (default: false)"
+        "Use readability mode to declutter the page (optional)"
       ),
     userAgent: z
       .string()
       .optional()
-      .describe("Custom user agent string to use for the request"),
+      .describe("Custom user agent for the request (optional)"),
     referrer: z
       .string()
       .optional()
-      .describe("HTTP referrer to use for the request"),
+      .describe("HTTP referrer for the request (optional)"),
     pdfOptions: z
       .object({
         pagination: z
           .boolean()
           .optional()
-          .describe("Whether to paginate the PDF"),
-        width: z.number().optional().describe("Width for PDF in points"),
+          .describe("Paginate the PDF (optional)"),
+        width: z.number().optional().describe("Width for PDF in points (optional)"),
       })
       .optional()
-      .describe("PDF-specific options (only used when format is 'pdf')"),
+      .describe("PDF-specific options (optional)"),
     databaseName: z
       .string()
       .optional()
       .describe(
-        "The name of the database to create the record in (defaults to current database)"
+        "Database to create the record in (optional, defaults to current)"
       ),
   })
   .strict();
@@ -183,9 +183,9 @@ const createFromUrl = async (
 };
 
 export const createFromUrlTool: Tool = {
-  name: "create_from_url",
-  description:
-    "Create a record in DEVONthink from a web URL. This tool supports creating formatted notes, markdown, PDFs, and web documents. Use `parentGroupUuid` to specify a location, otherwise it will be created in the database's incoming group. The tool returns the `uuid` of the new record.\n\nIMPORTANT - Database Root vs Inbox:\n- No parentGroupUuid = creates in database's Inbox (incoming group)\n- To create at database root: use parentGroupUuid with the database UUID\n- Get database UUID first using get_open_databases tool\n\nExample workflow for root creation:\n1. Use get_open_databases to get database UUID (e.g., '5E47D6F2-5E0C-4E30-A6ED-2AC92116C3E1')\n2. Use create_from_url with parentGroupUuid: '5E47D6F2-5E0C-4E30-A6ED-2AC92116C3E1'",
+  name: "createFromUrl",
+  title: "Create Record from URL",
+  description: "Create a record in DEVONthink from a web URL.\n\nExample:\n{\n  \"url\": \"https://www.example.com\",\n  \"format\": \"markdown\"\n}",
   inputSchema: zodToJsonSchema(CreateFromUrlSchema) as ToolInput,
   run: createFromUrl,
 };

@@ -13,8 +13,8 @@ type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const UpdateRecordContentSchema = z
   .object({
-    uuid: z.string().describe("The UUID of the record to update"),
-    content: z.string().describe("The new content for the record"),
+    uuid: z.string().describe("UUID of the record to update"),
+    content: z.string().describe("New content for the record"),
   })
   .strict();
 
@@ -105,8 +105,9 @@ const updateRecordContent = async (
 };
 
 export const updateRecordContentTool: Tool = {
-  name: "update_record_content",
-  description: "Updates the content of an existing record in DEVONthink while preserving its UUID and all metadata. Works with markdown, text, RTF, formatted notes, and HTML documents. Uses the 'plainText' property for text-based formats and 'source' property for HTML. Since UUIDs are globally unique across all databases, only the UUID is required to identify the record.",
+  name: "updateRecordContent",
+  title: "Update Record Content",
+  description: "Updates the content of an existing record in DEVONthink.\n\nExample:\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\",\n  \"content\": \"# New Content\"\n}",
   inputSchema: zodToJsonSchema(UpdateRecordContentSchema) as ToolInput,
   run: updateRecordContent,
 };

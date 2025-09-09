@@ -18,20 +18,20 @@ type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const DuplicateRecordSchema = z
   .object({
-    uuid: z.string().optional().describe("The UUID of the record to duplicate"),
-    recordId: z.number().optional().describe("The ID of the record to duplicate"),
+    uuid: z.string().optional().describe("UUID of the record to duplicate"),
+    recordId: z.number().optional().describe("ID of the record to duplicate"),
     recordPath: z
       .string()
       .optional()
-      .describe("The DEVONthink location path of the record (e.g., '/Inbox/My Document'), NOT the filesystem path"),
+      .describe("DEVONthink location path of the record (e.g., '/Inbox/My Document')"),
     destinationGroupUuid: z
       .string()
-      .describe("The UUID of the destination group (can be in any database)"),
+      .describe("UUID of the destination group"),
     databaseName: z
       .string()
       .optional()
       .describe(
-        "The name of the database containing the source record (defaults to current database)"
+        "Database containing the source record (optional, defaults to current)"
       ),
   })
   .strict()
@@ -205,9 +205,9 @@ const duplicateRecord = async (
 };
 
 export const duplicateRecordTool: Tool = {
-  name: "duplicate_record",
-  description:
-    "Duplicate a record to any destination group, creating an independent copy. Unlike replication, duplication can cross databases and creates a completely separate record. Indexed items are not supported by audit-proof databases.\n\nRecord identification methods (in order of reliability):\n1. **UUID** (recommended): Globally unique identifier that works across all databases\n2. **ID + Database**: Database-specific ID requires specifying the database name\n3. **DEVONthink Path**: Internal DEVONthink location path like '/Inbox/My Document' (NOT filesystem paths like '/Users/.../')\n\n**Important Path Note**: Use DEVONthink's internal location paths (shown in the 'Path' column in DEVONthink), not filesystem paths. Example: '/Projects/2024/Report.pdf' not '/Users/david/Databases/MyDB.dtBase2/Files.noindex/...'\n\n**Replicate vs Duplicate**:\n- **Replicate**: Creates linked reference within same database (use replicate_record tool)\n- **Duplicate**: Creates independent copy, can cross databases (this tool)\n\nReturns the duplicated record's UUID, ID, location, and destination database information.",
+  name: "duplicateRecord",
+  title: "Duplicate Record",
+  description: "Duplicate a record to any destination group, creating an independent copy.\n\nExample:\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\",\n  \"destinationGroupUuid\": \"FEDC-BA09-8765-4321\"\n}",
   inputSchema: zodToJsonSchema(DuplicateRecordSchema) as ToolInput,
   run: duplicateRecord,
 };

@@ -78,10 +78,10 @@ const getCurrentDatabase = async (): Promise<GetCurrentDatabaseResult> => {
   return await executeJxa<GetCurrentDatabaseResult>(script);
 };
 
-export const currentDatabaseTool: Tool = {
-  name: "current_database",
-  description:
-    "Get information about the currently selected/active database in DEVONthink. This tool returns detailed properties of the database that is currently in focus, including its UUID, name, path, and various settings. Useful for determining which database operations will target by default.",
+export const getCurrentDatabaseTool: Tool = {
+  name: "getCurrentDatabase",
+  title: "Get Current Database",
+  description: "Get information about the currently selected database in DEVONthink.\n\nExample:\n{}",
   inputSchema: zodToJsonSchema(GetCurrentDatabaseSchema) as ToolInput,
   run: getCurrentDatabase,
 };

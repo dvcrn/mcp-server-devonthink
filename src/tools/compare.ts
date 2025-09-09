@@ -16,23 +16,19 @@ const CompareSchema = z
   .object({
     recordUuid: z
       .string()
-      .describe("The UUID of the primary record to compare"),
+      .describe("Primary record UUID for comparison"),
     compareWithUuid: z
       .string()
       .optional()
-      .describe(
-        "The UUID of the second record for direct comparison (optional)"
-      ),
+      .describe("Second record UUID for direct comparison (optional)"),
     databaseName: z
       .string()
       .optional()
-      .describe(
-        "The name of the database to search in (defaults to current database)"
-      ),
+      .describe("Database name to search in (optional)"),
     comparison: z
       .enum(["data comparison", "tags comparison"])
       .optional()
-      .describe("The comparison type"),
+      .describe("Comparison type (optional)"),
   })
   .strict();
 
@@ -254,9 +250,9 @@ const compare = async (input: CompareInput): Promise<CompareResult> => {
 };
 
 export const compareTool: Tool = {
-  name: "compare",
-  description:
-    "Compare DEVONthink records to find similarities. Use with just `recordUuid` to find similar records in the database, or add `compareWithUuid` to directly compare two specific records. The tool returns either a list of similar records or a detailed comparison between two records.",
+  name: "compareRecords",
+  title: "Compare Records",
+  description: "Compare DEVONthink records for similarities.\n\nExample 1: Find similar records\n{\n  \"recordUuid\": \"1234-5678-90AB-CDEF\"\n}\n\nExample 2: Compare two specific records\n{\n  \"recordUuid\": \"1234-5678-90AB-CDEF\",\n  \"compareWithUuid\": \"FEDC-BA09-8765-4321\"\n}",
   inputSchema: zodToJsonSchema(CompareSchema) as ToolInput,
   run: compare,
 };
