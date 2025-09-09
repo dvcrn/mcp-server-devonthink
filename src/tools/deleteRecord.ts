@@ -19,7 +19,7 @@ const DeleteRecordSchema = z
     recordPath: z
       .string()
       .optional()
-      .describe("DEVONthink location path of the record (e.g., '/Inbox/My Document')"),
+      .describe("DEVONthink location path of the record (e.g., '/Inbox/My Document'), NOT the filesystem path"),
     databaseName: z
       .string()
       .optional()
