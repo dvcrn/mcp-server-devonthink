@@ -98,8 +98,7 @@ const renameRecord = async (
 };
 
 export const renameRecordTool: Tool = {
-  name: "renameRecord",
-  title: "Rename Record",
+  name: "rename_record",
   description: "Renames a specific record in DEVONthink.\n\nExample:\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\",\n  \"newName\": \"New Record Name\"\n}",
   inputSchema: zodToJsonSchema(RenameRecordSchema) as ToolInput,
   run: renameRecord,

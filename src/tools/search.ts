@@ -256,9 +256,6 @@ const search = async (input: SearchInput): Promise<SearchResult> => {
           } catch (e) {
             return JSON.stringify({ success: false, error: "Error checking if record is a group: " + e.toString() });
           }
-        } else if (pDatabaseName) {
-          // If a specific database was provided, use its root group to scope the search
-          searchScope = targetDatabase.root();
         } else {
           searchScope = null; // Search all databases
         }
@@ -339,8 +336,7 @@ const search = async (input: SearchInput): Promise<SearchResult> => {
 
 export const searchTool: Tool = {
   name: "search",
-  title: "Search Records",
-  description: "Search for records in DEVONthink. See DEVONthink documentation for advanced search query syntax.\n\nExample:\n{\n  \"query\": \"invoice 2024\"\n}",
+  description: "Search for records in DEVONthink.\n\nExample:\n{\n  \"query\": \"invoice 2024\"\n}",
   inputSchema: zodToJsonSchema(SearchSchema) as ToolInput,
   run: search,
 };

@@ -186,8 +186,7 @@ const getRecordProperties = async (
 };
 
 export const getRecordPropertiesTool: Tool = {
-  name: "getRecordProperties",
-  title: "Get Record Properties",
+  name: "get_record_properties",
   description: "Get detailed properties and metadata for a DEVONthink record.\n\nExample:\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\"\n}",
   inputSchema: zodToJsonSchema(GetRecordPropertiesSchema) as ToolInput,
   run: getRecordProperties,

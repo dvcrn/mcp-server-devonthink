@@ -108,8 +108,7 @@ const listGroupContent = async (
 };
 
 export const listGroupContentTool: Tool = {
-  name: "listGroupContent",
-  title: "List Group Content",
+  name: "list_group_content",
   description: "Lists the content of a specific group in DEVONthink.\n\nExample:\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\"\n}",
   inputSchema: zodToJsonSchema(ListGroupContentSchema) as ToolInput,
   run: listGroupContent,

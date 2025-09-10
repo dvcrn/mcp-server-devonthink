@@ -97,9 +97,8 @@ const getSelectedRecords = async (): Promise<GetSelectedRecordsResult> => {
   return await executeJxa<GetSelectedRecordsResult>(script);
 };
 
-export const getSelectedRecordsTool: Tool = {
-  name: "getSelectedRecords",
-  title: "Get Selected Records",
+export const selectedRecordsTool: Tool = {
+  name: "selected_records",
   description: "Get information about currently selected records in DEVONthink.\n\nExample:\n{}",
   inputSchema: zodToJsonSchema(GetSelectedRecordsSchema) as ToolInput,
   run: getSelectedRecords,

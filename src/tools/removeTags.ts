@@ -105,8 +105,7 @@ const removeTags = async (
 };
 
 export const removeTagsTool: Tool = {
-  name: "removeTags",
-  title: "Remove Tags",
+  name: "remove_tags",
   description: "Removes tags from a specific record in DEVONthink.\n\nExample:\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\",\n  \"tags\": [\"old-tag\"]\n}",
   inputSchema: zodToJsonSchema(RemoveTagsSchema) as ToolInput,
   run: removeTags,

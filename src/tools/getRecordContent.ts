@@ -105,8 +105,7 @@ const getRecordContent = async (
 };
 
 export const getRecordContentTool: Tool = {
-  name: "getRecordContent",
-  title: "Get Record Content",
+  name: "get_record_content",
   description: "Gets the content of a specific record in DEVONthink.\n\nExample:\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\"\n}",
   inputSchema: zodToJsonSchema(GetRecordContentSchema) as ToolInput,
   run: getRecordContent,

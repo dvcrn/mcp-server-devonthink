@@ -250,8 +250,7 @@ const compare = async (input: CompareInput): Promise<CompareResult> => {
 };
 
 export const compareTool: Tool = {
-  name: "compareRecords",
-  title: "Compare Records",
+  name: "compare",
   description: "Compare DEVONthink records for similarities.\n\nExample 1: Find similar records\n{\n  \"recordUuid\": \"1234-5678-90AB-CDEF\"\n}\n\nExample 2: Compare two specific records\n{\n  \"recordUuid\": \"1234-5678-90AB-CDEF\",\n  \"compareWithUuid\": \"FEDC-BA09-8765-4321\"\n}",
   inputSchema: zodToJsonSchema(CompareSchema) as ToolInput,
   run: compare,

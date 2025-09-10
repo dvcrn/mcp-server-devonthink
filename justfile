@@ -1,4 +1,4 @@
-# DEVONthink MCP Server - Just Commands
+# MicroFn MCP Server - Just Commands
 
 # Default recipe to show available commands
 default:

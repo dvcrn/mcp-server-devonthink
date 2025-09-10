@@ -167,8 +167,7 @@ const getRecordByIdentifier = async (
 };
 
 export const getRecordByIdentifierTool: Tool = {
-  name: "getRecordByIdentifier",
-  title: "Get Record by Identifier",
+  name: "get_record_by_identifier",
   description: "Get a DEVONthink record using its UUID or ID.\n\nExample (UUID):\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\"\n}\n\nExample (ID):\n{\n  \"id\": 12345,\n  \"databaseName\": \"MyDatabase\"\n}",
   inputSchema: zodToJsonSchema(GetRecordByIdentifierSchema) as ToolInput,
   run: getRecordByIdentifier,

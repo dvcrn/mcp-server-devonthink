@@ -156,8 +156,7 @@ const classify = async (input: ClassifyInput): Promise<ClassifyResult> => {
 };
 
 export const classifyTool: Tool = {
-  name: "classifyRecord",
-  title: "Classify Record",
+  name: "classify",
   description: "Get classification proposals for a DEVONthink record.\n\nExample:\n{\n  \"recordUuid\": \"1234-5678-90AB-CDEF\"\n}",
   inputSchema: zodToJsonSchema(ClassifySchema) as ToolInput,
   run: classify,

@@ -105,8 +105,7 @@ const updateRecordContent = async (
 };
 
 export const updateRecordContentTool: Tool = {
-  name: "updateRecordContent",
-  title: "Update Record Content",
+  name: "update_record_content",
   description: "Updates the content of an existing record in DEVONthink.\n\nExample:\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\",\n  \"content\": \"# New Content\"\n}",
   inputSchema: zodToJsonSchema(UpdateRecordContentSchema) as ToolInput,
   run: updateRecordContent,
