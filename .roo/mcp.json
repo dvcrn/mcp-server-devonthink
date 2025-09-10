@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "devonthink": {
+      "timeout": 60,
+      "command": "node",
+      "args": ["/Users/david/src/mcp-server-devonthink/dist/index.js"],
+      "env": {
+        "GENERATE_SHORTCUT_TOOLS": "true",
+        "INJECT_SHORTCUT_LIST": "false"
+      },
+      "type": "stdio"
+    }
+  }
+}
