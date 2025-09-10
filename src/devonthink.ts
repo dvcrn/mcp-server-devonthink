@@ -1,13 +1,13 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-  ErrorCode,
-  ListResourcesRequestSchema,
-  ListPromptsRequestSchema,
-  ListResourceTemplatesRequestSchema,
-  McpError,
-  Tool,
+	CallToolRequestSchema,
+	ListToolsRequestSchema,
+	ErrorCode,
+	ListResourcesRequestSchema,
+	ListPromptsRequestSchema,
+	ListResourceTemplatesRequestSchema,
+	McpError,
+	Tool,
 } from "@modelcontextprotocol/sdk/types.js";
 import { isRunningTool } from "./tools/isRunning.js";
 import { createRecordTool } from "./tools/createRecord.js";
@@ -34,97 +34,94 @@ import { convertRecordTool } from "./tools/convertRecord.js";
 import { updateRecordContentTool } from "./tools/updateRecordContent.js";
 
 export const createServer = async () => {
-  const server = new Server(
-    {
-      name: "devonthink-mcp",
-      version: "0.1.0",
-    },
-    {
-      capabilities: {
-        tools: {},
-        resources: {},
-        prompts: {},
-      },
-    }
-  );
+	const server = new Server(
+		{
+			name: "devonthink-mcp",
+			version: "0.1.0",
+		},
+		{
+			capabilities: {
+				tools: {},
+				resources: {},
+				prompts: {},
+			},
+		},
+	);
 
-  const tools: Tool[] = [
-    isRunningTool,
-    createRecordTool,
-    deleteRecordTool,
-    moveRecordTool,
-    getRecordPropertiesTool,
-    getRecordByIdentifierTool,
-    searchTool,
-    lookupRecordTool,
-    createFromUrlTool,
-    getOpenDatabasesTool,
-    currentDatabaseTool,
-    selectedRecordsTool,
-    listGroupContentTool,
-    getRecordContentTool,
-    renameRecordTool,
-    addTagsTool,
-    removeTagsTool,
-    classifyTool,
-    compareTool,
-    replicateRecordTool,
-    duplicateRecordTool,
-    convertRecordTool,
-    updateRecordContentTool,
-  ];
+	const tools: Tool[] = [
+		isRunningTool,
+		createRecordTool,
+		deleteRecordTool,
+		moveRecordTool,
+		getRecordPropertiesTool,
+		getRecordByIdentifierTool,
+		searchTool,
+		lookupRecordTool,
+		createFromUrlTool,
+		getOpenDatabasesTool,
+		currentDatabaseTool,
+		selectedRecordsTool,
+		listGroupContentTool,
+		getRecordContentTool,
+		renameRecordTool,
+		addTagsTool,
+		removeTagsTool,
+		classifyTool,
+		compareTool,
+		replicateRecordTool,
+		duplicateRecordTool,
+		convertRecordTool,
+		updateRecordContentTool,
+	];
 
-  server.setRequestHandler(ListToolsRequestSchema, async () => {
-    return { tools };
-  });
+	server.setRequestHandler(ListToolsRequestSchema, async () => {
+		return { tools };
+	});
 
-  server.setRequestHandler(ListResourcesRequestSchema, async () => {
-    return { resources: [] };
-  });
+	server.setRequestHandler(ListResourcesRequestSchema, async () => {
+		return { resources: [] };
+	});
 
-  server.setRequestHandler(ListResourceTemplatesRequestSchema, async () => {
-    return { resources: [] };
-  });
+	server.setRequestHandler(ListResourceTemplatesRequestSchema, async () => {
+		return { resources: [] };
+	});
 
-  server.setRequestHandler(ListPromptsRequestSchema, async () => {
-    return { prompts: [] };
-  });
+	server.setRequestHandler(ListPromptsRequestSchema, async () => {
+		return { prompts: [] };
+	});
 
-  server.setRequestHandler(CallToolRequestSchema, async (request) => {
-    const { name, arguments: args = {} } = request.params;
+	server.setRequestHandler(CallToolRequestSchema, async (request) => {
+		const { name, arguments: args = {} } = request.params;
 
-    const tool = tools.find((t) => t.name === name);
+		const tool = tools.find((t) => t.name === name);
 
-    if (!tool) {
-      throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
-    }
+		if (!tool) {
+			throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
+		}
 
-    if (typeof tool.run !== "function") {
-      throw new McpError(
-        ErrorCode.InternalError,
-        `Tool '${name}' has no run function.`
-      );
-    }
+		if (typeof tool.run !== "function") {
+			throw new McpError(ErrorCode.InternalError, `Tool '${name}' has no run function.`);
+		}
 
-    try {
-      const result = await tool.run(args);
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(result, null, 2),
-          },
-        ],
-      };
-    } catch (error) {
-      throw error instanceof McpError
-        ? error
-        : new McpError(
-            ErrorCode.InternalError,
-            error instanceof Error ? error.message : String(error)
-          );
-    }
-  });
+		try {
+			const result = await tool.run(args);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(result, null, 2),
+					},
+				],
+			};
+		} catch (error) {
+			throw error instanceof McpError
+				? error
+				: new McpError(
+						ErrorCode.InternalError,
+						error instanceof Error ? error.message : String(error),
+					);
+		}
+	});
 
-  return { server, cleanup: async () => {} };
+	return { server, cleanup: async () => {} };
 };

@@ -4,20 +4,20 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { createServer } from "./devonthink.js";
 
 async function main() {
-  const transport = new StdioServerTransport();
-  const { server, cleanup } = await createServer();
+	const transport = new StdioServerTransport();
+	const { server, cleanup } = await createServer();
 
-  await server.connect(transport);
+	await server.connect(transport);
 
-  // Cleanup on exit
-  process.on("SIGINT", async () => {
-    await cleanup();
-    await server.close();
-    process.exit(0);
-  });
+	// Cleanup on exit
+	process.on("SIGINT", async () => {
+		await cleanup();
+		await server.close();
+		process.exit(0);
+	});
 }
 
 main().catch((error) => {
-  console.error("Server error:", error);
-  process.exit(1);
+	console.error("Server error:", error);
+	process.exit(1);
 });
