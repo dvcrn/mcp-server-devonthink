@@ -15,7 +15,8 @@ interface DatabaseInfo {
   path: string;
   filename: string;
   encrypted: boolean;
-  auditProof: boolean;
+  revisionProof?: boolean; // DEVONthink 4.1 and later
+  auditProof?: boolean;    // DEVONthink before 4.1
   readOnly: boolean;
   spotlightIndexing: boolean;
   versioning: boolean;
@@ -54,11 +55,21 @@ const getOpenDatabases = async (): Promise<GetOpenDatabasesResult> => {
             path: db.path(),
             filename: db.filename(),
             encrypted: db.encrypted(),
-            auditProof: db.auditProof(),
             readOnly: db.readOnly(),
             spotlightIndexing: db.spotlightIndexing(),
             versioning: db.versioning()
           };
+          
+          // Handle audit/revision proof compatibility: before 4.1 vs 4.1 and later
+          try {
+            info["revisionProof"] = db.revisionProof(); // 4.1 and later
+          } catch (e) {
+            try {
+              info["auditProof"] = db.auditProof(); // before 4.1
+            } catch (e2) {
+              // fallback if neither works - don't add any property
+            }
+          }
           
           // Add comment if available
           if (db.comment && db.comment()) {

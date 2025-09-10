@@ -15,7 +15,8 @@ interface DatabaseInfo {
   path: string;
   filename: string;
   encrypted: boolean;
-  auditProof: boolean;
+  revisionProof?: boolean; // DEVONthink 4.1 and later
+  auditProof?: boolean;    // DEVONthink before 4.1
   readOnly: boolean;
   spotlightIndexing: boolean;
   versioning: boolean;
@@ -51,11 +52,21 @@ const getCurrentDatabase = async (): Promise<GetCurrentDatabaseResult> => {
           path: currentDb.path(),
           filename: currentDb.filename(),
           encrypted: currentDb.encrypted(),
-          auditProof: currentDb.auditProof(),
           readOnly: currentDb.readOnly(),
           spotlightIndexing: currentDb.spotlightIndexing(),
           versioning: currentDb.versioning()
         };
+        
+        // Handle audit/revision proof compatibility: before 4.1 vs 4.1 and later
+        try {
+          databaseInfo["revisionProof"] = currentDb.revisionProof(); // 4.1 and later
+        } catch (e) {
+          try {
+            databaseInfo["auditProof"] = currentDb.auditProof(); // before 4.1
+          } catch (e2) {
+            // fallback if neither works - don't add any property
+          }
+        }
         
         // Add comment if available
         if (currentDb.comment && currentDb.comment()) {
