@@ -2,47 +2,44 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { Tool, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../applescript/execute.js";
-import {
-  escapeStringForJXA,
-  isJXASafeString,
-} from "../utils/escapeString.js";
+import { escapeStringForJXA, isJXASafeString } from "../utils/escapeString.js";
 import { getRecordLookupHelpers } from "../utils/jxaHelpers.js";
 
 const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const UpdateRecordContentSchema = z
-  .object({
-    uuid: z.string().describe("UUID of the record to update"),
-    content: z.string().describe("New content for the record"),
-  })
-  .strict();
+	.object({
+		uuid: z.string().describe("UUID of the record to update"),
+		content: z.string().describe("New content for the record"),
+	})
+	.strict();
 
 type UpdateRecordContentInput = z.infer<typeof UpdateRecordContentSchema>;
 
 interface UpdateRecordContentResult {
-  success: boolean;
-  error?: string;
-  uuid?: string;
-  name?: string;
-  recordType?: string;
-  updatedProperty?: string;
+	success: boolean;
+	error?: string;
+	uuid?: string;
+	name?: string;
+	recordType?: string;
+	updatedProperty?: string;
 }
 
 const updateRecordContent = async (
-  input: UpdateRecordContentInput
+	input: UpdateRecordContentInput,
 ): Promise<UpdateRecordContentResult> => {
-  const { uuid, content } = input;
+	const { uuid, content } = input;
 
-  // Validate string inputs
-  if (!isJXASafeString(uuid)) {
-    return { success: false, error: "UUID contains invalid characters" };
-  }
-  if (!isJXASafeString(content)) {
-    return { success: false, error: "Content contains invalid characters" };
-  }
+	// Validate string inputs
+	if (!isJXASafeString(uuid)) {
+		return { success: false, error: "UUID contains invalid characters" };
+	}
+	if (!isJXASafeString(content)) {
+		return { success: false, error: "Content contains invalid characters" };
+	}
 
-  const script = `
+	const script = `
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
@@ -101,12 +98,13 @@ const updateRecordContent = async (
     })();
   `;
 
-  return await executeJxa<UpdateRecordContentResult>(script);
+	return await executeJxa<UpdateRecordContentResult>(script);
 };
 
 export const updateRecordContentTool: Tool = {
-  name: "update_record_content",
-  description: "Updates the content of an existing record in DEVONthink.\n\nExample:\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\",\n  \"content\": \"# New Content\"\n}",
-  inputSchema: zodToJsonSchema(UpdateRecordContentSchema) as ToolInput,
-  run: updateRecordContent,
+	name: "update_record_content",
+	description:
+		'Updates the content of an existing record in DEVONthink.\n\nExample:\n{\n  "uuid": "1234-5678-90AB-CDEF",\n  "content": "# New Content"\n}',
+	inputSchema: zodToJsonSchema(UpdateRecordContentSchema) as ToolInput,
+	run: updateRecordContent,
 };

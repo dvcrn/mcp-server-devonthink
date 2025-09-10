@@ -2,62 +2,53 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { Tool, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../applescript/execute.js";
-import {
-  escapeStringForJXA,
-  formatValueForJXA,
-  isJXASafeString,
-} from "../utils/escapeString.js";
+import { escapeStringForJXA, formatValueForJXA, isJXASafeString } from "../utils/escapeString.js";
 import { getRecordLookupHelpers, getDatabaseHelper } from "../utils/jxaHelpers.js";
 
 const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const DeleteRecordSchema = z
-  .object({
-    uuid: z.string().optional().describe("UUID of the record to delete"),
-    recordId: z.number().optional().describe("ID of the record to delete"),
-    recordPath: z
-      .string()
-      .optional()
-      .describe("DEVONthink location path of the record (e.g., '/Inbox/My Document')"),
-    databaseName: z
-      .string()
-      .optional()
-      .describe(
-        "Database to delete the record from (optional, defaults to current)"
-      ),
-  })
-  .strict()
-  .refine(
-    (data) =>
-      data.uuid !== undefined ||
-      data.recordId !== undefined ||
-      data.recordPath !== undefined,
-    {
-      message:
-        "Either uuid, recordId, or recordPath must be provided",
-    }
-  );
+	.object({
+		uuid: z.string().optional().describe("UUID of the record to delete"),
+		recordId: z.number().optional().describe("ID of the record to delete"),
+		recordPath: z
+			.string()
+			.optional()
+			.describe("DEVONthink location path of the record (e.g., '/Inbox/My Document')"),
+		databaseName: z
+			.string()
+			.optional()
+			.describe("Database to delete the record from (optional, defaults to current)"),
+	})
+	.strict()
+	.refine(
+		(data) =>
+			data.uuid !== undefined || data.recordId !== undefined || data.recordPath !== undefined,
+		{
+			message: "Either uuid, recordId, or recordPath must be provided",
+		},
+	);
 
 type DeleteRecordInput = z.infer<typeof DeleteRecordSchema>;
 
 const deleteRecord = async (
-  input: DeleteRecordInput
+	input: DeleteRecordInput,
 ): Promise<{ success: boolean; error?: string }> => {
-  const { uuid, recordId, recordPath, databaseName } = input;
+	const { uuid, recordId, recordPath, databaseName } = input;
 
-  // Validate string inputs
-  if (uuid && !isJXASafeString(uuid)) {
-    return { success: false, error: "UUID contains invalid characters" };
-  }
-  if (recordPath && !isJXASafeString(recordPath)) {
-    return { success: false, error: "Record path contains invalid characters" };
-  }
-  if (databaseName && !isJXASafeString(databaseName)) {
-    return { success: false, error: "Database name contains invalid characters" };
-  }
+	// Validate string inputs
+	if (uuid && !isJXASafeString(uuid)) {
+		return { success: false, error: "UUID contains invalid characters" };
+	}
+	if (recordPath && !isJXASafeString(recordPath)) {
+		return { success: false, error: "Record path contains invalid characters" };
+	}
+	if (databaseName && !isJXASafeString(databaseName)) {
+		return { success: false, error: "Database name contains invalid characters" };
+	}
 
-  const script = `
+	const script = `
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
@@ -121,12 +112,13 @@ const deleteRecord = async (
     })();
   `;
 
-  return await executeJxa<{ success: boolean; error?: string }>(script);
+	return await executeJxa<{ success: boolean; error?: string }>(script);
 };
 
 export const deleteRecordTool: Tool = {
-  name: "delete_record",
-  description: "Delete a record from DEVONthink.\n\nExample:\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\"\n}",
-  inputSchema: zodToJsonSchema(DeleteRecordSchema) as ToolInput,
-  run: deleteRecord,
+	name: "delete_record",
+	description:
+		'Delete a record from DEVONthink.\n\nExample:\n{\n  "uuid": "1234-5678-90AB-CDEF"\n}',
+	inputSchema: zodToJsonSchema(DeleteRecordSchema) as ToolInput,
+	run: deleteRecord,
 };

@@ -9,28 +9,28 @@ type ToolInput = z.infer<typeof ToolInputSchema>;
 const GetCurrentDatabaseSchema = z.object({}).strict();
 
 interface DatabaseInfo {
-  id: number;
-  uuid: string;
-  name: string;
-  path: string;
-  filename: string;
-  encrypted: boolean;
-  revisionProof?: boolean; // DEVONthink 4.1 and later
-  auditProof?: boolean;    // DEVONthink before 4.1
-  readOnly: boolean;
-  spotlightIndexing: boolean;
-  versioning: boolean;
-  comment?: string;
+	id: number;
+	uuid: string;
+	name: string;
+	path: string;
+	filename: string;
+	encrypted: boolean;
+	revisionProof?: boolean; // DEVONthink 4.1 and later
+	auditProof?: boolean; // DEVONthink before 4.1
+	readOnly: boolean;
+	spotlightIndexing: boolean;
+	versioning: boolean;
+	comment?: string;
 }
 
 interface GetCurrentDatabaseResult {
-  success: boolean;
-  error?: string;
-  database?: DatabaseInfo;
+	success: boolean;
+	error?: string;
+	database?: DatabaseInfo;
 }
 
 const getCurrentDatabase = async (): Promise<GetCurrentDatabaseResult> => {
-  const script = `
+	const script = `
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
@@ -86,12 +86,13 @@ const getCurrentDatabase = async (): Promise<GetCurrentDatabaseResult> => {
     })();
   `;
 
-  return await executeJxa<GetCurrentDatabaseResult>(script);
+	return await executeJxa<GetCurrentDatabaseResult>(script);
 };
 
 export const currentDatabaseTool: Tool = {
-  name: "current_database",
-  description: "Get information about the currently selected database in DEVONthink.\n\nExample:\n{}",
-  inputSchema: zodToJsonSchema(GetCurrentDatabaseSchema) as ToolInput,
-  run: getCurrentDatabase,
+	name: "current_database",
+	description:
+		"Get information about the currently selected database in DEVONthink.\n\nExample:\n{}",
+	inputSchema: zodToJsonSchema(GetCurrentDatabaseSchema) as ToolInput,
+	run: getCurrentDatabase,
 };
