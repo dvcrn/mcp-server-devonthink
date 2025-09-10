@@ -9,29 +9,29 @@ type ToolInput = z.infer<typeof ToolInputSchema>;
 const GetOpenDatabasesSchema = z.object({}).strict();
 
 interface DatabaseInfo {
-  id: number;
-  uuid: string;
-  name: string;
-  path: string;
-  filename: string;
-  encrypted: boolean;
-  revisionProof?: boolean; // DEVONthink 4.1 and later
-  auditProof?: boolean;    // DEVONthink before 4.1
-  readOnly: boolean;
-  spotlightIndexing: boolean;
-  versioning: boolean;
-  comment?: string;
+	id: number;
+	uuid: string;
+	name: string;
+	path: string;
+	filename: string;
+	encrypted: boolean;
+	revisionProof?: boolean; // DEVONthink 4.1 and later
+	auditProof?: boolean; // DEVONthink before 4.1
+	readOnly: boolean;
+	spotlightIndexing: boolean;
+	versioning: boolean;
+	comment?: string;
 }
 
 interface GetOpenDatabasesResult {
-  success: boolean;
-  error?: string;
-  databases?: DatabaseInfo[];
-  totalCount?: number;
+	success: boolean;
+	error?: string;
+	databases?: DatabaseInfo[];
+	totalCount?: number;
 }
 
 const getOpenDatabases = async (): Promise<GetOpenDatabasesResult> => {
-  const script = `
+	const script = `
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
@@ -93,12 +93,12 @@ const getOpenDatabases = async (): Promise<GetOpenDatabasesResult> => {
     })();
   `;
 
-  return await executeJxa<GetOpenDatabasesResult>(script);
+	return await executeJxa<GetOpenDatabasesResult>(script);
 };
 
 export const getOpenDatabasesTool: Tool = {
-  name: "get_open_databases",
-  description: "Get a list of all currently open databases in DEVONthink.\n\nExample:\n{}",
-  inputSchema: zodToJsonSchema(GetOpenDatabasesSchema) as ToolInput,
-  run: getOpenDatabases,
+	name: "get_open_databases",
+	description: "Get a list of all currently open databases in DEVONthink.\n\nExample:\n{}",
+	inputSchema: zodToJsonSchema(GetOpenDatabasesSchema) as ToolInput,
+	run: getOpenDatabases,
 };

@@ -2,102 +2,85 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { Tool, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../applescript/execute.js";
-import {
-  escapeStringForJXA,
-  formatValueForJXA,
-  isJXASafeString,
-} from "../utils/escapeString.js";
-import {
-  getRecordLookupHelpers,
-  getDatabaseHelper,
-  isGroupHelper,
-} from "../utils/jxaHelpers.js";
+import { escapeStringForJXA, formatValueForJXA, isJXASafeString } from "../utils/escapeString.js";
+import { getRecordLookupHelpers, getDatabaseHelper, isGroupHelper } from "../utils/jxaHelpers.js";
 
 const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const DuplicateRecordSchema = z
-  .object({
-    uuid: z.string().optional().describe("UUID of the record to duplicate"),
-    recordId: z.number().optional().describe("ID of the record to duplicate"),
-    recordPath: z
-      .string()
-      .optional()
-      .describe("DEVONthink location path of the record (e.g., '/Inbox/My Document')"),
-    destinationGroupUuid: z
-      .string()
-      .describe("UUID of the destination group"),
-    databaseName: z
-      .string()
-      .optional()
-      .describe(
-        "Database containing the source record (optional, defaults to current)"
-      ),
-  })
-  .strict()
-  .refine(
-    (data) =>
-      data.uuid !== undefined ||
-      data.recordId !== undefined ||
-      data.recordPath !== undefined,
-    {
-      message:
-        "Either uuid, recordId, or recordPath must be provided",
-    }
-  );
+	.object({
+		uuid: z.string().optional().describe("UUID of the record to duplicate"),
+		recordId: z.number().optional().describe("ID of the record to duplicate"),
+		recordPath: z
+			.string()
+			.optional()
+			.describe("DEVONthink location path of the record (e.g., '/Inbox/My Document')"),
+		destinationGroupUuid: z.string().describe("UUID of the destination group"),
+		databaseName: z
+			.string()
+			.optional()
+			.describe("Database containing the source record (optional, defaults to current)"),
+	})
+	.strict()
+	.refine(
+		(data) =>
+			data.uuid !== undefined || data.recordId !== undefined || data.recordPath !== undefined,
+		{
+			message: "Either uuid, recordId, or recordPath must be provided",
+		},
+	);
 
 type DuplicateRecordInput = z.infer<typeof DuplicateRecordSchema>;
 
 interface DuplicateRecordResult {
-  success: boolean;
-  error?: string;
-  duplicatedRecord?: {
-    id: number;
-    uuid: string;
-    name: string;
-    path: string;
-    location: string;
-    recordType: string;
-    databaseName: string;
-  };
+	success: boolean;
+	error?: string;
+	duplicatedRecord?: {
+		id: number;
+		uuid: string;
+		name: string;
+		path: string;
+		location: string;
+		recordType: string;
+		databaseName: string;
+	};
 }
 
-const duplicateRecord = async (
-  input: DuplicateRecordInput
-): Promise<DuplicateRecordResult> => {
-  const uuid = input.uuid;
-  const recordId = input.recordId;
-  const recordPath = input.recordPath;
-  const destinationGroupUuid = input.destinationGroupUuid;
-  const databaseName = input.databaseName;
+const duplicateRecord = async (input: DuplicateRecordInput): Promise<DuplicateRecordResult> => {
+	const uuid = input.uuid;
+	const recordId = input.recordId;
+	const recordPath = input.recordPath;
+	const destinationGroupUuid = input.destinationGroupUuid;
+	const databaseName = input.databaseName;
 
-  // Validate string inputs
-  if (uuid && !isJXASafeString(uuid)) {
-    const errorResult: DuplicateRecordResult = {} as DuplicateRecordResult;
-    errorResult["success"] = false;
-    errorResult["error"] = "UUID contains invalid characters";
-    return errorResult;
-  }
-  if (recordPath && !isJXASafeString(recordPath)) {
-    const errorResult: DuplicateRecordResult = {} as DuplicateRecordResult;
-    errorResult["success"] = false;
-    errorResult["error"] = "Record path contains invalid characters";
-    return errorResult;
-  }
-  if (destinationGroupUuid && !isJXASafeString(destinationGroupUuid)) {
-    const errorResult: DuplicateRecordResult = {} as DuplicateRecordResult;
-    errorResult["success"] = false;
-    errorResult["error"] = "Destination group UUID contains invalid characters";
-    return errorResult;
-  }
-  if (databaseName && !isJXASafeString(databaseName)) {
-    const errorResult: DuplicateRecordResult = {} as DuplicateRecordResult;
-    errorResult["success"] = false;
-    errorResult["error"] = "Database name contains invalid characters";
-    return errorResult;
-  }
+	// Validate string inputs
+	if (uuid && !isJXASafeString(uuid)) {
+		const errorResult: DuplicateRecordResult = {} as DuplicateRecordResult;
+		errorResult["success"] = false;
+		errorResult["error"] = "UUID contains invalid characters";
+		return errorResult;
+	}
+	if (recordPath && !isJXASafeString(recordPath)) {
+		const errorResult: DuplicateRecordResult = {} as DuplicateRecordResult;
+		errorResult["success"] = false;
+		errorResult["error"] = "Record path contains invalid characters";
+		return errorResult;
+	}
+	if (destinationGroupUuid && !isJXASafeString(destinationGroupUuid)) {
+		const errorResult: DuplicateRecordResult = {} as DuplicateRecordResult;
+		errorResult["success"] = false;
+		errorResult["error"] = "Destination group UUID contains invalid characters";
+		return errorResult;
+	}
+	if (databaseName && !isJXASafeString(databaseName)) {
+		const errorResult: DuplicateRecordResult = {} as DuplicateRecordResult;
+		errorResult["success"] = false;
+		errorResult["error"] = "Database name contains invalid characters";
+		return errorResult;
+	}
 
-  const script = `
+	const script = `
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
@@ -201,12 +184,13 @@ const duplicateRecord = async (
     })();
   `;
 
-  return await executeJxa<DuplicateRecordResult>(script);
+	return await executeJxa<DuplicateRecordResult>(script);
 };
 
 export const duplicateRecordTool: Tool = {
-  name: "duplicate_record",
-  description: "Duplicate a record to any destination group, creating an independent copy.\n\nExample:\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\",\n  \"destinationGroupUuid\": \"FEDC-BA09-8765-4321\"\n}",
-  inputSchema: zodToJsonSchema(DuplicateRecordSchema) as ToolInput,
-  run: duplicateRecord,
+	name: "duplicate_record",
+	description:
+		'Duplicate a record to any destination group, creating an independent copy.\n\nExample:\n{\n  "uuid": "1234-5678-90AB-CDEF",\n  "destinationGroupUuid": "FEDC-BA09-8765-4321"\n}',
+	inputSchema: zodToJsonSchema(DuplicateRecordSchema) as ToolInput,
+	run: duplicateRecord,
 };
