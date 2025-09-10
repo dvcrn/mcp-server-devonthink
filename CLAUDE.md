@@ -33,6 +33,9 @@
   - **`duplicateRecord.ts`**: Duplicates records to any database (creates independent copies)
   - **`convertRecord.ts`**: Converts records to different formats
   - **`updateRecordContent.ts`**: Updates the content of existing records while preserving UUID
+  - **`importFile.ts`**: Imports individual files from the filesystem using DEVONthink's native import functionality
+  - **`importDirectory.ts`**: Imports entire directory structures with filtering and recursive options
+  - **`importWithOptions.ts`**: Advanced import tool with comprehensive configuration options and batch processing
 - **`src/utils/`**: Utility functions
   - **`escapeString.ts`**: Provides safe string escaping for JXA script interpolation
 - **`src/applescript/execute.ts`**: A utility module that provides the `executeJxa` function to run JXA scripts via the command line.
@@ -64,6 +67,9 @@ The MCP server currently provides the following tools:
 21. **`duplicate_record`** - Duplicate records to any database (creates independent copies)
 22. **`convert_record`** - Convert records to different formats (plain text, rich text, markdown, HTML, PDF, etc.)
 23. **`update_record_content`** - Update the content of existing records while preserving UUID and metadata
+24. **`import_file`** - Import individual files from the filesystem, preserving file type and metadata using DEVONthink's native import
+25. **`import_directory`** - Import entire directory structures with recursive processing, file filtering, and path preservation options
+26. **`import_with_options`** - Advanced batch import with comprehensive options including duplicate handling, tagging, and custom configurations
 
 ## Adding New Tools
 
@@ -597,3 +603,106 @@ search({ query: "name:foo kind:pdf" })
 - Always validate that paths are DEVONthink location paths, not filesystem paths
 - Use proper date syntax for search queries
 - Prefer UUID or ID+Database over path-based lookups when possible
+
+## Native File Import Tools (2025-08)
+
+### Enhanced File Import Capabilities
+
+The MCP server now includes three powerful import tools that use DEVONthink's native import functionality, solving previous encoding and file type issues:
+
+### `import_file` - Single File Import
+- **Purpose**: Import individual files with proper metadata preservation
+- **Benefits**: Handles all file types (text, binary, scripts, images), preserves file metadata
+- **Parameters**:
+  - `filePath`: Absolute filesystem path to the file
+  - `parentGroupUuid`: Target group UUID (optional, defaults to inbox)
+  - `databaseName`: Target database name (optional, defaults to current)
+  - `customName`: Override the imported record name (optional)
+
+**Example Usage:**
+```javascript
+// Import a shell script
+mcp_client.call("import_file", {
+  "filePath": "/path/to/script.sh",
+  "parentGroupUuid": "scripts-folder-uuid",
+  "customName": "Deployment Script"
+})
+```
+
+### `import_directory` - Directory Structure Import
+- **Purpose**: Import entire directory hierarchies with filtering
+- **Benefits**: Batch processing, file filtering, structure preservation
+- **Parameters**:
+  - `directoryPath`: Absolute path to directory
+  - `parentGroupUuid`: Target group UUID (optional)
+  - `databaseName`: Target database name (optional)
+  - `recursive`: Import subdirectories (default: true)
+  - `fileFilter`: Glob pattern (e.g., "*.{md,txt}")
+  - `excludeHidden`: Skip hidden files (default: true)
+  - `preservePath`: Maintain directory structure (default: true)
+
+**Example Usage:**
+```javascript
+// Import project documentation
+mcp_client.call("import_directory", {
+  "directoryPath": "/path/to/project/docs",
+  "fileFilter": "*.{md,txt,pdf}",
+  "preservePath": true
+})
+```
+
+### `import_with_options` - Advanced Batch Import
+- **Purpose**: Comprehensive import with advanced configuration
+- **Benefits**: Duplicate handling, batch tagging, multiple sources
+- **Parameters**:
+  - `sourcePaths`: Array of file/directory paths
+  - `parentGroupUuid`: Target group UUID (optional)
+  - `databaseName`: Target database name (optional)
+  - `importOptions`: Comprehensive configuration object
+    - `createIndex`: Boolean (default: true) - Create index entries for imported files
+    - `duplicateDetection`: "skip", "rename", or "replace" - How to handle duplicate files
+    - `preserveCreationDate`: Boolean (default: true) - Maintain original file dates
+    - `addTags`: Array of tags to apply to all imported records
+    - `recursive`: Boolean (default: true) - Import subdirectories recursively (applies to directory sources)
+    - `fileFilter`: Glob pattern to filter files (e.g., "*.md", "*.{txt,md}")
+    - `excludeHidden`: Boolean (default: true) - Whether to exclude hidden files and directories
+    - `preservePath`: Boolean (default: true) - Whether to preserve directory structure
+
+**Example Usage:**
+```javascript
+// Import with comprehensive options
+mcp_client.call("import_with_options", {
+  "sourcePaths": ["/archive/project1", "/archive/project2"],
+  "importOptions": {
+    "createIndex": true,
+    "duplicateDetection": "rename",
+    "preserveCreationDate": true,
+    "addTags": ["archived", "legacy"],
+    "fileFilter": "*.{md,txt,js,sh}",
+    "preservePath": true
+  }
+})
+```
+
+### Key Advantages Over Content-Based Creation
+
+1. **Encoding Safety**: DEVONthink handles all character encodings internally
+2. **File Type Preservation**: Maintains proper file types and associations
+3. **Metadata Preservation**: Keeps creation dates, file sizes, and other metadata
+4. **Binary File Support**: Handles images, PDFs, executables, and other binary formats
+5. **Batch Processing**: Efficiently imports multiple files and directories
+6. **Error Recovery**: Graceful handling of problematic files with detailed reporting
+
+### Import Tool Selection Guide
+
+- **Single File**: Use `import_file` for importing individual files with optional renaming
+- **Directory Structure**: Use `import_directory` for importing folder hierarchies with filtering
+- **Complex Batch**: Use `import_with_options` for advanced scenarios with duplicate handling and tagging
+
+### Response Format
+
+All import tools return detailed responses including:
+- `importedRecords`: Array of successfully imported records with UUIDs and metadata
+- `skippedFiles`: Files that couldn't be imported with reasons
+- `duplicateFiles`: Duplicate handling results (for `import_with_options`)
+- `totalFiles`, `importedCount`, `skippedCount`: Summary statistics
