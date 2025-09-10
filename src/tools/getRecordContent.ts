@@ -14,11 +14,11 @@ type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const GetRecordContentSchema = z
   .object({
-    uuid: z.string().describe("The UUID of the record to get content from"),
+    uuid: z.string().describe("UUID of the record to get content from"),
     databaseName: z
       .string()
       .optional()
-      .describe("The name of the database to get the record from (optional)"),
+      .describe("Database name to get the record from (optional)"),
   })
   .strict();
 
@@ -106,7 +106,7 @@ const getRecordContent = async (
 
 export const getRecordContentTool: Tool = {
   name: "get_record_content",
-  description: "Gets the content of a specific record in DEVONthink.",
+  description: "Gets the content of a specific record in DEVONthink.\n\nExample:\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\"\n}",
   inputSchema: zodToJsonSchema(GetRecordContentSchema) as ToolInput,
   run: getRecordContent,
 };

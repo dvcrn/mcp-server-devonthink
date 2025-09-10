@@ -14,8 +14,8 @@ type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const AddTagsSchema = z
   .object({
-    uuid: z.string().describe("The UUID of the record to add tags to"),
-    tags: z.array(z.string()).describe("An array of tags to add"),
+    uuid: z.string().describe("Record UUID to add tags to"),
+    tags: z.array(z.string()).describe("Tags to add"),
   })
   .strict();
 
@@ -83,7 +83,7 @@ const addTags = async (input: AddTagsInput): Promise<AddTagsResult> => {
 
 export const addTagsTool: Tool = {
   name: "add_tags",
-  description: "Adds tags to a specific record in DEVONthink.",
+  description: "Adds tags to a DEVONthink record.\n\nExample:\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\",\n  \"tags\": [\"important\", \"work\"]\n}",
   inputSchema: zodToJsonSchema(AddTagsSchema) as ToolInput,
   run: addTags,
 };

@@ -14,12 +14,12 @@ type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const RenameRecordSchema = z
   .object({
-    uuid: z.string().describe("The UUID of the record to rename"),
-    newName: z.string().describe("The new name for the record"),
+    uuid: z.string().describe("UUID of the record to rename"),
+    newName: z.string().describe("New name for the record"),
     databaseName: z
       .string()
       .optional()
-      .describe("The name of the database to rename the record in (optional)"),
+      .describe("Database to rename the record in (optional)"),
   })
   .strict();
 
@@ -99,7 +99,7 @@ const renameRecord = async (
 
 export const renameRecordTool: Tool = {
   name: "rename_record",
-  description: "Renames a specific record in DEVONthink.",
+  description: "Renames a specific record in DEVONthink.\n\nExample:\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\",\n  \"newName\": \"New Record Name\"\n}",
   inputSchema: zodToJsonSchema(RenameRecordSchema) as ToolInput,
   run: renameRecord,
 };

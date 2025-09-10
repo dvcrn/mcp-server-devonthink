@@ -19,28 +19,28 @@ type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const SearchSchema = z
   .object({
-    query: z.string().describe("The search query string"),
+    query: z.string().describe("Search query string"),
     groupUuid: z
       .string()
       .optional()
-      .describe("The UUID of the group to search in (most reliable method)"),
+      .describe("UUID of the group to search in (optional)"),
     groupId: z
       .number()
       .optional()
-      .describe("The ID of the group to search in (requires databaseName)"),
+      .describe("ID of the group to search in (optional, requires databaseName)"),
     groupPath: z
       .string()
       .optional()
-      .describe("The path of the group to search in (e.g., '/Trips/2025')"),
+      .describe("Path of the group to search in (e.g., '/Trips/2025') (optional)"),
     databaseName: z
       .string()
       .optional()
-      .describe("The database name (required when using groupId)"),
+      .describe("Database name (optional, required with groupId)"),
     useCurrentGroup: z
       .boolean()
       .optional()
       .describe(
-        "Search in the currently selected group in DEVONthink (ignores other group parameters)"
+        "Search in the currently selected group (optional)"
       ),
     recordType: z
       .enum([
@@ -59,20 +59,20 @@ const SearchSchema = z
       ])
       .optional()
       .describe(
-        "Filter results by record type (e.g., 'PDF' for PDF files, 'group' for folders)"
+        "Filter results by record type (optional)"
       ),
     comparison: z
       .enum(["no case", "no umlauts", "fuzzy", "related"])
       .optional()
-      .describe("The comparison type for the search"),
+      .describe("Comparison type for the search (optional)"),
     excludeSubgroups: z
       .boolean()
       .optional()
-      .describe("Whether to exclude subgroups from the search"),
+      .describe("Exclude subgroups from the search (optional)"),
     limit: z
       .number()
       .optional()
-      .describe("Maximum number of results to return (default: 50)"),
+      .describe("Maximum number of results to return (optional)"),
   })
   .strict()
   .refine(
@@ -256,9 +256,6 @@ const search = async (input: SearchInput): Promise<SearchResult> => {
           } catch (e) {
             return JSON.stringify({ success: false, error: "Error checking if record is a group: " + e.toString() });
           }
-        } else if (pDatabaseName) {
-          // If a specific database was provided, use its root group to scope the search
-          searchScope = targetDatabase.root();
         } else {
           searchScope = null; // Search all databases
         }
@@ -339,8 +336,7 @@ const search = async (input: SearchInput): Promise<SearchResult> => {
 
 export const searchTool: Tool = {
   name: "search",
-  description:
-    "Search for records in DEVONthink. This tool is useful for general text-based queries and can be scoped to a specific group. It supports various comparison options and returns a list of matching records with their properties including both ID and UUID.\n\n**Search query syntax examples:**\n- Simple text: `invoice 2024`\n- Boolean operators: `travel AND (berlin OR munich)`, `invoice NOT paid`\n- Exact phrase: `\"exact phrase here\"`\n- Wildcards: `doc*` (matches document, documentation, etc.)\n- Field searches: `name:\"meeting notes\"`, `comment:important`\n- Type filtering: `kind:pdf`, `kind:group`, `kind:markdown`, `kind:!group` (exclude groups)\n- Name searches: `name:foo kind:pdf`, `name:~thailand` (contains thailand)\n- Date searches: `kind:pdf created:Yesterday`, `kind:pdf created:#3days`, `created>=2025-07-14 created<=2025-07-21`\n- Tag searches: `tags:urgent`, `tags:(urgent OR important)`\n\n**Correct date syntax:**\n- Recent: `created:Yesterday`, `created:#3days`, `created:#1week`\n- Specific dates: `created>=2025-07-14`, `created<=2025-07-21`\n- Combined: `kind:document created>=2025-07-14 created<=2025-07-21`\n\n**Search scope options (in order of efficiency):**\n1. **useCurrentGroup** - Search in currently selected group (instant)\n2. **groupUuid** - Direct UUID lookup (fastest)\n3. **groupId + databaseName** - Direct ID lookup (fast)\n4. **groupPath** - Direct DEVONthink location path, e.g., '/Trips/2025' (NOT filesystem paths)\n\n**Examples:**\n- Search in current group: `useCurrentGroup: true`\n- Search PDFs only: `recordType: 'PDF'`\n- Search in specific folder by UUID: `groupUuid: '5557A251-0062-4DD9-9DA5-4CFE9DEE627B'`\n- Search in folder by path: `groupPath: '/Trips/2025'`\n- Recent PDFs: `query: 'kind:pdf created:#3days'`\n- Complex query: `query: 'name:foo kind:pdf created>=2025-07-14'`\n\n**Record type filters:** group, markdown, PDF, bookmark, formatted note, txt, rtf, rtfd, webarchive, quicktime, picture, smart group\n\n**Comparison options:**\n- 'no case': Case insensitive\n- 'no umlauts': Diacritics insensitive\n- 'fuzzy': Fuzzy matching\n- 'related': Find related content\n\nNote: Special characters in queries are automatically escaped. The tool returns both the record ID (database-specific) and UUID (globally unique) for each result.",
+  description: "Search for records in DEVONthink.\n\nExample:\n{\n  \"query\": \"invoice 2024\"\n}",
   inputSchema: zodToJsonSchema(SearchSchema) as ToolInput,
   run: search,
 };

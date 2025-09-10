@@ -12,13 +12,13 @@ const ListGroupContentSchema = z
       .string()
       .optional()
       .describe(
-        "The UUID of the group to list content from. Defaults to the root of the database if not provided or if '/' is passed."
+        "UUID of the group to list content from (optional, defaults to root)"
       ),
     databaseName: z
       .string()
       .optional()
       .describe(
-        "The name of the database to get the record properties from (defaults to current database)"
+        "Database to get the record properties from (optional)"
       ),
   })
   .strict();
@@ -109,8 +109,7 @@ const listGroupContent = async (
 
 export const listGroupContentTool: Tool = {
   name: "list_group_content",
-  description:
-    "Lists the content of a specific group in DEVONthink. If the uuid is not provided or is '/', it will list the content of the root group.",
+  description: "Lists the content of a specific group in DEVONthink.\n\nExample:\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\"\n}",
   inputSchema: zodToJsonSchema(ListGroupContentSchema) as ToolInput,
   run: listGroupContent,
 };

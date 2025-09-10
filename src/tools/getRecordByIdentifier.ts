@@ -17,15 +17,15 @@ const GetRecordByIdentifierSchema = z
     uuid: z
       .string()
       .optional()
-      .describe("The UUID of the record (globally unique, works across all databases)"),
+      .describe("UUID of the record"),
     id: z
       .number()
       .optional()
-      .describe("The ID of the record (database-specific, requires databaseName)"),
+      .describe("ID of the record (requires databaseName)"),
     databaseName: z
       .string()
       .optional()
-      .describe("The name of the database (required when using ID, optional with UUID)"),
+      .describe("Database name (required with id)"),
   })
   .strict()
   .refine(
@@ -168,8 +168,7 @@ const getRecordByIdentifier = async (
 
 export const getRecordByIdentifierTool: Tool = {
   name: "get_record_by_identifier",
-  description:
-    "Get a DEVONthink record using either its UUID or ID+Database combination. This is the recommended tool for looking up specific records when you have their identifier.\n\n**UUID Lookup** (Recommended):\n- Globally unique across all databases\n- Works without specifying database\n- Most reliable method\n- Example: `uuid: '4A0C305D-2190-44F5-8E41-FB5E48ADEA2F'`\n\n**ID + Database Lookup**:\n- Requires both ID and database name\n- ID is only unique within a database\n- Example: `id: 12345, databaseName: '1 - Documents'`\n\nThis tool returns essential record properties including both UUID and ID for future reference. For full record properties, use get_record_properties with the returned UUID.",
+  description: "Get a DEVONthink record using its UUID or ID.\n\nExample (UUID):\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\"\n}\n\nExample (ID):\n{\n  \"id\": 12345,\n  \"databaseName\": \"MyDatabase\"\n}",
   inputSchema: zodToJsonSchema(GetRecordByIdentifierSchema) as ToolInput,
   run: getRecordByIdentifier,
 };
