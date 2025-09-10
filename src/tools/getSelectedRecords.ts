@@ -9,31 +9,31 @@ type ToolInput = z.infer<typeof ToolInputSchema>;
 const GetSelectedRecordsSchema = z.object({}).strict();
 
 interface RecordInfo {
-  id: number;
-  uuid: string;
-  name: string;
-  path: string;
-  location: string;
-  recordType: string;
-  kind: string;
-  creationDate: string;
-  modificationDate: string;
-  tags: string[];
-  size: number;
-  rating?: number;
-  label?: number;
-  comment?: string;
+	id: number;
+	uuid: string;
+	name: string;
+	path: string;
+	location: string;
+	recordType: string;
+	kind: string;
+	creationDate: string;
+	modificationDate: string;
+	tags: string[];
+	size: number;
+	rating?: number;
+	label?: number;
+	comment?: string;
 }
 
 interface GetSelectedRecordsResult {
-  success: boolean;
-  error?: string;
-  records?: RecordInfo[];
-  totalCount?: number;
+	success: boolean;
+	error?: string;
+	records?: RecordInfo[];
+	totalCount?: number;
 }
 
 const getSelectedRecords = async (): Promise<GetSelectedRecordsResult> => {
-  const script = `
+	const script = `
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
@@ -94,13 +94,13 @@ const getSelectedRecords = async (): Promise<GetSelectedRecordsResult> => {
     })();
   `;
 
-  return await executeJxa<GetSelectedRecordsResult>(script);
+	return await executeJxa<GetSelectedRecordsResult>(script);
 };
 
 export const selectedRecordsTool: Tool = {
-  name: "selected_records",
-  description:
-    "Get information about currently selected records in DEVONthink. This tool returns detailed properties of all records that are currently selected in the DEVONthink interface, including their UUIDs, names, paths, types, and metadata. Returns an empty array if no records are selected. Useful for batch operations on user's current selection.",
-  inputSchema: zodToJsonSchema(GetSelectedRecordsSchema) as ToolInput,
-  run: getSelectedRecords,
+	name: "selected_records",
+	description:
+		"Get information about currently selected records in DEVONthink. This tool returns detailed properties of all records that are currently selected in the DEVONthink interface, including their UUIDs, names, paths, types, and metadata. Returns an empty array if no records are selected. Useful for batch operations on user's current selection.",
+	inputSchema: zodToJsonSchema(GetSelectedRecordsSchema) as ToolInput,
+	run: getSelectedRecords,
 };

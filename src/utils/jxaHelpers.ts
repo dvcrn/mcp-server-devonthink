@@ -219,7 +219,7 @@ function convertDevonthinkRecord(record) {
  * Get all JXA helpers as a single string
  */
 export function getJXAHelpers(): string {
-  return `
+	return `
     // JXA Helper Functions
     ${lookupByUuidHelper}
     ${lookupByIdHelper}
@@ -236,7 +236,7 @@ export function getJXAHelpers(): string {
  * Get specific helpers
  */
 export function getRecordLookupHelpers(): string {
-  return `
+	return `
     ${lookupByUuidHelper}
     ${lookupByIdHelper}
     ${lookupByPathHelper}
@@ -249,20 +249,19 @@ export function getRecordLookupHelpers(): string {
  * Format lookup options for JXA
  */
 export function formatLookupOptions(
-  uuid?: string,
-  id?: number,
-  path?: string,
-  name?: string,
-  databaseName?: string
+	uuid?: string,
+	id?: number,
+	path?: string,
+	name?: string,
+	databaseName?: string,
 ): string {
-  const options: string[] = [];
+	const options: string[] = [];
 
-  if (uuid) options.push(`uuid: ${JSON.stringify(uuid)}`);
-  if (id !== undefined) options.push(`id: ${id}`);
-  if (path) options.push(`path: ${JSON.stringify(path)}`);
-  if (name) options.push(`name: ${JSON.stringify(name)}`);
-  if (databaseName)
-    options.push(`databaseName: ${JSON.stringify(databaseName)}`);
+	if (uuid) options.push(`uuid: ${JSON.stringify(uuid)}`);
+	if (id !== undefined) options.push(`id: ${id}`);
+	if (path) options.push(`path: ${JSON.stringify(path)}`);
+	if (name) options.push(`name: ${JSON.stringify(name)}`);
+	if (databaseName) options.push(`databaseName: ${JSON.stringify(databaseName)}`);
 
-  return `{ ${options.join(", ")} }`;
+	return `{ ${options.join(", ")} }`;
 }

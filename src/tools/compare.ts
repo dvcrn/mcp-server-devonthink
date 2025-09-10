@@ -2,103 +2,93 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { Tool, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../applescript/execute.js";
-import {
-  escapeStringForJXA,
-  formatValueForJXA,
-  isJXASafeString,
-} from "../utils/escapeString.js";
+import { escapeStringForJXA, formatValueForJXA, isJXASafeString } from "../utils/escapeString.js";
 import { getRecordLookupHelpers, getDatabaseHelper } from "../utils/jxaHelpers.js";
 
 const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const CompareSchema = z
-  .object({
-    recordUuid: z
-      .string()
-      .describe("The UUID of the primary record to compare"),
-    compareWithUuid: z
-      .string()
-      .optional()
-      .describe(
-        "The UUID of the second record for direct comparison (optional)"
-      ),
-    databaseName: z
-      .string()
-      .optional()
-      .describe(
-        "The name of the database to search in (defaults to current database)"
-      ),
-    comparison: z
-      .enum(["data comparison", "tags comparison"])
-      .optional()
-      .describe("The comparison type"),
-  })
-  .strict();
+	.object({
+		recordUuid: z.string().describe("The UUID of the primary record to compare"),
+		compareWithUuid: z
+			.string()
+			.optional()
+			.describe("The UUID of the second record for direct comparison (optional)"),
+		databaseName: z
+			.string()
+			.optional()
+			.describe("The name of the database to search in (defaults to current database)"),
+		comparison: z
+			.enum(["data comparison", "tags comparison"])
+			.optional()
+			.describe("The comparison type"),
+	})
+	.strict();
 
 type CompareInput = z.infer<typeof CompareSchema>;
 
 interface CompareResult {
-  success: boolean;
-  error?: string;
-  mode?: "single_record" | "two_record";
-  similarRecords?: Array<{
-    id: number;
-    uuid: string;
-    name: string;
-    path: string;
-    location: string;
-    recordType: string;
-    kind: string;
-    score?: number;
-    creationDate?: string;
-    modificationDate?: string;
-    tags?: string[];
-    size?: number;
-  }>;
-  comparison?: {
-    record1: {
-      uuid: string;
-      name: string;
-      recordType: string;
-      tags: string[];
-      size: number;
-    };
-    record2: {
-      uuid: string;
-      name: string;
-      recordType: string;
-      tags: string[];
-      size: number;
-    };
-    similarities: {
-      sameType: boolean;
-      commonTags: string[];
-      sizeDifference: number;
-      tagSimilarity: number;
-    };
-  };
-  totalCount?: number;
+	success: boolean;
+	error?: string;
+	mode?: "single_record" | "two_record";
+	similarRecords?: Array<{
+		id: number;
+		uuid: string;
+		name: string;
+		path: string;
+		location: string;
+		recordType: string;
+		kind: string;
+		score?: number;
+		creationDate?: string;
+		modificationDate?: string;
+		tags?: string[];
+		size?: number;
+	}>;
+	comparison?: {
+		record1: {
+			uuid: string;
+			name: string;
+			recordType: string;
+			tags: string[];
+			size: number;
+		};
+		record2: {
+			uuid: string;
+			name: string;
+			recordType: string;
+			tags: string[];
+			size: number;
+		};
+		similarities: {
+			sameType: boolean;
+			commonTags: string[];
+			sizeDifference: number;
+			tagSimilarity: number;
+		};
+	};
+	totalCount?: number;
 }
 
 const compare = async (input: CompareInput): Promise<CompareResult> => {
-  const { recordUuid, compareWithUuid, databaseName, comparison } = input;
+	const { recordUuid, compareWithUuid, databaseName, comparison } = input;
 
-  // Validate string inputs
-  if (!isJXASafeString(recordUuid)) {
-    return { success: false, error: "Record UUID contains invalid characters" };
-  }
-  if (compareWithUuid && !isJXASafeString(compareWithUuid)) {
-    return { success: false, error: "Compare with UUID contains invalid characters" };
-  }
-  if (databaseName && !isJXASafeString(databaseName)) {
-    return { success: false, error: "Database name contains invalid characters" };
-  }
-  if (comparison && !isJXASafeString(comparison)) {
-    return { success: false, error: "Comparison type contains invalid characters" };
-  }
+	// Validate string inputs
+	if (!isJXASafeString(recordUuid)) {
+		return { success: false, error: "Record UUID contains invalid characters" };
+	}
+	if (compareWithUuid && !isJXASafeString(compareWithUuid)) {
+		return { success: false, error: "Compare with UUID contains invalid characters" };
+	}
+	if (databaseName && !isJXASafeString(databaseName)) {
+		return { success: false, error: "Database name contains invalid characters" };
+	}
+	if (comparison && !isJXASafeString(comparison)) {
+		return { success: false, error: "Comparison type contains invalid characters" };
+	}
 
-  const script = `
+	const script = `
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
@@ -250,13 +240,13 @@ const compare = async (input: CompareInput): Promise<CompareResult> => {
     })();
   `;
 
-  return await executeJxa<CompareResult>(script);
+	return await executeJxa<CompareResult>(script);
 };
 
 export const compareTool: Tool = {
-  name: "compare",
-  description:
-    "Compare DEVONthink records to find similarities. Use with just `recordUuid` to find similar records in the database, or add `compareWithUuid` to directly compare two specific records. The tool returns either a list of similar records or a detailed comparison between two records.",
-  inputSchema: zodToJsonSchema(CompareSchema) as ToolInput,
-  run: compare,
+	name: "compare",
+	description:
+		"Compare DEVONthink records to find similarities. Use with just `recordUuid` to find similar records in the database, or add `compareWithUuid` to directly compare two specific records. The tool returns either a list of similar records or a detailed comparison between two records.",
+	inputSchema: zodToJsonSchema(CompareSchema) as ToolInput,
+	run: compare,
 };

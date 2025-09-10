@@ -2,101 +2,92 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { Tool, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../applescript/execute.js";
-import {
-  escapeStringForJXA,
-  formatValueForJXA,
-  isJXASafeString,
-} from "../utils/escapeString.js";
-import {
-  getRecordLookupHelpers,
-  getDatabaseHelper,
-  isGroupHelper,
-} from "../utils/jxaHelpers.js";
+import { escapeStringForJXA, formatValueForJXA, isJXASafeString } from "../utils/escapeString.js";
+import { getRecordLookupHelpers, getDatabaseHelper, isGroupHelper } from "../utils/jxaHelpers.js";
 
 const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const ReplicateRecordSchema = z
-  .object({
-    uuid: z.string().optional().describe("The UUID of the record to replicate"),
-    recordId: z.number().optional().describe("The ID of the record to replicate"),
-    recordPath: z
-      .string()
-      .optional()
-      .describe("The DEVONthink location path of the record (e.g., '/Inbox/My Document'), NOT the filesystem path"),
-    destinationGroupUuid: z
-      .string()
-      .describe("The UUID of the destination group (must be in the same database as the source record)"),
-    databaseName: z
-      .string()
-      .optional()
-      .describe(
-        "The name of the database containing the record (defaults to current database)"
-      ),
-  })
-  .strict()
-  .refine(
-    (data) =>
-      data.uuid !== undefined ||
-      data.recordId !== undefined ||
-      data.recordPath !== undefined,
-    {
-      message:
-        "Either uuid, recordId, or recordPath must be provided",
-    }
-  );
+	.object({
+		uuid: z.string().optional().describe("The UUID of the record to replicate"),
+		recordId: z.number().optional().describe("The ID of the record to replicate"),
+		recordPath: z
+			.string()
+			.optional()
+			.describe(
+				"The DEVONthink location path of the record (e.g., '/Inbox/My Document'), NOT the filesystem path",
+			),
+		destinationGroupUuid: z
+			.string()
+			.describe(
+				"The UUID of the destination group (must be in the same database as the source record)",
+			),
+		databaseName: z
+			.string()
+			.optional()
+			.describe(
+				"The name of the database containing the record (defaults to current database)",
+			),
+	})
+	.strict()
+	.refine(
+		(data) =>
+			data.uuid !== undefined || data.recordId !== undefined || data.recordPath !== undefined,
+		{
+			message: "Either uuid, recordId, or recordPath must be provided",
+		},
+	);
 
 type ReplicateRecordInput = z.infer<typeof ReplicateRecordSchema>;
 
 interface ReplicateRecordResult {
-  success: boolean;
-  error?: string;
-  replicatedRecord?: {
-    id: number;
-    uuid: string;
-    name: string;
-    path: string;
-    location: string;
-    recordType: string;
-  };
+	success: boolean;
+	error?: string;
+	replicatedRecord?: {
+		id: number;
+		uuid: string;
+		name: string;
+		path: string;
+		location: string;
+		recordType: string;
+	};
 }
 
-const replicateRecord = async (
-  input: ReplicateRecordInput
-): Promise<ReplicateRecordResult> => {
-  const uuid = input.uuid;
-  const recordId = input.recordId;
-  const recordPath = input.recordPath;
-  const destinationGroupUuid = input.destinationGroupUuid;
-  const databaseName = input.databaseName;
+const replicateRecord = async (input: ReplicateRecordInput): Promise<ReplicateRecordResult> => {
+	const uuid = input.uuid;
+	const recordId = input.recordId;
+	const recordPath = input.recordPath;
+	const destinationGroupUuid = input.destinationGroupUuid;
+	const databaseName = input.databaseName;
 
-  // Validate string inputs
-  if (uuid && !isJXASafeString(uuid)) {
-    const errorResult: ReplicateRecordResult = {} as ReplicateRecordResult;
-    errorResult["success"] = false;
-    errorResult["error"] = "UUID contains invalid characters";
-    return errorResult;
-  }
-  if (recordPath && !isJXASafeString(recordPath)) {
-    const errorResult: ReplicateRecordResult = {} as ReplicateRecordResult;
-    errorResult["success"] = false;
-    errorResult["error"] = "Record path contains invalid characters";
-    return errorResult;
-  }
-  if (destinationGroupUuid && !isJXASafeString(destinationGroupUuid)) {
-    const errorResult: ReplicateRecordResult = {} as ReplicateRecordResult;
-    errorResult["success"] = false;
-    errorResult["error"] = "Destination group UUID contains invalid characters";
-    return errorResult;
-  }
-  if (databaseName && !isJXASafeString(databaseName)) {
-    const errorResult: ReplicateRecordResult = {} as ReplicateRecordResult;
-    errorResult["success"] = false;
-    errorResult["error"] = "Database name contains invalid characters";
-    return errorResult;
-  }
+	// Validate string inputs
+	if (uuid && !isJXASafeString(uuid)) {
+		const errorResult: ReplicateRecordResult = {} as ReplicateRecordResult;
+		errorResult["success"] = false;
+		errorResult["error"] = "UUID contains invalid characters";
+		return errorResult;
+	}
+	if (recordPath && !isJXASafeString(recordPath)) {
+		const errorResult: ReplicateRecordResult = {} as ReplicateRecordResult;
+		errorResult["success"] = false;
+		errorResult["error"] = "Record path contains invalid characters";
+		return errorResult;
+	}
+	if (destinationGroupUuid && !isJXASafeString(destinationGroupUuid)) {
+		const errorResult: ReplicateRecordResult = {} as ReplicateRecordResult;
+		errorResult["success"] = false;
+		errorResult["error"] = "Destination group UUID contains invalid characters";
+		return errorResult;
+	}
+	if (databaseName && !isJXASafeString(databaseName)) {
+		const errorResult: ReplicateRecordResult = {} as ReplicateRecordResult;
+		errorResult["success"] = false;
+		errorResult["error"] = "Database name contains invalid characters";
+		return errorResult;
+	}
 
-  const script = `
+	const script = `
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
@@ -209,13 +200,13 @@ const replicateRecord = async (
     })();
   `;
 
-  return await executeJxa<ReplicateRecordResult>(script);
+	return await executeJxa<ReplicateRecordResult>(script);
 };
 
 export const replicateRecordTool: Tool = {
-  name: "replicate_record",
-  description:
-    "Replicate a record within the same database to a destination group. This creates a linked reference to the original record, not an independent copy. The source record and destination group must be in the same database.\n\nRecord identification methods (in order of reliability):\n1. **UUID** (recommended): Globally unique identifier that works across all databases\n2. **ID + Database**: Database-specific ID requires specifying the database name\n3. **DEVONthink Path**: Internal DEVONthink location path like '/Inbox/My Document' (NOT filesystem paths like '/Users/.../')\n\n**Important Path Note**: Use DEVONthink's internal location paths (shown in the 'Path' column in DEVONthink), not filesystem paths. Example: '/Projects/2024/Report.pdf' not '/Users/david/Databases/MyDB.dtBase2/Files.noindex/...'\n\n**Replicate vs Duplicate**:\n- **Replicate**: Creates linked reference within same database (this tool)\n- **Duplicate**: Creates independent copy, can cross databases (use duplicate_record tool)\n\nReturns the replicated record's UUID, ID, and location information.",
-  inputSchema: zodToJsonSchema(ReplicateRecordSchema) as ToolInput,
-  run: replicateRecord,
+	name: "replicate_record",
+	description:
+		"Replicate a record within the same database to a destination group. This creates a linked reference to the original record, not an independent copy. The source record and destination group must be in the same database.\n\nRecord identification methods (in order of reliability):\n1. **UUID** (recommended): Globally unique identifier that works across all databases\n2. **ID + Database**: Database-specific ID requires specifying the database name\n3. **DEVONthink Path**: Internal DEVONthink location path like '/Inbox/My Document' (NOT filesystem paths like '/Users/.../')\n\n**Important Path Note**: Use DEVONthink's internal location paths (shown in the 'Path' column in DEVONthink), not filesystem paths. Example: '/Projects/2024/Report.pdf' not '/Users/david/Databases/MyDB.dtBase2/Files.noindex/...'\n\n**Replicate vs Duplicate**:\n- **Replicate**: Creates linked reference within same database (this tool)\n- **Duplicate**: Creates independent copy, can cross databases (use duplicate_record tool)\n\nReturns the replicated record's UUID, ID, and location information.",
+	inputSchema: zodToJsonSchema(ReplicateRecordSchema) as ToolInput,
+	run: replicateRecord,
 };

@@ -9,18 +9,18 @@ type ToolInput = z.infer<typeof ToolInputSchema>;
 const IsRunningSchema = z.object({}).strict();
 
 const isRunning = async (): Promise<{ isRunning: boolean }> => {
-  const script = `
+	const script = `
     const app = Application("DEVONthink");
     const isRunning = app.running();
     JSON.stringify({ isRunning });
   `;
-  return await executeJxa<{ isRunning: boolean }>(script);
+	return await executeJxa<{ isRunning: boolean }>(script);
 };
 
 export const isRunningTool: Tool = {
-  name: "is_running",
-  description:
-    "Check if the DEVONthink application is currently running. This is a simple check that returns a boolean value and is useful for verifying that the application is available before attempting other operations.",
-  inputSchema: zodToJsonSchema(IsRunningSchema) as ToolInput,
-  run: isRunning,
+	name: "is_running",
+	description:
+		"Check if the DEVONthink application is currently running. This is a simple check that returns a boolean value and is useful for verifying that the application is available before attempting other operations.",
+	inputSchema: zodToJsonSchema(IsRunningSchema) as ToolInput,
+	run: isRunning,
 };

@@ -9,28 +9,28 @@ type ToolInput = z.infer<typeof ToolInputSchema>;
 const GetOpenDatabasesSchema = z.object({}).strict();
 
 interface DatabaseInfo {
-  id: number;
-  uuid: string;
-  name: string;
-  path: string;
-  filename: string;
-  encrypted: boolean;
-  auditProof: boolean;
-  readOnly: boolean;
-  spotlightIndexing: boolean;
-  versioning: boolean;
-  comment?: string;
+	id: number;
+	uuid: string;
+	name: string;
+	path: string;
+	filename: string;
+	encrypted: boolean;
+	auditProof: boolean;
+	readOnly: boolean;
+	spotlightIndexing: boolean;
+	versioning: boolean;
+	comment?: string;
 }
 
 interface GetOpenDatabasesResult {
-  success: boolean;
-  error?: string;
-  databases?: DatabaseInfo[];
-  totalCount?: number;
+	success: boolean;
+	error?: string;
+	databases?: DatabaseInfo[];
+	totalCount?: number;
 }
 
 const getOpenDatabases = async (): Promise<GetOpenDatabasesResult> => {
-  const script = `
+	const script = `
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
@@ -82,13 +82,13 @@ const getOpenDatabases = async (): Promise<GetOpenDatabasesResult> => {
     })();
   `;
 
-  return await executeJxa<GetOpenDatabasesResult>(script);
+	return await executeJxa<GetOpenDatabasesResult>(script);
 };
 
 export const getOpenDatabasesTool: Tool = {
-  name: "get_open_databases",
-  description:
-    "Get a list of all currently open databases in DEVONthink. This tool is useful for discovering available databases and their properties, such as name, path, and encryption status. The returned database names can be used in other tools.\n\nIMPORTANT - Database UUIDs for Claude Code Operations:\nThe UUID field in the results is ESSENTIAL for database root operations:\n- Use the database UUID as parentGroupUuid in create_record to create at database root\n- Use the database UUID as destinationGroupUuid in move_record to move to database root\n- Use the database UUID as parentGroupUuid in create_from_url to create at database root\n\nExample: Database UUID '5E47D6F2-5E0C-4E30-A6ED-2AC92116C3E1' represents the true root level of that database.",
-  inputSchema: zodToJsonSchema(GetOpenDatabasesSchema) as ToolInput,
-  run: getOpenDatabases,
+	name: "get_open_databases",
+	description:
+		"Get a list of all currently open databases in DEVONthink. This tool is useful for discovering available databases and their properties, such as name, path, and encryption status. The returned database names can be used in other tools.\n\nIMPORTANT - Database UUIDs for Claude Code Operations:\nThe UUID field in the results is ESSENTIAL for database root operations:\n- Use the database UUID as parentGroupUuid in create_record to create at database root\n- Use the database UUID as destinationGroupUuid in move_record to move to database root\n- Use the database UUID as parentGroupUuid in create_from_url to create at database root\n\nExample: Database UUID '5E47D6F2-5E0C-4E30-A6ED-2AC92116C3E1' represents the true root level of that database.",
+	inputSchema: zodToJsonSchema(GetOpenDatabasesSchema) as ToolInput,
+	run: getOpenDatabases,
 };

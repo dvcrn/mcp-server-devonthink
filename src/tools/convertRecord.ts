@@ -2,119 +2,110 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { Tool, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../applescript/execute.js";
-import {
-  escapeStringForJXA,
-  formatValueForJXA,
-  isJXASafeString,
-} from "../utils/escapeString.js";
-import {
-  getRecordLookupHelpers,
-  getDatabaseHelper,
-  isGroupHelper,
-} from "../utils/jxaHelpers.js";
+import { escapeStringForJXA, formatValueForJXA, isJXASafeString } from "../utils/escapeString.js";
+import { getRecordLookupHelpers, getDatabaseHelper, isGroupHelper } from "../utils/jxaHelpers.js";
 
 const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const ConvertRecordSchema = z
-  .object({
-    uuid: z.string().optional().describe("The UUID of the record to convert"),
-    recordId: z.number().optional().describe("The ID of the record to convert"),
-    recordPath: z
-      .string()
-      .optional()
-      .describe("The DEVONthink location path of the record (e.g., '/Inbox/My Document'), NOT the filesystem path"),
-    format: z
-      .enum([
-        "bookmark",
-        "simple",
-        "rich", 
-        "note",
-        "markdown",
-        "HTML",
-        "webarchive",
-        "PDF document",
-        "single page PDF document", 
-        "PDF without annotations",
-        "PDF with annotations burnt in"
-      ])
-      .describe("The desired format for conversion"),
-    destinationGroupUuid: z
-      .string()
-      .optional()
-      .describe("The UUID of the destination group for the converted record (defaults to parent of source record)"),
-    databaseName: z
-      .string()
-      .optional()
-      .describe(
-        "The name of the database containing the source record (defaults to current database)"
-      ),
-  })
-  .strict()
-  .refine(
-    (data) =>
-      data.uuid !== undefined ||
-      data.recordId !== undefined ||
-      data.recordPath !== undefined,
-    {
-      message:
-        "Either uuid, recordId, or recordPath must be provided",
-    }
-  );
+	.object({
+		uuid: z.string().optional().describe("The UUID of the record to convert"),
+		recordId: z.number().optional().describe("The ID of the record to convert"),
+		recordPath: z
+			.string()
+			.optional()
+			.describe(
+				"The DEVONthink location path of the record (e.g., '/Inbox/My Document'), NOT the filesystem path",
+			),
+		format: z
+			.enum([
+				"bookmark",
+				"simple",
+				"rich",
+				"note",
+				"markdown",
+				"HTML",
+				"webarchive",
+				"PDF document",
+				"single page PDF document",
+				"PDF without annotations",
+				"PDF with annotations burnt in",
+			])
+			.describe("The desired format for conversion"),
+		destinationGroupUuid: z
+			.string()
+			.optional()
+			.describe(
+				"The UUID of the destination group for the converted record (defaults to parent of source record)",
+			),
+		databaseName: z
+			.string()
+			.optional()
+			.describe(
+				"The name of the database containing the source record (defaults to current database)",
+			),
+	})
+	.strict()
+	.refine(
+		(data) =>
+			data.uuid !== undefined || data.recordId !== undefined || data.recordPath !== undefined,
+		{
+			message: "Either uuid, recordId, or recordPath must be provided",
+		},
+	);
 
 type ConvertRecordInput = z.infer<typeof ConvertRecordSchema>;
 
 interface ConvertRecordResult {
-  success: boolean;
-  error?: string;
-  convertedRecord?: {
-    id: number;
-    uuid: string;
-    name: string;
-    path: string;
-    location: string;
-    recordType: string;
-    format: string;
-  };
+	success: boolean;
+	error?: string;
+	convertedRecord?: {
+		id: number;
+		uuid: string;
+		name: string;
+		path: string;
+		location: string;
+		recordType: string;
+		format: string;
+	};
 }
 
-const convertRecord = async (
-  input: ConvertRecordInput
-): Promise<ConvertRecordResult> => {
-  const uuid = input.uuid;
-  const recordId = input.recordId;
-  const recordPath = input.recordPath;
-  const format = input.format;
-  const destinationGroupUuid = input.destinationGroupUuid;
-  const databaseName = input.databaseName;
+const convertRecord = async (input: ConvertRecordInput): Promise<ConvertRecordResult> => {
+	const uuid = input.uuid;
+	const recordId = input.recordId;
+	const recordPath = input.recordPath;
+	const format = input.format;
+	const destinationGroupUuid = input.destinationGroupUuid;
+	const databaseName = input.databaseName;
 
-  // Validate string inputs
-  if (uuid && !isJXASafeString(uuid)) {
-    const errorResult: ConvertRecordResult = {} as ConvertRecordResult;
-    errorResult["success"] = false;
-    errorResult["error"] = "UUID contains invalid characters";
-    return errorResult;
-  }
-  if (recordPath && !isJXASafeString(recordPath)) {
-    const errorResult: ConvertRecordResult = {} as ConvertRecordResult;
-    errorResult["success"] = false;
-    errorResult["error"] = "Record path contains invalid characters";
-    return errorResult;
-  }
-  if (destinationGroupUuid && !isJXASafeString(destinationGroupUuid)) {
-    const errorResult: ConvertRecordResult = {} as ConvertRecordResult;
-    errorResult["success"] = false;
-    errorResult["error"] = "Destination group UUID contains invalid characters";
-    return errorResult;
-  }
-  if (databaseName && !isJXASafeString(databaseName)) {
-    const errorResult: ConvertRecordResult = {} as ConvertRecordResult;
-    errorResult["success"] = false;
-    errorResult["error"] = "Database name contains invalid characters";
-    return errorResult;
-  }
+	// Validate string inputs
+	if (uuid && !isJXASafeString(uuid)) {
+		const errorResult: ConvertRecordResult = {} as ConvertRecordResult;
+		errorResult["success"] = false;
+		errorResult["error"] = "UUID contains invalid characters";
+		return errorResult;
+	}
+	if (recordPath && !isJXASafeString(recordPath)) {
+		const errorResult: ConvertRecordResult = {} as ConvertRecordResult;
+		errorResult["success"] = false;
+		errorResult["error"] = "Record path contains invalid characters";
+		return errorResult;
+	}
+	if (destinationGroupUuid && !isJXASafeString(destinationGroupUuid)) {
+		const errorResult: ConvertRecordResult = {} as ConvertRecordResult;
+		errorResult["success"] = false;
+		errorResult["error"] = "Destination group UUID contains invalid characters";
+		return errorResult;
+	}
+	if (databaseName && !isJXASafeString(databaseName)) {
+		const errorResult: ConvertRecordResult = {} as ConvertRecordResult;
+		errorResult["success"] = false;
+		errorResult["error"] = "Database name contains invalid characters";
+		return errorResult;
+	}
 
-  const script = `
+	const script = `
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
@@ -161,11 +152,11 @@ const convertRecord = async (
         // Get destination group if specified
         let destinationGroup = null;
         if (${destinationGroupUuid ? `"${escapeStringForJXA(destinationGroupUuid)}"` : "null"}) {
-          destinationGroup = theApp.getRecordWithUuid("${destinationGroupUuid ? escapeStringForJXA(destinationGroupUuid) : ''}");
+          destinationGroup = theApp.getRecordWithUuid("${destinationGroupUuid ? escapeStringForJXA(destinationGroupUuid) : ""}");
           if (!destinationGroup) {
             return JSON.stringify({
               success: false,
-              error: "Destination group with UUID ${destinationGroupUuid ? escapeStringForJXA(destinationGroupUuid) : 'unknown'} not found"
+              error: "Destination group with UUID ${destinationGroupUuid ? escapeStringForJXA(destinationGroupUuid) : "unknown"} not found"
             });
           }
           
@@ -224,13 +215,13 @@ const convertRecord = async (
     })();
   `;
 
-  return await executeJxa<ConvertRecordResult>(script);
+	return await executeJxa<ConvertRecordResult>(script);
 };
 
 export const convertRecordTool: Tool = {
-  name: "convert_record",
-  description:
-    "Convert a record to a different format and create a new record. This creates a new record in the specified format while leaving the original unchanged.\n\nRecord identification methods (in order of reliability):\n1. **UUID** (recommended): Globally unique identifier that works across all databases\n2. **ID + Database**: Database-specific ID requires specifying the database name\n3. **DEVONthink Path**: Internal DEVONthink location path like '/Inbox/My Document' (NOT filesystem paths like '/Users/.../')\n\n**Important Path Note**: Use DEVONthink's internal location paths (shown in the 'Path' column in DEVONthink), not filesystem paths. Example: '/Projects/2024/Report.pdf' not '/Users/david/Databases/MyDB.dtBase2/Files.noindex/...'\n\n**Available formats**:\n- **bookmark**: Convert to bookmark\n- **simple**: Plain text format (default)\n- **rich**: Rich text format\n- **note**: Formatted note\n- **markdown**: Markdown format\n- **HTML**: HTML format\n- **webarchive**: Web archive format\n- **PDF document**: Standard PDF\n- **single page PDF document**: Single page PDF\n- **PDF without annotations**: PDF without annotations\n- **PDF with annotations burnt in**: PDF with annotations embedded\n\n**Destination**: If no destination group is specified, the converted record will be created in the same location as the source record's parent.\n\nReturns the converted record's UUID, ID, location, and format information.",
-  inputSchema: zodToJsonSchema(ConvertRecordSchema) as ToolInput,
-  run: convertRecord,
+	name: "convert_record",
+	description:
+		"Convert a record to a different format and create a new record. This creates a new record in the specified format while leaving the original unchanged.\n\nRecord identification methods (in order of reliability):\n1. **UUID** (recommended): Globally unique identifier that works across all databases\n2. **ID + Database**: Database-specific ID requires specifying the database name\n3. **DEVONthink Path**: Internal DEVONthink location path like '/Inbox/My Document' (NOT filesystem paths like '/Users/.../')\n\n**Important Path Note**: Use DEVONthink's internal location paths (shown in the 'Path' column in DEVONthink), not filesystem paths. Example: '/Projects/2024/Report.pdf' not '/Users/david/Databases/MyDB.dtBase2/Files.noindex/...'\n\n**Available formats**:\n- **bookmark**: Convert to bookmark\n- **simple**: Plain text format (default)\n- **rich**: Rich text format\n- **note**: Formatted note\n- **markdown**: Markdown format\n- **HTML**: HTML format\n- **webarchive**: Web archive format\n- **PDF document**: Standard PDF\n- **single page PDF document**: Single page PDF\n- **PDF without annotations**: PDF without annotations\n- **PDF with annotations burnt in**: PDF with annotations embedded\n\n**Destination**: If no destination group is specified, the converted record will be created in the same location as the source record's parent.\n\nReturns the converted record's UUID, ID, location, and format information.",
+	inputSchema: zodToJsonSchema(ConvertRecordSchema) as ToolInput,
+	run: convertRecord,
 };

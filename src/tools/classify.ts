@@ -2,65 +2,56 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { Tool, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../applescript/execute.js";
-import {
-  escapeStringForJXA,
-  formatValueForJXA,
-  isJXASafeString,
-} from "../utils/escapeString.js";
+import { escapeStringForJXA, formatValueForJXA, isJXASafeString } from "../utils/escapeString.js";
 import { getRecordLookupHelpers, getDatabaseHelper } from "../utils/jxaHelpers.js";
 
 const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const ClassifySchema = z
-  .object({
-    recordUuid: z.string().describe("The UUID of the record to classify"),
-    databaseName: z
-      .string()
-      .optional()
-      .describe(
-        "The name of the database to search in (defaults to current database)"
-      ),
-    comparison: z
-      .enum(["data comparison", "tags comparison"])
-      .optional()
-      .describe("The comparison type for classification"),
-    tags: z
-      .boolean()
-      .optional()
-      .describe("Whether to propose tags instead of groups"),
-  })
-  .strict();
+	.object({
+		recordUuid: z.string().describe("The UUID of the record to classify"),
+		databaseName: z
+			.string()
+			.optional()
+			.describe("The name of the database to search in (defaults to current database)"),
+		comparison: z
+			.enum(["data comparison", "tags comparison"])
+			.optional()
+			.describe("The comparison type for classification"),
+		tags: z.boolean().optional().describe("Whether to propose tags instead of groups"),
+	})
+	.strict();
 
 type ClassifyInput = z.infer<typeof ClassifySchema>;
 
 interface ClassifyResult {
-  success: boolean;
-  error?: string;
-  proposals?: Array<{
-    name: string;
-    type: string;
-    location?: string;
-    score?: number;
-  }>;
-  totalCount?: number;
+	success: boolean;
+	error?: string;
+	proposals?: Array<{
+		name: string;
+		type: string;
+		location?: string;
+		score?: number;
+	}>;
+	totalCount?: number;
 }
 
 const classify = async (input: ClassifyInput): Promise<ClassifyResult> => {
-  const { recordUuid, databaseName, comparison, tags } = input;
+	const { recordUuid, databaseName, comparison, tags } = input;
 
-  // Validate string inputs
-  if (!isJXASafeString(recordUuid)) {
-    return { success: false, error: "Record UUID contains invalid characters" };
-  }
-  if (databaseName && !isJXASafeString(databaseName)) {
-    return { success: false, error: "Database name contains invalid characters" };
-  }
-  if (comparison && !isJXASafeString(comparison)) {
-    return { success: false, error: "Comparison type contains invalid characters" };
-  }
+	// Validate string inputs
+	if (!isJXASafeString(recordUuid)) {
+		return { success: false, error: "Record UUID contains invalid characters" };
+	}
+	if (databaseName && !isJXASafeString(databaseName)) {
+		return { success: false, error: "Database name contains invalid characters" };
+	}
+	if (comparison && !isJXASafeString(comparison)) {
+		return { success: false, error: "Comparison type contains invalid characters" };
+	}
 
-  const script = `
+	const script = `
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
@@ -154,13 +145,13 @@ const classify = async (input: ClassifyInput): Promise<ClassifyResult> => {
     })();
   `;
 
-  return await executeJxa<ClassifyResult>(script);
+	return await executeJxa<ClassifyResult>(script);
 };
 
 export const classifyTool: Tool = {
-  name: "classify",
-  description:
-    "Get classification proposals for a DEVONthink record. This tool uses DEVONthink's AI to suggest appropriate groups or tags for organizing the record. Use the `recordUuid` to specify which record to classify.",
-  inputSchema: zodToJsonSchema(ClassifySchema) as ToolInput,
-  run: classify,
+	name: "classify",
+	description:
+		"Get classification proposals for a DEVONthink record. This tool uses DEVONthink's AI to suggest appropriate groups or tags for organizing the record. Use the `recordUuid` to specify which record to classify.",
+	inputSchema: zodToJsonSchema(ClassifySchema) as ToolInput,
+	run: classify,
 };

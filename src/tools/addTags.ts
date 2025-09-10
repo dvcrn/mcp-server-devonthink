@@ -2,44 +2,40 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { Tool, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../applescript/execute.js";
-import {
-  escapeStringForJXA,
-  formatValueForJXA,
-  isJXASafeString,
-} from "../utils/escapeString.js";
+import { escapeStringForJXA, formatValueForJXA, isJXASafeString } from "../utils/escapeString.js";
 import { getRecordLookupHelpers } from "../utils/jxaHelpers.js";
 
 const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const AddTagsSchema = z
-  .object({
-    uuid: z.string().describe("The UUID of the record to add tags to"),
-    tags: z.array(z.string()).describe("An array of tags to add"),
-  })
-  .strict();
+	.object({
+		uuid: z.string().describe("The UUID of the record to add tags to"),
+		tags: z.array(z.string()).describe("An array of tags to add"),
+	})
+	.strict();
 
 type AddTagsInput = z.infer<typeof AddTagsSchema>;
 
 interface AddTagsResult {
-  success: boolean;
-  error?: string;
+	success: boolean;
+	error?: string;
 }
 
 const addTags = async (input: AddTagsInput): Promise<AddTagsResult> => {
-  const { uuid, tags } = input;
+	const { uuid, tags } = input;
 
-  // Validate string inputs
-  if (!isJXASafeString(uuid)) {
-    return { success: false, error: "UUID contains invalid characters" };
-  }
-  for (const tag of tags) {
-    if (!isJXASafeString(tag)) {
-      return { success: false, error: `Tag "${tag}" contains invalid characters` };
-    }
-  }
+	// Validate string inputs
+	if (!isJXASafeString(uuid)) {
+		return { success: false, error: "UUID contains invalid characters" };
+	}
+	for (const tag of tags) {
+		if (!isJXASafeString(tag)) {
+			return { success: false, error: `Tag "${tag}" contains invalid characters` };
+		}
+	}
 
-  const script = `
+	const script = `
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
@@ -78,12 +74,12 @@ const addTags = async (input: AddTagsInput): Promise<AddTagsResult> => {
     })();
   `;
 
-  return await executeJxa<AddTagsResult>(script);
+	return await executeJxa<AddTagsResult>(script);
 };
 
 export const addTagsTool: Tool = {
-  name: "add_tags",
-  description: "Adds tags to a specific record in DEVONthink.",
-  inputSchema: zodToJsonSchema(AddTagsSchema) as ToolInput,
-  run: addTags,
+	name: "add_tags",
+	description: "Adds tags to a specific record in DEVONthink.",
+	inputSchema: zodToJsonSchema(AddTagsSchema) as ToolInput,
+	run: addTags,
 };

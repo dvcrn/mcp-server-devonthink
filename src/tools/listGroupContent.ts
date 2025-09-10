@@ -7,42 +7,40 @@ const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const ListGroupContentSchema = z
-  .object({
-    uuid: z
-      .string()
-      .optional()
-      .describe(
-        "The UUID of the group to list content from. Defaults to the root of the database if not provided or if '/' is passed."
-      ),
-    databaseName: z
-      .string()
-      .optional()
-      .describe(
-        "The name of the database to get the record properties from (defaults to current database)"
-      ),
-  })
-  .strict();
+	.object({
+		uuid: z
+			.string()
+			.optional()
+			.describe(
+				"The UUID of the group to list content from. Defaults to the root of the database if not provided or if '/' is passed.",
+			),
+		databaseName: z
+			.string()
+			.optional()
+			.describe(
+				"The name of the database to get the record properties from (defaults to current database)",
+			),
+	})
+	.strict();
 
 type ListGroupContentInput = z.infer<typeof ListGroupContentSchema>;
 
 interface RecordInfo {
-  uuid: string;
-  name: string;
-  recordType: string;
+	uuid: string;
+	name: string;
+	recordType: string;
 }
 
 interface ListGroupContentResult {
-  success: boolean;
-  error?: string;
-  records?: RecordInfo[];
+	success: boolean;
+	error?: string;
+	records?: RecordInfo[];
 }
 
-const listGroupContent = async (
-  input: ListGroupContentInput
-): Promise<ListGroupContentResult> => {
-  const { uuid, databaseName } = input;
+const listGroupContent = async (input: ListGroupContentInput): Promise<ListGroupContentResult> => {
+	const { uuid, databaseName } = input;
 
-  const getDatabaseJxa = `
+	const getDatabaseJxa = `
     let targetDatabase;
     if ("${databaseName || ""}") {
       const databases = theApp.databases();
@@ -55,12 +53,12 @@ const listGroupContent = async (
     }
   `;
 
-  const getGroupJxa =
-    uuid && uuid !== "/"
-      ? `const group = theApp.getRecordWithUuid("${uuid}");`
-      : `const group = targetDatabase.root();`;
+	const getGroupJxa =
+		uuid && uuid !== "/"
+			? `const group = theApp.getRecordWithUuid("${uuid}");`
+			: `const group = targetDatabase.root();`;
 
-  const script = `
+	const script = `
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
@@ -104,13 +102,13 @@ const listGroupContent = async (
     })();
   `;
 
-  return await executeJxa<ListGroupContentResult>(script);
+	return await executeJxa<ListGroupContentResult>(script);
 };
 
 export const listGroupContentTool: Tool = {
-  name: "list_group_content",
-  description:
-    "Lists the content of a specific group in DEVONthink. If the uuid is not provided or is '/', it will list the content of the root group.",
-  inputSchema: zodToJsonSchema(ListGroupContentSchema) as ToolInput,
-  run: listGroupContent,
+	name: "list_group_content",
+	description:
+		"Lists the content of a specific group in DEVONthink. If the uuid is not provided or is '/', it will list the content of the root group.",
+	inputSchema: zodToJsonSchema(ListGroupContentSchema) as ToolInput,
+	run: listGroupContent,
 };
