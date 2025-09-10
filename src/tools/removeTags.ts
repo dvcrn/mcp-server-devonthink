@@ -2,55 +2,47 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { Tool, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../applescript/execute.js";
-import {
-  escapeStringForJXA,
-  formatValueForJXA,
-  isJXASafeString,
-} from "../utils/escapeString.js";
+import { escapeStringForJXA, formatValueForJXA, isJXASafeString } from "../utils/escapeString.js";
 import { getRecordLookupHelpers } from "../utils/jxaHelpers.js";
 
 const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const RemoveTagsSchema = z
-  .object({
-    uuid: z.string().describe("UUID of the record to remove tags from"),
-    tags: z.array(z.string()).describe("Tags to remove"),
-    databaseName: z
-      .string()
-      .optional()
-      .describe(
-        "Database to remove tags from the record in (optional)"
-      ),
-  })
-  .strict();
+	.object({
+		uuid: z.string().describe("UUID of the record to remove tags from"),
+		tags: z.array(z.string()).describe("Tags to remove"),
+		databaseName: z
+			.string()
+			.optional()
+			.describe("Database to remove tags from the record in (optional)"),
+	})
+	.strict();
 
 type RemoveTagsInput = z.infer<typeof RemoveTagsSchema>;
 
 interface RemoveTagsResult {
-  success: boolean;
-  error?: string;
+	success: boolean;
+	error?: string;
 }
 
-const removeTags = async (
-  input: RemoveTagsInput
-): Promise<RemoveTagsResult> => {
-  const { uuid, tags, databaseName } = input;
+const removeTags = async (input: RemoveTagsInput): Promise<RemoveTagsResult> => {
+	const { uuid, tags, databaseName } = input;
 
-  // Validate string inputs
-  if (!isJXASafeString(uuid)) {
-    return { success: false, error: "UUID contains invalid characters" };
-  }
-  for (const tag of tags) {
-    if (!isJXASafeString(tag)) {
-      return { success: false, error: `Tag "${tag}" contains invalid characters` };
-    }
-  }
-  if (databaseName && !isJXASafeString(databaseName)) {
-    return { success: false, error: "Database name contains invalid characters" };
-  }
+	// Validate string inputs
+	if (!isJXASafeString(uuid)) {
+		return { success: false, error: "UUID contains invalid characters" };
+	}
+	for (const tag of tags) {
+		if (!isJXASafeString(tag)) {
+			return { success: false, error: `Tag "${tag}" contains invalid characters` };
+		}
+	}
+	if (databaseName && !isJXASafeString(databaseName)) {
+		return { success: false, error: "Database name contains invalid characters" };
+	}
 
-  const script = `
+	const script = `
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
@@ -101,12 +93,13 @@ const removeTags = async (
     })();
   `;
 
-  return await executeJxa<RemoveTagsResult>(script);
+	return await executeJxa<RemoveTagsResult>(script);
 };
 
 export const removeTagsTool: Tool = {
-  name: "remove_tags",
-  description: "Removes tags from a specific record in DEVONthink.\n\nExample:\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\",\n  \"tags\": [\"old-tag\"]\n}",
-  inputSchema: zodToJsonSchema(RemoveTagsSchema) as ToolInput,
-  run: removeTags,
+	name: "remove_tags",
+	description:
+		'Removes tags from a specific record in DEVONthink.\n\nExample:\n{\n  "uuid": "1234-5678-90AB-CDEF",\n  "tags": ["old-tag"]\n}',
+	inputSchema: zodToJsonSchema(RemoveTagsSchema) as ToolInput,
+	run: removeTags,
 };

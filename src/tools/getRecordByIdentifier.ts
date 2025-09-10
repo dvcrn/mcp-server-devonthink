@@ -2,76 +2,62 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { Tool, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../applescript/execute.js";
-import {
-  escapeStringForJXA,
-  formatValueForJXA,
-  isJXASafeString,
-} from "../utils/escapeString.js";
+import { escapeStringForJXA, formatValueForJXA, isJXASafeString } from "../utils/escapeString.js";
 import { getRecordLookupHelpers, getDatabaseHelper } from "../utils/jxaHelpers.js";
 
 const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const GetRecordByIdentifierSchema = z
-  .object({
-    uuid: z
-      .string()
-      .optional()
-      .describe("UUID of the record"),
-    id: z
-      .number()
-      .optional()
-      .describe("ID of the record (requires databaseName)"),
-    databaseName: z
-      .string()
-      .optional()
-      .describe("Database name (required with id)"),
-  })
-  .strict()
-  .refine(
-    (data) => data.uuid !== undefined || (data.id !== undefined && data.databaseName !== undefined),
-    {
-      message: "Either UUID alone, or ID with databaseName must be provided",
-    }
-  );
+	.object({
+		uuid: z.string().optional().describe("UUID of the record"),
+		id: z.number().optional().describe("ID of the record (requires databaseName)"),
+		databaseName: z.string().optional().describe("Database name (required with id)"),
+	})
+	.strict()
+	.refine(
+		(data) =>
+			data.uuid !== undefined || (data.id !== undefined && data.databaseName !== undefined),
+		{
+			message: "Either UUID alone, or ID with databaseName must be provided",
+		},
+	);
 
 type GetRecordByIdentifierInput = z.infer<typeof GetRecordByIdentifierSchema>;
 
 interface RecordResult {
-  success: boolean;
-  error?: string;
-  record?: {
-    id: number;
-    uuid: string;
-    name: string;
-    path: string;
-    location: string;
-    recordType: string;
-    kind: string;
-    database: string;
-    creationDate?: string;
-    modificationDate?: string;
-    tags?: string[];
-    size?: number;
-    url?: string;
-    comment?: string;
-  };
+	success: boolean;
+	error?: string;
+	record?: {
+		id: number;
+		uuid: string;
+		name: string;
+		path: string;
+		location: string;
+		recordType: string;
+		kind: string;
+		database: string;
+		creationDate?: string;
+		modificationDate?: string;
+		tags?: string[];
+		size?: number;
+		url?: string;
+		comment?: string;
+	};
 }
 
-const getRecordByIdentifier = async (
-  input: GetRecordByIdentifierInput
-): Promise<RecordResult> => {
-  const { uuid, id, databaseName } = input;
+const getRecordByIdentifier = async (input: GetRecordByIdentifierInput): Promise<RecordResult> => {
+	const { uuid, id, databaseName } = input;
 
-  // Validate string inputs
-  if (uuid && !isJXASafeString(uuid)) {
-    return { success: false, error: "UUID contains invalid characters" };
-  }
-  if (databaseName && !isJXASafeString(databaseName)) {
-    return { success: false, error: "Database name contains invalid characters" };
-  }
+	// Validate string inputs
+	if (uuid && !isJXASafeString(uuid)) {
+		return { success: false, error: "UUID contains invalid characters" };
+	}
+	if (databaseName && !isJXASafeString(databaseName)) {
+		return { success: false, error: "Database name contains invalid characters" };
+	}
 
-  const script = `
+	const script = `
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
@@ -163,12 +149,13 @@ const getRecordByIdentifier = async (
     })();
   `;
 
-  return await executeJxa<RecordResult>(script);
+	return await executeJxa<RecordResult>(script);
 };
 
 export const getRecordByIdentifierTool: Tool = {
-  name: "get_record_by_identifier",
-  description: "Get a DEVONthink record using its UUID or ID.\n\nExample (UUID):\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\"\n}\n\nExample (ID):\n{\n  \"id\": 12345,\n  \"databaseName\": \"MyDatabase\"\n}",
-  inputSchema: zodToJsonSchema(GetRecordByIdentifierSchema) as ToolInput,
-  run: getRecordByIdentifier,
+	name: "get_record_by_identifier",
+	description:
+		'Get a DEVONthink record using its UUID or ID.\n\nExample (UUID):\n{\n  "uuid": "1234-5678-90AB-CDEF"\n}\n\nExample (ID):\n{\n  "id": 12345,\n  "databaseName": "MyDatabase"\n}',
+	inputSchema: zodToJsonSchema(GetRecordByIdentifierSchema) as ToolInput,
+	run: getRecordByIdentifier,
 };

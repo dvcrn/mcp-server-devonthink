@@ -2,63 +2,53 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { Tool, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../applescript/execute.js";
-import {
-  escapeStringForJXA,
-  formatValueForJXA,
-  isJXASafeString,
-} from "../utils/escapeString.js";
+import { escapeStringForJXA, formatValueForJXA, isJXASafeString } from "../utils/escapeString.js";
 import { getRecordLookupHelpers, getDatabaseHelper } from "../utils/jxaHelpers.js";
 
 const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const ClassifySchema = z
-  .object({
-    recordUuid: z.string().describe("UUID of the record to classify"),
-    databaseName: z
-      .string()
-      .optional()
-      .describe("Database name to search in (optional)"),
-    comparison: z
-      .enum(["data comparison", "tags comparison"])
-      .optional()
-      .describe("Comparison type for classification (optional)"),
-    tags: z
-      .boolean()
-      .optional()
-      .describe("Propose tags instead of groups (optional)"),
-  })
-  .strict();
+	.object({
+		recordUuid: z.string().describe("UUID of the record to classify"),
+		databaseName: z.string().optional().describe("Database name to search in (optional)"),
+		comparison: z
+			.enum(["data comparison", "tags comparison"])
+			.optional()
+			.describe("Comparison type for classification (optional)"),
+		tags: z.boolean().optional().describe("Propose tags instead of groups (optional)"),
+	})
+	.strict();
 
 type ClassifyInput = z.infer<typeof ClassifySchema>;
 
 interface ClassifyResult {
-  success: boolean;
-  error?: string;
-  proposals?: Array<{
-    name: string;
-    type: string;
-    location?: string;
-    score?: number;
-  }>;
-  totalCount?: number;
+	success: boolean;
+	error?: string;
+	proposals?: Array<{
+		name: string;
+		type: string;
+		location?: string;
+		score?: number;
+	}>;
+	totalCount?: number;
 }
 
 const classify = async (input: ClassifyInput): Promise<ClassifyResult> => {
-  const { recordUuid, databaseName, comparison, tags } = input;
+	const { recordUuid, databaseName, comparison, tags } = input;
 
-  // Validate string inputs
-  if (!isJXASafeString(recordUuid)) {
-    return { success: false, error: "Record UUID contains invalid characters" };
-  }
-  if (databaseName && !isJXASafeString(databaseName)) {
-    return { success: false, error: "Database name contains invalid characters" };
-  }
-  if (comparison && !isJXASafeString(comparison)) {
-    return { success: false, error: "Comparison type contains invalid characters" };
-  }
+	// Validate string inputs
+	if (!isJXASafeString(recordUuid)) {
+		return { success: false, error: "Record UUID contains invalid characters" };
+	}
+	if (databaseName && !isJXASafeString(databaseName)) {
+		return { success: false, error: "Database name contains invalid characters" };
+	}
+	if (comparison && !isJXASafeString(comparison)) {
+		return { success: false, error: "Comparison type contains invalid characters" };
+	}
 
-  const script = `
+	const script = `
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
@@ -152,12 +142,13 @@ const classify = async (input: ClassifyInput): Promise<ClassifyResult> => {
     })();
   `;
 
-  return await executeJxa<ClassifyResult>(script);
+	return await executeJxa<ClassifyResult>(script);
 };
 
 export const classifyTool: Tool = {
-  name: "classify",
-  description: "Get classification proposals for a DEVONthink record.\n\nExample:\n{\n  \"recordUuid\": \"1234-5678-90AB-CDEF\"\n}",
-  inputSchema: zodToJsonSchema(ClassifySchema) as ToolInput,
-  run: classify,
+	name: "classify",
+	description:
+		'Get classification proposals for a DEVONthink record.\n\nExample:\n{\n  "recordUuid": "1234-5678-90AB-CDEF"\n}',
+	inputSchema: zodToJsonSchema(ClassifySchema) as ToolInput,
+	run: classify,
 };

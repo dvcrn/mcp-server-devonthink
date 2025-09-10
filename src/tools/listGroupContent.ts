@@ -7,42 +7,36 @@ const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const ListGroupContentSchema = z
-  .object({
-    uuid: z
-      .string()
-      .optional()
-      .describe(
-        "UUID of the group to list content from (optional, defaults to root)"
-      ),
-    databaseName: z
-      .string()
-      .optional()
-      .describe(
-        "Database to get the record properties from (optional)"
-      ),
-  })
-  .strict();
+	.object({
+		uuid: z
+			.string()
+			.optional()
+			.describe("UUID of the group to list content from (optional, defaults to root)"),
+		databaseName: z
+			.string()
+			.optional()
+			.describe("Database to get the record properties from (optional)"),
+	})
+	.strict();
 
 type ListGroupContentInput = z.infer<typeof ListGroupContentSchema>;
 
 interface RecordInfo {
-  uuid: string;
-  name: string;
-  recordType: string;
+	uuid: string;
+	name: string;
+	recordType: string;
 }
 
 interface ListGroupContentResult {
-  success: boolean;
-  error?: string;
-  records?: RecordInfo[];
+	success: boolean;
+	error?: string;
+	records?: RecordInfo[];
 }
 
-const listGroupContent = async (
-  input: ListGroupContentInput
-): Promise<ListGroupContentResult> => {
-  const { uuid, databaseName } = input;
+const listGroupContent = async (input: ListGroupContentInput): Promise<ListGroupContentResult> => {
+	const { uuid, databaseName } = input;
 
-  const getDatabaseJxa = `
+	const getDatabaseJxa = `
     let targetDatabase;
     if ("${databaseName || ""}") {
       const databases = theApp.databases();
@@ -55,12 +49,12 @@ const listGroupContent = async (
     }
   `;
 
-  const getGroupJxa =
-    uuid && uuid !== "/"
-      ? `const group = theApp.getRecordWithUuid("${uuid}");`
-      : `const group = targetDatabase.root();`;
+	const getGroupJxa =
+		uuid && uuid !== "/"
+			? `const group = theApp.getRecordWithUuid("${uuid}");`
+			: `const group = targetDatabase.root();`;
 
-  const script = `
+	const script = `
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
@@ -104,12 +98,13 @@ const listGroupContent = async (
     })();
   `;
 
-  return await executeJxa<ListGroupContentResult>(script);
+	return await executeJxa<ListGroupContentResult>(script);
 };
 
 export const listGroupContentTool: Tool = {
-  name: "list_group_content",
-  description: "Lists the content of a specific group in DEVONthink.\n\nExample:\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\"\n}",
-  inputSchema: zodToJsonSchema(ListGroupContentSchema) as ToolInput,
-  run: listGroupContent,
+	name: "list_group_content",
+	description:
+		'Lists the content of a specific group in DEVONthink.\n\nExample:\n{\n  "uuid": "1234-5678-90AB-CDEF"\n}',
+	inputSchema: zodToJsonSchema(ListGroupContentSchema) as ToolInput,
+	run: listGroupContent,
 };

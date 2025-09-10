@@ -7,47 +7,38 @@ const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const CreateRecordSchema = z
-  .object({
-    name: z.string().describe("Name of the new record"),
-    type: z
-      .string()
-      .describe(
-        "Record type (e.g., 'markdown', 'formatted note', 'bookmark', 'group')"
-      ),
-    content: z
-      .string()
-      .optional()
-      .describe("Content for text-based records (optional)"),
-    url: z.string().optional().describe("URL for bookmark records (optional)"),
-    parentGroupUuid: z
-      .string()
-      .optional()
-      .describe(
-        "UUID of the parent group (optional, defaults to incoming group)"
-      ),
-    databaseName: z
-      .string()
-      .optional()
-      .describe(
-        "Database to create the record in (optional, defaults to current)"
-      ),
-  })
-  .strict();
+	.object({
+		name: z.string().describe("Name of the new record"),
+		type: z
+			.string()
+			.describe("Record type (e.g., 'markdown', 'formatted note', 'bookmark', 'group')"),
+		content: z.string().optional().describe("Content for text-based records (optional)"),
+		url: z.string().optional().describe("URL for bookmark records (optional)"),
+		parentGroupUuid: z
+			.string()
+			.optional()
+			.describe("UUID of the parent group (optional, defaults to incoming group)"),
+		databaseName: z
+			.string()
+			.optional()
+			.describe("Database to create the record in (optional, defaults to current)"),
+	})
+	.strict();
 
 type CreateRecordInput = z.infer<typeof CreateRecordSchema>;
 
 const createRecord = async (
-  input: CreateRecordInput
+	input: CreateRecordInput,
 ): Promise<{
-  success: boolean;
-  recordId?: number;
-  name?: string;
-  uuid?: string;
-  error?: string;
+	success: boolean;
+	recordId?: number;
+	name?: string;
+	uuid?: string;
+	error?: string;
 }> => {
-  const { name, type, content, url, parentGroupUuid, databaseName } = input;
+	const { name, type, content, url, parentGroupUuid, databaseName } = input;
 
-  const script = `
+	const script = `
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
@@ -82,11 +73,7 @@ const createRecord = async (
         };
         
         // Add content if provided
-        ${
-          content
-            ? `recordProps.content = \`${content.replace(/`/g, "\\`")}\`;`
-            : ""
-        }
+        ${content ? `recordProps.content = \`${content.replace(/`/g, "\\`")}\`;` : ""}
         
         // Add URL if provided
         ${url ? `recordProps.URL = "${url}";` : ""}
@@ -116,18 +103,19 @@ const createRecord = async (
     })();
   `;
 
-  return await executeJxa<{
-    success: boolean;
-    recordId?: number;
-    name?: string;
-    uuid?: string;
-    error?: string;
-  }>(script);
+	return await executeJxa<{
+		success: boolean;
+		recordId?: number;
+		name?: string;
+		uuid?: string;
+		error?: string;
+	}>(script);
 };
 
 export const createRecordTool: Tool = {
-  name: "create_record",
-  description: "Create a new record in DEVONthink.\n\nExample:\n{\n  \"name\": \"New Note\",\n  \"type\": \"markdown\",\n  \"content\": \"# Hello World\"\n}",
-  inputSchema: zodToJsonSchema(CreateRecordSchema) as ToolInput,
-  run: createRecord,
+	name: "create_record",
+	description:
+		'Create a new record in DEVONthink.\n\nExample:\n{\n  "name": "New Note",\n  "type": "markdown",\n  "content": "# Hello World"\n}',
+	inputSchema: zodToJsonSchema(CreateRecordSchema) as ToolInput,
+	run: createRecord,
 };
