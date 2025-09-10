@@ -21,12 +21,12 @@
 		"build": "tsc && shx chmod +x dist/index.js",
 		"prepare": "npm run build",
 		"watch": "tsc --watch",
-		"format": "biome format --write",
+		"format": "biome format --write .",
 		"lint:fix": "biome lint --fix",
 		"start": "node dist/index.js",
 		"type-check": "tsc --noEmit",
 		"test": "vitest run",
-		"format:check": "biome format package.json src/utils/**/*"
+		"format:check": "biome format ."
 	},
 	"dependencies": {
 		"@modelcontextprotocol/sdk": "1.0.1",

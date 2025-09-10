@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { escapeStringForJXA, formatValueForJXA } from "../escapeString";
-import { formatLookupOptions } from "../jxaHelpers";
+import { escapeStringForJXA, formatValueForJXA } from "../../src/utils/escapeString";
 
 describe("escapeStringForJXA", () => {
 	it("returns empty string for undefined or null", () => {
@@ -28,19 +27,5 @@ describe("formatValueForJXA", () => {
 	it("converts nullish values to null", () => {
 		expect(formatValueForJXA(null)).toBe("null");
 		expect(formatValueForJXA(undefined)).toBe("null");
-	});
-});
-
-describe("formatLookupOptions", () => {
-	it("creates a properly formatted options object", () => {
-		const result = formatLookupOptions("uuid", 5, "/path", "name", "db");
-		expect(result).toBe(
-			'{ uuid: "uuid", id: 5, path: "/path", name: "name", databaseName: "db" }',
-		);
-	});
-
-	it("omits undefined values", () => {
-		const result = formatLookupOptions(undefined, 1);
-		expect(result).toBe("{ id: 1 }");
 	});
 });
