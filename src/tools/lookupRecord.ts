@@ -186,8 +186,7 @@ const lookupRecord = async (
 };
 
 export const lookupRecordTool: Tool = {
-  name: "lookupRecord",
-  title: "Lookup Record",
+  name: "lookup_record",
   description: "Look up records in DEVONthink by a specific attribute.\n\nExample:\n{\n  \"lookupType\": \"filename\",\n  \"value\": \"report.pdf\"\n}",
   inputSchema: zodToJsonSchema(LookupRecordSchema) as ToolInput,
   run: lookupRecord,

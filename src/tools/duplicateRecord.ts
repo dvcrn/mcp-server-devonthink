@@ -23,7 +23,7 @@ const DuplicateRecordSchema = z
     recordPath: z
       .string()
       .optional()
-      .describe("DEVONthink location path of the record (e.g., '/Inbox/My Document'), NOT the filesystem path"),
+      .describe("DEVONthink location path of the record (e.g., '/Inbox/My Document')"),
     destinationGroupUuid: z
       .string()
       .describe("UUID of the destination group"),
@@ -205,9 +205,8 @@ const duplicateRecord = async (
 };
 
 export const duplicateRecordTool: Tool = {
-  name: "duplicateRecord",
-  title: "Duplicate Record",
-  description: "Duplicate a record to any destination group, creating an independent copy. Unlike replicate, this can cross databases.\n\nExample:\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\",\n  \"destinationGroupUuid\": \"FEDC-BA09-8765-4321\"\n}",
+  name: "duplicate_record",
+  description: "Duplicate a record to any destination group, creating an independent copy.\n\nExample:\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\",\n  \"destinationGroupUuid\": \"FEDC-BA09-8765-4321\"\n}",
   inputSchema: zodToJsonSchema(DuplicateRecordSchema) as ToolInput,
   run: duplicateRecord,
 };

@@ -18,8 +18,7 @@ const isRunning = async (): Promise<{ isRunning: boolean }> => {
 };
 
 export const isRunningTool: Tool = {
-  name: "isRunning",
-  title: "Is DEVONthink Running",
+  name: "is_running",
   description: "Check if the DEVONthink application is currently running.\n\nExample:\n{}",
   inputSchema: zodToJsonSchema(IsRunningSchema) as ToolInput,
   run: isRunning,

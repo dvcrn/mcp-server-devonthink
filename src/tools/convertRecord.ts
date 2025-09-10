@@ -23,7 +23,7 @@ const ConvertRecordSchema = z
     recordPath: z
       .string()
       .optional()
-      .describe("DEVONthink location path of the record (e.g., '/Inbox/My Document'), NOT the filesystem path"),
+      .describe("DEVONthink location path of the record (e.g., '/Inbox/My Document')"),
     format: z
       .enum([
         "bookmark",
@@ -228,8 +228,7 @@ const convertRecord = async (
 };
 
 export const convertRecordTool: Tool = {
-  name: "convertRecord",
-  title: "Convert Record",
+  name: "convert_record",
   description: "Convert a record to a different format, creating a new record.\n\nExample:\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\",\n  \"format\": \"markdown\"\n}",
   inputSchema: zodToJsonSchema(ConvertRecordSchema) as ToolInput,
   run: convertRecord,

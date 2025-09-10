@@ -19,7 +19,7 @@ const DeleteRecordSchema = z
     recordPath: z
       .string()
       .optional()
-      .describe("DEVONthink location path of the record (e.g., '/Inbox/My Document'), NOT the filesystem path"),
+      .describe("DEVONthink location path of the record (e.g., '/Inbox/My Document')"),
     databaseName: z
       .string()
       .optional()
@@ -125,8 +125,7 @@ const deleteRecord = async (
 };
 
 export const deleteRecordTool: Tool = {
-  name: "deleteRecord",
-  title: "Delete Record",
+  name: "delete_record",
   description: "Delete a record from DEVONthink.\n\nExample:\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\"\n}",
   inputSchema: zodToJsonSchema(DeleteRecordSchema) as ToolInput,
   run: deleteRecord,

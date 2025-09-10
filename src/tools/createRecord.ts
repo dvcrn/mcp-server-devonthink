@@ -126,9 +126,8 @@ const createRecord = async (
 };
 
 export const createRecordTool: Tool = {
-  name: "createRecord",
-  title: "Create Record",
-  description: "Create a new record in DEVONthink. To create at root, use database UUID as parentGroupUuid.\n\nExample:\n{\n  \"name\": \"New Note\",\n  \"type\": \"markdown\",\n  \"content\": \"# Hello World\"\n}",
+  name: "create_record",
+  description: "Create a new record in DEVONthink.\n\nExample:\n{\n  \"name\": \"New Note\",\n  \"type\": \"markdown\",\n  \"content\": \"# Hello World\"\n}",
   inputSchema: zodToJsonSchema(CreateRecordSchema) as ToolInput,
   run: createRecord,
 };
