@@ -3,34 +3,34 @@ import express from "express";
 import { createServer } from "./devonthink.js";
 
 async function main() {
-    const app = express();
+	const app = express();
 
-    const { server, cleanup } = await createServer();
+	const { server, cleanup } = await createServer();
 
-    let transport: SSEServerTransport;
+	let transport: SSEServerTransport;
 
-    app.get("/sse", async (req, res) => {
-      console.log("Received connection");
-      transport = new SSEServerTransport("/message", res);
-      await server.connect(transport);
+	app.get("/sse", async (req, res) => {
+		console.log("Received connection");
+		transport = new SSEServerTransport("/message", res);
+		await server.connect(transport);
 
-      server.onclose = async () => {
-        await cleanup();
-        await server.close();
-        process.exit(0);
-      };
-    });
+		server.onclose = async () => {
+			await cleanup();
+			await server.close();
+			process.exit(0);
+		};
+	});
 
-    app.post("/message", async (req, res) => {
-      console.log("Received message");
+	app.post("/message", async (req, res) => {
+		console.log("Received message");
 
-      await transport.handlePostMessage(req, res);
-    });
+		await transport.handlePostMessage(req, res);
+	});
 
-    const PORT = process.env.PORT || 3001;
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-    });
+	const PORT = process.env.PORT || 3001;
+	app.listen(PORT, () => {
+		console.log(`Server is running on port ${PORT}`);
+	});
 }
 
 main();

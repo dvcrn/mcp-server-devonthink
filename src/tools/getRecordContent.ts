@@ -2,48 +2,42 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { Tool, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../applescript/execute.js";
-import {
-  escapeStringForJXA,
-  formatValueForJXA,
-  isJXASafeString,
-} from "../utils/escapeString.js";
+import { escapeStringForJXA, formatValueForJXA, isJXASafeString } from "../utils/escapeString.js";
 import { getRecordLookupHelpers } from "../utils/jxaHelpers.js";
 
 const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const GetRecordContentSchema = z
-  .object({
-    uuid: z.string().describe("UUID of the record to get content from"),
-    databaseName: z
-      .string()
-      .optional()
-      .describe("Database name to get the record from (optional)"),
-  })
-  .strict();
+	.object({
+		uuid: z.string().describe("UUID of the record to get content from"),
+		databaseName: z
+			.string()
+			.optional()
+			.describe("Database name to get the record from (optional)"),
+	})
+	.strict();
 
 type GetRecordContentInput = z.infer<typeof GetRecordContentSchema>;
 
 interface GetRecordContentResult {
-  success: boolean;
-  error?: string;
-  content?: string;
+	success: boolean;
+	error?: string;
+	content?: string;
 }
 
-const getRecordContent = async (
-  input: GetRecordContentInput
-): Promise<GetRecordContentResult> => {
-  const { uuid, databaseName } = input;
+const getRecordContent = async (input: GetRecordContentInput): Promise<GetRecordContentResult> => {
+	const { uuid, databaseName } = input;
 
-  // Validate string inputs
-  if (!isJXASafeString(uuid)) {
-    return { success: false, error: "UUID contains invalid characters" };
-  }
-  if (databaseName && !isJXASafeString(databaseName)) {
-    return { success: false, error: "Database name contains invalid characters" };
-  }
+	// Validate string inputs
+	if (!isJXASafeString(uuid)) {
+		return { success: false, error: "UUID contains invalid characters" };
+	}
+	if (databaseName && !isJXASafeString(databaseName)) {
+		return { success: false, error: "Database name contains invalid characters" };
+	}
 
-  const script = `
+	const script = `
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
@@ -101,12 +95,13 @@ const getRecordContent = async (
     })();
   `;
 
-  return await executeJxa<GetRecordContentResult>(script);
+	return await executeJxa<GetRecordContentResult>(script);
 };
 
 export const getRecordContentTool: Tool = {
-  name: "get_record_content",
-  description: "Gets the content of a specific record in DEVONthink.\n\nExample:\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\"\n}",
-  inputSchema: zodToJsonSchema(GetRecordContentSchema) as ToolInput,
-  run: getRecordContent,
+	name: "get_record_content",
+	description:
+		'Gets the content of a specific record in DEVONthink.\n\nExample:\n{\n  "uuid": "1234-5678-90AB-CDEF"\n}',
+	inputSchema: zodToJsonSchema(GetRecordContentSchema) as ToolInput,
+	run: getRecordContent,
 };

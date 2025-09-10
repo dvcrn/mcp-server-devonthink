@@ -2,94 +2,64 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { Tool, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../applescript/execute.js";
-import {
-  escapeStringForJXA,
-  formatValueForJXA,
-  isJXASafeString,
-} from "../utils/escapeString.js";
-import {
-  getRecordLookupHelpers,
-  getDatabaseHelper,
-  isGroupHelper,
-} from "../utils/jxaHelpers.js";
+import { escapeStringForJXA, formatValueForJXA, isJXASafeString } from "../utils/escapeString.js";
+import { getRecordLookupHelpers, getDatabaseHelper, isGroupHelper } from "../utils/jxaHelpers.js";
 
 const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const MoveRecordSchema = z
-  .object({
-    uuid: z.string().optional().describe("UUID of the record to move"),
-    recordId: z.number().optional().describe("ID of the record to move"),
-    recordName: z
-      .string()
-      .optional()
-      .describe("Name of the record to move"),
-    recordPath: z
-      .string()
-      .optional()
-      .describe("Path of the record to move"),
-    destinationGroupUuid: z
-      .string()
-      .optional()
-      .describe("UUID of the destination group"),
-    databaseName: z
-      .string()
-      .optional()
-      .describe(
-        "Database to move the record in (optional)"
-      ),
-  })
-  .strict()
-  .refine(
-    (data) =>
-      data.uuid !== undefined ||
-      data.recordId !== undefined ||
-      data.recordName !== undefined ||
-      data.recordPath !== undefined,
-    {
-      message:
-        "Either uuid, recordId, recordName, or recordPath must be provided",
-    }
-  );
+	.object({
+		uuid: z.string().optional().describe("UUID of the record to move"),
+		recordId: z.number().optional().describe("ID of the record to move"),
+		recordName: z.string().optional().describe("Name of the record to move"),
+		recordPath: z.string().optional().describe("Path of the record to move"),
+		destinationGroupUuid: z.string().optional().describe("UUID of the destination group"),
+		databaseName: z.string().optional().describe("Database to move the record in (optional)"),
+	})
+	.strict()
+	.refine(
+		(data) =>
+			data.uuid !== undefined ||
+			data.recordId !== undefined ||
+			data.recordName !== undefined ||
+			data.recordPath !== undefined,
+		{
+			message: "Either uuid, recordId, recordName, or recordPath must be provided",
+		},
+	);
 
 type MoveRecordInput = z.infer<typeof MoveRecordSchema>;
 
 const moveRecord = async (
-  input: MoveRecordInput
+	input: MoveRecordInput,
 ): Promise<{ success: boolean; newLocation?: string; error?: string }> => {
-  const {
-    uuid,
-    recordId,
-    recordName,
-    recordPath,
-    destinationGroupUuid,
-    databaseName,
-  } = input;
+	const { uuid, recordId, recordName, recordPath, destinationGroupUuid, databaseName } = input;
 
-  // Validate string inputs
-  if (uuid && !isJXASafeString(uuid)) {
-    return { success: false, error: "UUID contains invalid characters" };
-  }
-  if (recordName && !isJXASafeString(recordName)) {
-    return { success: false, error: "Record name contains invalid characters" };
-  }
-  if (recordPath && !isJXASafeString(recordPath)) {
-    return { success: false, error: "Record path contains invalid characters" };
-  }
-  if (destinationGroupUuid && !isJXASafeString(destinationGroupUuid)) {
-    return {
-      success: false,
-      error: "Destination UUID contains invalid characters",
-    };
-  }
-  if (databaseName && !isJXASafeString(databaseName)) {
-    return {
-      success: false,
-      error: "Database name contains invalid characters",
-    };
-  }
+	// Validate string inputs
+	if (uuid && !isJXASafeString(uuid)) {
+		return { success: false, error: "UUID contains invalid characters" };
+	}
+	if (recordName && !isJXASafeString(recordName)) {
+		return { success: false, error: "Record name contains invalid characters" };
+	}
+	if (recordPath && !isJXASafeString(recordPath)) {
+		return { success: false, error: "Record path contains invalid characters" };
+	}
+	if (destinationGroupUuid && !isJXASafeString(destinationGroupUuid)) {
+		return {
+			success: false,
+			error: "Destination UUID contains invalid characters",
+		};
+	}
+	if (databaseName && !isJXASafeString(databaseName)) {
+		return {
+			success: false,
+			error: "Database name contains invalid characters",
+		};
+	}
 
-  const script = `
+	const script = `
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
@@ -102,8 +72,8 @@ const moveRecord = async (
       try {
         // Get target database
         const targetDatabase = getDatabase(theApp, ${
-          databaseName ? `"${escapeStringForJXA(databaseName)}"` : "null"
-        });
+			databaseName ? `"${escapeStringForJXA(databaseName)}"` : "null"
+		});
         
         // Build lookup options for the record to move
         const lookupOptions = {
@@ -133,10 +103,8 @@ const moveRecord = async (
         // Find the destination group
         let destinationGroupRecord;
         const pDestinationGroupUuid = ${
-          destinationGroupUuid
-            ? `"${escapeStringForJXA(destinationGroupUuid)}"`
-            : "null"
-        };
+			destinationGroupUuid ? `"${escapeStringForJXA(destinationGroupUuid)}"` : "null"
+		};
         
         if (pDestinationGroupUuid) {
           try {
@@ -189,16 +157,17 @@ const moveRecord = async (
     })();
   `;
 
-  return await executeJxa<{
-    success: boolean;
-    newLocation?: string;
-    error?: string;
-  }>(script);
+	return await executeJxa<{
+		success: boolean;
+		newLocation?: string;
+		error?: string;
+	}>(script);
 };
 
 export const moveRecordTool: Tool = {
-  name: "move_record",
-  description: "Move a record to a different group in DEVONthink.\n\nExample:\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\",\n  \"destinationGroupUuid\": \"FEDC-BA09-8765-4321\"\n}",
-  inputSchema: zodToJsonSchema(MoveRecordSchema) as ToolInput,
-  run: moveRecord,
+	name: "move_record",
+	description:
+		'Move a record to a different group in DEVONthink.\n\nExample:\n{\n  "uuid": "1234-5678-90AB-CDEF",\n  "destinationGroupUuid": "FEDC-BA09-8765-4321"\n}',
+	inputSchema: zodToJsonSchema(MoveRecordSchema) as ToolInput,
+	run: moveRecord,
 };

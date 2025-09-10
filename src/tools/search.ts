@@ -3,168 +3,151 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import { Tool, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../applescript/execute.js";
 import {
-  escapeSearchQuery,
-  formatValueForJXA,
-  isJXASafeString,
-  escapeStringForJXA,
+	escapeSearchQuery,
+	formatValueForJXA,
+	isJXASafeString,
+	escapeStringForJXA,
 } from "../utils/escapeString.js";
-import {
-  getRecordLookupHelpers,
-  getDatabaseHelper,
-  isGroupHelper,
-} from "../utils/jxaHelpers.js";
+import { getRecordLookupHelpers, getDatabaseHelper, isGroupHelper } from "../utils/jxaHelpers.js";
 
 const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const SearchSchema = z
-  .object({
-    query: z.string().describe("Search query string"),
-    groupUuid: z
-      .string()
-      .optional()
-      .describe("UUID of the group to search in (optional)"),
-    groupId: z
-      .number()
-      .optional()
-      .describe("ID of the group to search in (optional, requires databaseName)"),
-    groupPath: z
-      .string()
-      .optional()
-      .describe("Path of the group to search in (e.g., '/Trips/2025') (optional)"),
-    databaseName: z
-      .string()
-      .optional()
-      .describe("Database name (optional, required with groupId)"),
-    useCurrentGroup: z
-      .boolean()
-      .optional()
-      .describe(
-        "Search in the currently selected group (optional)"
-      ),
-    recordType: z
-      .enum([
-        "group",
-        "markdown",
-        "PDF",
-        "bookmark",
-        "formatted note",
-        "txt",
-        "rtf",
-        "rtfd",
-        "webarchive",
-        "quicktime",
-        "picture",
-        "smart group",
-      ])
-      .optional()
-      .describe(
-        "Filter results by record type (optional)"
-      ),
-    comparison: z
-      .enum(["no case", "no umlauts", "fuzzy", "related"])
-      .optional()
-      .describe("Comparison type for the search (optional)"),
-    excludeSubgroups: z
-      .boolean()
-      .optional()
-      .describe("Exclude subgroups from the search (optional)"),
-    limit: z
-      .number()
-      .optional()
-      .describe("Maximum number of results to return (optional)"),
-  })
-  .strict()
-  .refine(
-    (data) => {
-      // If groupId is provided, databaseName must also be provided
-      if (data.groupId !== undefined && !data.databaseName) {
-        return false;
-      }
-      // If useCurrentGroup is true, other group parameters should not be provided
-      if (
-        data.useCurrentGroup &&
-        (data.groupUuid || data.groupId || data.groupPath)
-      ) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message:
-        "databaseName is required when using groupId; when useCurrentGroup is true, other group parameters should not be provided",
-    }
-  );
+	.object({
+		query: z.string().describe("Search query string"),
+		groupUuid: z.string().optional().describe("UUID of the group to search in (optional)"),
+		groupId: z
+			.number()
+			.optional()
+			.describe("ID of the group to search in (optional, requires databaseName)"),
+		groupPath: z
+			.string()
+			.optional()
+			.describe("Path of the group to search in (e.g., '/Trips/2025') (optional)"),
+		databaseName: z
+			.string()
+			.optional()
+			.describe("Database name (optional, required with groupId)"),
+		useCurrentGroup: z
+			.boolean()
+			.optional()
+			.describe("Search in the currently selected group (optional)"),
+		recordType: z
+			.enum([
+				"group",
+				"markdown",
+				"PDF",
+				"bookmark",
+				"formatted note",
+				"txt",
+				"rtf",
+				"rtfd",
+				"webarchive",
+				"quicktime",
+				"picture",
+				"smart group",
+			])
+			.optional()
+			.describe("Filter results by record type (optional)"),
+		comparison: z
+			.enum(["no case", "no umlauts", "fuzzy", "related"])
+			.optional()
+			.describe("Comparison type for the search (optional)"),
+		excludeSubgroups: z
+			.boolean()
+			.optional()
+			.describe("Exclude subgroups from the search (optional)"),
+		limit: z.number().optional().describe("Maximum number of results to return (optional)"),
+	})
+	.strict()
+	.refine(
+		(data) => {
+			// If groupId is provided, databaseName must also be provided
+			if (data.groupId !== undefined && !data.databaseName) {
+				return false;
+			}
+			// If useCurrentGroup is true, other group parameters should not be provided
+			if (data.useCurrentGroup && (data.groupUuid || data.groupId || data.groupPath)) {
+				return false;
+			}
+			return true;
+		},
+		{
+			message:
+				"databaseName is required when using groupId; when useCurrentGroup is true, other group parameters should not be provided",
+		},
+	);
 
 type SearchInput = z.infer<typeof SearchSchema>;
 
 interface SearchResult {
-  success: boolean;
-  error?: string;
-  results?: Array<{
-    id: number;
-    uuid: string;
-    name: string;
-    path: string;
-    location: string;
-    recordType: string;
-    kind: string;
-    score?: number;
-    creationDate?: string;
-    modificationDate?: string;
-    tags?: string[];
-    size?: number;
-  }>;
-  totalCount?: number;
+	success: boolean;
+	error?: string;
+	results?: Array<{
+		id: number;
+		uuid: string;
+		name: string;
+		path: string;
+		location: string;
+		recordType: string;
+		kind: string;
+		score?: number;
+		creationDate?: string;
+		modificationDate?: string;
+		tags?: string[];
+		size?: number;
+	}>;
+	totalCount?: number;
 }
 
 const search = async (input: SearchInput): Promise<SearchResult> => {
-  const {
-    query,
-    groupUuid,
-    groupId,
-    groupPath,
-    databaseName,
-    useCurrentGroup,
-    recordType,
-    comparison,
-    excludeSubgroups,
-    limit = 50,
-  } = input;
+	const {
+		query,
+		groupUuid,
+		groupId,
+		groupPath,
+		databaseName,
+		useCurrentGroup,
+		recordType,
+		comparison,
+		excludeSubgroups,
+		limit = 50,
+	} = input;
 
-  // Validate inputs
-  if (!isJXASafeString(query)) {
-    return {
-      success: false,
-      error: "Search query contains invalid characters",
-    };
-  }
+	// Validate inputs
+	if (!isJXASafeString(query)) {
+		return {
+			success: false,
+			error: "Search query contains invalid characters",
+		};
+	}
 
-  if (groupUuid && !isJXASafeString(groupUuid)) {
-    return {
-      success: false,
-      error: "Group UUID contains invalid characters",
-    };
-  }
+	if (groupUuid && !isJXASafeString(groupUuid)) {
+		return {
+			success: false,
+			error: "Group UUID contains invalid characters",
+		};
+	}
 
-  if (groupPath && !isJXASafeString(groupPath)) {
-    return {
-      success: false,
-      error: "Group path contains invalid characters",
-    };
-  }
+	if (groupPath && !isJXASafeString(groupPath)) {
+		return {
+			success: false,
+			error: "Group path contains invalid characters",
+		};
+	}
 
-  if (databaseName && !isJXASafeString(databaseName)) {
-    return {
-      success: false,
-      error: "Database name contains invalid characters",
-    };
-  }
+	if (databaseName && !isJXASafeString(databaseName)) {
+		return {
+			success: false,
+			error: "Database name contains invalid characters",
+		};
+	}
 
-  // Escape the search query
-  const escapedQuery = escapeSearchQuery(query);
+	// Escape the search query
+	const escapedQuery = escapeSearchQuery(query);
 
-  const script = `
+	const script = `
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
@@ -176,22 +159,14 @@ const search = async (input: SearchInput): Promise<SearchResult> => {
       
       try {
         // Define variables for lookup
-        const pGroupUuid = ${
-          groupUuid ? `"${escapeStringForJXA(groupUuid)}"` : "null"
-        };
+        const pGroupUuid = ${groupUuid ? `"${escapeStringForJXA(groupUuid)}"` : "null"};
         const pGroupId = ${groupId !== undefined ? groupId : "null"};
-        const pGroupPath = ${
-          groupPath ? `"${escapeStringForJXA(groupPath)}"` : "null"
-        };
-        const pDatabaseName = ${
-          databaseName ? `"${escapeStringForJXA(databaseName)}"` : "null"
-        };
+        const pGroupPath = ${groupPath ? `"${escapeStringForJXA(groupPath)}"` : "null"};
+        const pDatabaseName = ${databaseName ? `"${escapeStringForJXA(databaseName)}"` : "null"};
         const pUseCurrentGroup = ${useCurrentGroup === true};
         const pRecordType = ${formatValueForJXA(recordType)};
         const pComparison = ${formatValueForJXA(comparison)};
-        const pExcludeSubgroups = ${
-          excludeSubgroups !== undefined ? excludeSubgroups : "null"
-        };
+        const pExcludeSubgroups = ${excludeSubgroups !== undefined ? excludeSubgroups : "null"};
         const pLimit = ${limit};
 
 
@@ -330,13 +305,12 @@ const search = async (input: SearchInput): Promise<SearchResult> => {
     })();
   `;
 
-
-  return await executeJxa<SearchResult>(script);
+	return await executeJxa<SearchResult>(script);
 };
 
 export const searchTool: Tool = {
-  name: "search",
-  description: "Search for records in DEVONthink.\n\nExample:\n{\n  \"query\": \"invoice 2024\"\n}",
-  inputSchema: zodToJsonSchema(SearchSchema) as ToolInput,
-  run: search,
+	name: "search",
+	description: 'Search for records in DEVONthink.\n\nExample:\n{\n  "query": "invoice 2024"\n}',
+	inputSchema: zodToJsonSchema(SearchSchema) as ToolInput,
+	run: search,
 };

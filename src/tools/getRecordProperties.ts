@@ -2,94 +2,78 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { Tool, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../applescript/execute.js";
-import {
-  escapeStringForJXA,
-  formatValueForJXA,
-  isJXASafeString,
-} from "../utils/escapeString.js";
+import { escapeStringForJXA, formatValueForJXA, isJXASafeString } from "../utils/escapeString.js";
 import { getRecordLookupHelpers, getDatabaseHelper } from "../utils/jxaHelpers.js";
 
 const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const GetRecordPropertiesSchema = z
-  .object({
-    uuid: z.string().optional().describe("UUID of the record"),
-    recordId: z
-      .number()
-      .optional()
-      .describe("ID of the record to get properties for"),
-    recordPath: z
-      .string()
-      .optional()
-      .describe(
-        "DEVONthink location path of the record (e.g., '/Inbox/My Document')"
-      ),
-    databaseName: z
-      .string()
-      .optional()
-      .describe(
-        "Database to get the record properties from (optional)"
-      ),
-  })
-  .strict()
-  .refine(
-    (data) =>
-      data.uuid !== undefined ||
-      data.recordId !== undefined ||
-      data.recordPath !== undefined,
-    {
-      message:
-        "Either uuid, recordId, or recordPath must be provided",
-    }
-  );
+	.object({
+		uuid: z.string().optional().describe("UUID of the record"),
+		recordId: z.number().optional().describe("ID of the record to get properties for"),
+		recordPath: z
+			.string()
+			.optional()
+			.describe("DEVONthink location path of the record (e.g., '/Inbox/My Document')"),
+		databaseName: z
+			.string()
+			.optional()
+			.describe("Database to get the record properties from (optional)"),
+	})
+	.strict()
+	.refine(
+		(data) =>
+			data.uuid !== undefined || data.recordId !== undefined || data.recordPath !== undefined,
+		{
+			message: "Either uuid, recordId, or recordPath must be provided",
+		},
+	);
 
 type GetRecordPropertiesInput = z.infer<typeof GetRecordPropertiesSchema>;
 
 interface RecordProperties {
-  success: boolean;
-  error?: string;
-  id?: number;
-  uuid?: string;
-  name?: string;
-  path?: string;
-  location?: string;
-  recordType?: string;
-  kind?: string;
-  creationDate?: string;
-  modificationDate?: string;
-  additionDate?: string;
-  size?: number;
-  tags?: string[];
-  comment?: string;
-  url?: string;
-  rating?: number;
-  label?: number;
-  flag?: boolean;
-  unread?: boolean;
-  locked?: boolean;
-  plainText?: string;
-  wordCount?: number;
-  characterCount?: number;
+	success: boolean;
+	error?: string;
+	id?: number;
+	uuid?: string;
+	name?: string;
+	path?: string;
+	location?: string;
+	recordType?: string;
+	kind?: string;
+	creationDate?: string;
+	modificationDate?: string;
+	additionDate?: string;
+	size?: number;
+	tags?: string[];
+	comment?: string;
+	url?: string;
+	rating?: number;
+	label?: number;
+	flag?: boolean;
+	unread?: boolean;
+	locked?: boolean;
+	plainText?: string;
+	wordCount?: number;
+	characterCount?: number;
 }
 
-const getRecordProperties = async (
-  input: GetRecordPropertiesInput
-): Promise<RecordProperties> => {
-  const { uuid, recordId, recordPath, databaseName } = input;
+const getRecordProperties = async (input: GetRecordPropertiesInput): Promise<RecordProperties> => {
+	const { uuid, recordId, recordPath, databaseName } = input;
 
-  // Validate string inputs
-  if (uuid && !isJXASafeString(uuid)) {
-    return { success: false, error: "UUID contains invalid characters" };
-  }
-  if (recordPath && !isJXASafeString(recordPath)) {
-    return { success: false, error: "Record path contains invalid characters" };
-  }
-  if (databaseName && !isJXASafeString(databaseName)) {
-    return { success: false, error: "Database name contains invalid characters" };
-  }
+	// Validate string inputs
+	if (uuid && !isJXASafeString(uuid)) {
+		return { success: false, error: "UUID contains invalid characters" };
+	}
+	if (recordPath && !isJXASafeString(recordPath)) {
+		return { success: false, error: "Record path contains invalid characters" };
+	}
+	if (databaseName && !isJXASafeString(databaseName)) {
+		return { success: false, error: "Database name contains invalid characters" };
+	}
 
-  const script = `
+	const script = `
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
@@ -182,12 +166,13 @@ const getRecordProperties = async (
     })();
   `;
 
-  return await executeJxa<RecordProperties>(script);
+	return await executeJxa<RecordProperties>(script);
 };
 
 export const getRecordPropertiesTool: Tool = {
-  name: "get_record_properties",
-  description: "Get detailed properties and metadata for a DEVONthink record.\n\nExample:\n{\n  \"uuid\": \"1234-5678-90AB-CDEF\"\n}",
-  inputSchema: zodToJsonSchema(GetRecordPropertiesSchema) as ToolInput,
-  run: getRecordProperties,
+	name: "get_record_properties",
+	description:
+		'Get detailed properties and metadata for a DEVONthink record.\n\nExample:\n{\n  "uuid": "1234-5678-90AB-CDEF"\n}',
+	inputSchema: zodToJsonSchema(GetRecordPropertiesSchema) as ToolInput,
+	run: getRecordProperties,
 };

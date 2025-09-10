@@ -1,11 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/1.6.2/schema.json",
-	"organizeImports": {
-		"enabled": true
-	},
-	"files": {
-		"ignore": ["worker-configuration.d.ts"]
-	},
+	"$schema": "https://biomejs.dev/schemas/2.2.3/schema.json",
 	"vcs": {
 		"enabled": true,
 		"clientKind": "git",
@@ -18,7 +12,7 @@
 			"suspicious": {
 				"noExplicitAny": "off",
 				"noDebugger": "off",
-				"noConsoleLog": "off",
+				"noConsole": "off",
 				"noConfusingVoidType": "off"
 			},
 			"style": {
