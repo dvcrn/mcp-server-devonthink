@@ -1,43 +1,45 @@
 {
-    "name": "mcp-server-devonthink",
-    "version": "1.4.0",
-    "description": "MCP server that provides access to DEVONthink",
-    "license": "MIT",
-    "author": "David Mohl <git@d.sh>",
-    "homepage": "https://github.com/dvcrn/mcp-server-devonthink",
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/dvcrn/mcp-server-devonthink.git"
-    },
-    "bugs": "https://github.com/dvcrn/mcp-server-devonthink/issues",
-    "type": "module",
-    "bin": {
-        "mcp-server-devonthink": "dist/index.js"
-    },
-    "files": [
-        "dist"
-    ],
-    "scripts": {
-        "build": "tsc && shx chmod +x dist/index.js",
-        "prepare": "npm run build",
-        "watch": "tsc --watch",
-        "format": "biome format --write",
-        "lint:fix": "biome lint --fix",
-        "start": "node dist/index.js",
-        "type-check": "tsc --noEmit"
-    },
-    "dependencies": {
-        "@modelcontextprotocol/sdk": "1.0.1",
-        "express": "^4.21.1",
-        "zod": "^3.23.8",
-        "zod-to-json-schema": "^3.23.5"
-    },
-    "devDependencies": {
-        "@biomejs/biome": "^2.1.2",
-        "@types/express": "^5.0.0",
-        "shx": "^0.3.4",
-        "typescript": "^5.6.2",
-        "vitest": "^3.2.0"
-    },
-    "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+	"name": "mcp-server-devonthink",
+	"version": "1.4.0",
+	"description": "MCP server that provides access to DEVONthink",
+	"license": "MIT",
+	"author": "David Mohl <git@d.sh>",
+	"homepage": "https://github.com/dvcrn/mcp-server-devonthink",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/dvcrn/mcp-server-devonthink.git"
+	},
+	"bugs": "https://github.com/dvcrn/mcp-server-devonthink/issues",
+	"type": "module",
+	"bin": {
+		"mcp-server-devonthink": "dist/index.js"
+	},
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "tsc && shx chmod +x dist/index.js",
+		"prepare": "npm run build",
+		"watch": "tsc --watch",
+		"format": "biome format --write",
+		"lint:fix": "biome lint --fix",
+		"start": "node dist/index.js",
+		"type-check": "tsc --noEmit",
+		"test": "vitest run",
+		"format:check": "biome format package.json src/utils/**/*"
+	},
+	"dependencies": {
+		"@modelcontextprotocol/sdk": "1.0.1",
+		"express": "^4.21.1",
+		"zod": "^3.23.8",
+		"zod-to-json-schema": "^3.23.5"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.2.3",
+		"@types/express": "^5.0.0",
+		"shx": "^0.3.4",
+		"typescript": "^5.6.2",
+		"vitest": "^3.2.0"
+	},
+	"packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
