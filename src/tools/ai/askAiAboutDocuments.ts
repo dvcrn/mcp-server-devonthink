@@ -24,10 +24,7 @@ export const askAiAboutDocumentsTool = createDevonThinkTool({
       
       // Check if DEVONthink is running
       if (!theApp.running()) {
-        const result = {};
-        result["success"] = false;
-        result["error"] = "DEVONthink is not running";
-        return JSON.stringify(result);
+        return JSON.stringify({ success: false, error: "DEVONthink is not running" });
       }
       
       const records = [];
