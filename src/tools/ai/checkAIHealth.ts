@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createDevonThinkTool } from "../base/DevonThinkTool.js";
-import { TEST_AI_ENGINES } from "./constants.js";
+import { AI_ENGINES } from "./constants.js";
 
 /**
  * Input schema for the AI health check tool
@@ -53,7 +53,7 @@ export const checkAIHealthTool = createDevonThinkTool({
       result["devonthinkRunning"] = true;
       
       // Test engines using DEVONthink's actual API (following ai-support pattern)
-      const testEngines = ${helpers.formatValue(TEST_AI_ENGINES)};
+      const testEngines = ${helpers.formatValue(AI_ENGINES)};
       const configuredEngines = [];
       const workingEngines = [];
       
