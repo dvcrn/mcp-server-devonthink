@@ -42,12 +42,15 @@ function lookupByPath(theApp, path, database) {
     const pathComponents = path.split("/").filter(p => p.length > 0);
 
     // If no components (root path), return database root or null
-    if (pathComponents.length === 0) {
-      return database ? database.root() : null;
+    // Path lookups require a database context.
+    if (!database) {
+      return null;
     }
 
-    // Start from database root if database provided
-    if (!database) return null; // Path lookup requires database context
+    // If no components (e.g. path was "/"), return the database root.
+    if (pathComponents.length === 0) {
+      return database.root();
+    }
 
     let current = database.root();
 
