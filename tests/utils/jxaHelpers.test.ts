@@ -44,7 +44,7 @@ describe("lookupByPathHelper", () => {
 	it("uses double quotes for string literals to avoid shell escaping issues", () => {
 		// Single quotes in the helper would be doubled by executeJxa's shell escaping,
 		// breaking the JavaScript syntax. The helper must use double quotes.
-		const singleQuoteRegex = /\.replace\([^)]*'[^']*'[^)]*\)|\.split\('\/'\)/;
-		expect(lookupByPathHelper).not.toMatch(singleQuoteRegex);
+		expect(lookupByPathHelper).not.toContain(".split('/')");
+		expect(lookupByPathHelper).toContain('.split("/")');
 	});
 });

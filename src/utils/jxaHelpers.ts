@@ -38,8 +38,8 @@ export const lookupByPathHelper = `
 function lookupByPath(theApp, path, database) {
   if (!path) return null;
   try {
-    // Remove leading/trailing slashes and split path into components
-    const pathComponents = path.replace(/^\\/+|\\/+$/g, "").split("/").filter(p => p.length > 0);
+    // Split path into components, filtering out empty strings from leading/trailing slashes
+    const pathComponents = path.split("/").filter(p => p.length > 0);
 
     // If no components (root path), return database root or null
     if (pathComponents.length === 0) {
