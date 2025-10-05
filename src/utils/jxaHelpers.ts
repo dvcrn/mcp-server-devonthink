@@ -31,12 +31,35 @@ function lookupById(theApp, id) {
 
 /**
  * Helper function to lookup a record by path
+ * Navigates the hierarchy by splitting the path and traversing children
+ * If database is provided, starts from database.root(), otherwise searches globally
  */
 export const lookupByPathHelper = `
-function lookupByPath(theApp, path) {
+function lookupByPath(theApp, path, database) {
   if (!path) return null;
   try {
-    return theApp.getRecordAt(path);
+    // Remove leading/trailing slashes and split path into components
+    const pathComponents = path.replace(/^\\/+|\\/+$/g, "").split("/").filter(p => p.length > 0);
+
+    // If no components (root path), return database root or null
+    if (pathComponents.length === 0) {
+      return database ? database.root() : null;
+    }
+
+    // Start from database root if database provided
+    if (!database) return null; // Path lookup requires database context
+
+    let current = database.root();
+
+    // Navigate through each path component
+    for (const component of pathComponents) {
+      const children = current.children();
+      const found = children.find(c => c.name() === component);
+      if (!found) return null;
+      current = found;
+    }
+
+    return current;
   } catch (e) {
     return null;
   }
@@ -101,7 +124,7 @@ function getRecord(theApp, options) {
   
   // Try path (fast)
   if (options.path) {
-    record = lookupByPath(theApp, options.path);
+    record = lookupByPath(theApp, options.path, options.database);
     if (record) {
       const result = {};
       result["record"] = record;
