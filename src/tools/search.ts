@@ -8,7 +8,7 @@ import {
 	isJXASafeString,
 	escapeStringForJXA,
 } from "../utils/escapeString.js";
-import { getRecordLookupHelpers, getDatabaseHelper, isGroupHelper } from "../utils/jxaHelpers.js";
+import { getRecordLookupHelpers, getDatabaseHelper, isGroupHelper, versionHelper } from "../utils/jxaHelpers.js";
 
 const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
@@ -162,6 +162,7 @@ const search = async (input: SearchInput): Promise<SearchResult> => {
       ${getRecordLookupHelpers()}
       ${getDatabaseHelper}
       ${isGroupHelper}
+      ${versionHelper}
       
       try {
         // Define variables for lookup
@@ -237,6 +238,10 @@ const search = async (input: SearchInput): Promise<SearchResult> => {
           } catch (e) {
             return JSON.stringify({ success: false, error: "Error checking if record is a group: " + e.toString() });
           }
+        } else if (targetDatabase) {
+          // User specified a database but no specific group
+          // DEVONthink 4.1+ requires using database.root() instead of the database object
+          searchScope = isVersion41OrLater(theApp) ? targetDatabase.root() : targetDatabase;
         } else {
           searchScope = null; // Search all databases
         }

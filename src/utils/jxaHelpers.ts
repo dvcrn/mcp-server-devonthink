@@ -168,6 +168,21 @@ function isGroup(record) {
 }`;
 
 /**
+ * Helper to detect DEVONthink version for backward compatibility
+ */
+export const versionHelper = `
+function isVersion41OrLater(theApp) {
+  try {
+    const versionString = theApp.version();
+    const parts = versionString.split(".");
+    const versionNumber = parseFloat(parts[0] + "." + parts[1]);
+    return versionNumber >= 4.1;
+  } catch (e) {
+    return false;
+  }
+}`;
+
+/**
  * Helper to get database by name or use current
  */
 export const getDatabaseHelper = `
@@ -175,7 +190,7 @@ function getDatabase(theApp, databaseName) {
   if (!databaseName) {
     return theApp.currentDatabase();
   }
-  
+
   const databases = theApp.databases();
   const found = databases.find(db => db.name() === databaseName);
   if (!found) {
