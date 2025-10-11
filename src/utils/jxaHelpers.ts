@@ -175,8 +175,12 @@ function isVersion41OrLater(theApp) {
   try {
     const versionString = theApp.version();
     const parts = versionString.split(".");
-    const versionNumber = parseFloat(parts[0] + "." + parts[1]);
-    return versionNumber >= 4.1;
+    const major = parseInt(parts[0], 10);
+    const minor = parseInt(parts[1], 10);
+    if (isNaN(major) || isNaN(minor)) {
+      return false;
+    }
+    return major > 4 || (major === 4 && minor >= 1);
   } catch (e) {
     return false;
   }
