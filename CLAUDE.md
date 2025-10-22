@@ -67,7 +67,7 @@ The MCP server currently provides the following tools:
 21. **`duplicate_record`** - Duplicate records to any database (creates independent copies)
 22. **`convert_record`** - Convert records to different formats (plain text, rich text, markdown, HTML, PDF, etc.)
 23. **`update_record_content`** - Update the content of existing records while preserving UUID and metadata
-24. **`get_zotero_metadata`** - Look up Zotero attachment metadata for a DEVONthink record or Finder path
+24. **`get_zotero_metadata`** - Look up Zotero attachment metadata for a DEVONthink record or Finder path, returning handy top-level `citationKey`, `zoteroId`, and a short `metadataSummary`
 
 ## Adding New Tools
 

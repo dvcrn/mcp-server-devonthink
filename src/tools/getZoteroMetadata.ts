@@ -80,6 +80,9 @@ interface ZoteroMetadataToolSuccess {
 	lookupMethod?: string | null;
 	record?: RecordLookupResult["record"];
 	metadata: Record<string, unknown>;
+	citationKey?: string | null;
+	zoteroId?: string | null;
+	metadataSummary?: string;
 	pathsChecked: {
 		json?: string | null;
 		bib?: string | null;
@@ -318,6 +321,20 @@ const getZoteroMetadata = async (
 	}
 
 	if (lookupResult.source === "json") {
+		const item = lookupResult.item;
+		const zoteroId =
+			typeof item === "object" && item && "id" in item && typeof item.id === "string"
+				? (item.id as string)
+				: null;
+		const citationKey =
+			typeof item === "object" && item && "citationKey" in item && typeof item.citationKey === "string"
+				? (item.citationKey as string)
+				: null;
+		const title =
+			typeof item === "object" && item && "title" in item && typeof item.title === "string"
+				? (item.title as string)
+				: null;
+
 		return {
 			success: true,
 			finderPath: resolvedFinderPath,
@@ -329,9 +346,27 @@ const getZoteroMetadata = async (
 				matchValue: lookupResult.matchValue,
 				propertyPath: lookupResult.propertyPath,
 			},
+			citationKey: citationKey ?? zoteroId ?? null,
+			zoteroId,
+			metadataSummary: [
+				citationKey ? `citationKey=${citationKey}` : "",
+				zoteroId && zoteroId !== citationKey ? `id=${zoteroId}` : "",
+				title ? `title=${title}` : "",
+			]
+				.filter(Boolean)
+				.join("; "),
 			pathsChecked,
 		};
 	}
+
+	const citationKey = lookupResult.entry.key;
+	const zoteroId =
+		lookupResult.entry.fields.zotero_id ??
+		lookupResult.entry.fields.id ??
+		lookupResult.entry.fields.citationkey ??
+		null;
+	const title =
+		lookupResult.entry.fields.title ?? lookupResult.entry.fields["title"] ?? null;
 
 	return {
 		success: true,
@@ -346,6 +381,15 @@ const getZoteroMetadata = async (
 			matchValue: lookupResult.matchValue,
 			rawEntry: lookupResult.rawEntry,
 		},
+		citationKey,
+		zoteroId: typeof zoteroId === "string" ? zoteroId : null,
+		metadataSummary: [
+			citationKey ? `citationKey=${citationKey}` : "",
+			typeof zoteroId === "string" ? `id=${zoteroId}` : "",
+			typeof title === "string" ? `title=${title}` : "",
+		]
+			.filter(Boolean)
+			.join("; "),
 		pathsChecked,
 	};
 };

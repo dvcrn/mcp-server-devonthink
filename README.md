@@ -103,8 +103,8 @@ This MCP server provides access to DEVONthink functionality via the Model Contex
 
 17. `get_zotero_metadata`
     - Resolves Zotero metadata for a DEVONthink record or Finder path
-    - Input: Finder path, record UUID, DEVONthink ID + database, or DEVONthink location path
-    - Returns: Matched Zotero item data from JSON or BibTeX export, plus lookup diagnostics
+    - Input: Finder path, record UUID, DEVONthink ID + database, or DEVONthink location path (optional `zoteroJsonPath` / `zoteroBibPath` override export locations)
+    - Returns: The matched Zotero item with top-level `citationKey`, `zoteroId`, and a short summary string for LLM prompts
 
 ### Example: Search Tool
 
@@ -166,7 +166,7 @@ Zotero attachments stored in DEVONthink can be matched to exported Zotero metada
    - Supplying only one file is fine—the server detects whether you provided a `.json` or `.bib` path and uses it automatically.
    - If no metadata file is configured, the tool returns an informative error so you can correct the setup.
 
-3. Call the `get_zotero_metadata` tool with a Finder path or any supported DEVONthink identifier. The tool returns the matched Zotero entry (including citation key, fields, and the property that matched) or detailed errors describing which files were checked.
+3. Call the `get_zotero_metadata` tool with a Finder path or any supported DEVONthink identifier. The tool returns the matched Zotero entry (including citation key, fields, and the property that matched), exposes `citationKey` / `zoteroId` at the top level, and provides a brief `metadataSummary` string for LLM prompts. If no match is found, the response lists the files that were checked.
 
 Example invocation:
 
