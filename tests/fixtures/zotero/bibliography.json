@@ -1,0 +1,47 @@
+[
+  {
+    "id": "smith2024deep",
+    "type": "article-journal",
+    "title": "Deep Learning for Citation Matching",
+    "author": [
+      {
+        "family": "Smith",
+        "given": "Alex"
+      }
+    ],
+    "issued": {
+      "date-parts": [
+        [
+          2024
+        ]
+      ]
+    },
+    "attachments": [
+      {
+        "title": "Full Text PDF",
+        "localPath": "/Users/alex/Documents/Zotero/storage/ABC12345/Smith2024.pdf"
+      },
+      {
+        "title": "Supplement",
+        "localPath": "file:///Users/alex/Documents/Zotero/storage/ABC12345/Smith2024-supplement.pdf"
+      }
+    ]
+  },
+  {
+    "id": "miller2023notes",
+    "type": "paper-conference",
+    "title": "Notes on Knowledge Graphs",
+    "author": [
+      {
+        "family": "Miller",
+        "given": "Jordan"
+      }
+    ],
+    "attachments": [
+      {
+        "title": "Conference Paper",
+        "path": "/Users/alex/Documents/Zotero/storage/XYZ9876/Miller2023.pdf"
+      }
+    ]
+  }
+]

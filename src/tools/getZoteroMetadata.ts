@@ -4,11 +4,7 @@ import { Tool, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import { executeJxa } from "../applescript/execute.js";
 import { escapeStringForJXA, isJXASafeString } from "../utils/escapeString.js";
 import { getRecordLookupHelpers, getDatabaseHelper } from "../utils/jxaHelpers.js";
-import {
-	lookupZoteroMetadataByPath,
-	DEFAULT_ZOTERO_JSON_PATH,
-	DEFAULT_ZOTERO_BIB_PATH,
-} from "../utils/zoteroMetadata.js";
+import { lookupZoteroMetadataByPath } from "../utils/zoteroMetadata.js";
 
 const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
@@ -32,6 +28,14 @@ const GetZoteroMetadataSchema = z
 			.string()
 			.optional()
 			.describe("Absolute Finder path to the file, e.g. /Users/me/Documents/file.pdf"),
+		zoteroJsonPath: z
+			.string()
+			.optional()
+			.describe("Path to a Zotero JSON export containing attachment metadata"),
+		zoteroBibPath: z
+			.string()
+			.optional()
+			.describe("Path to a Zotero BibTeX export containing attachment metadata"),
 	})
 	.strict()
 	.refine(
@@ -77,8 +81,8 @@ interface ZoteroMetadataToolSuccess {
 	record?: RecordLookupResult["record"];
 	metadata: Record<string, unknown>;
 	pathsChecked: {
-		json: string;
-		bib: string;
+		json?: string | null;
+		bib?: string | null;
 	};
 }
 
@@ -87,8 +91,8 @@ interface ZoteroMetadataToolFailure {
 	error: string;
 	details?: string[];
 	pathsChecked: {
-		json: string;
-		bib: string;
+		json?: string | null;
+		bib?: string | null;
 	};
 }
 
@@ -219,16 +223,28 @@ const getRecordFinderPath = async (
 const getZoteroMetadata = async (
 	input: GetZoteroMetadataInput,
 ): Promise<ZoteroMetadataToolSuccess | ZoteroMetadataToolFailure> => {
-	const { uuid, id, databaseName, recordPath, finderPath } = input;
+	const {
+		uuid,
+		id,
+		databaseName,
+		recordPath,
+		finderPath,
+		zoteroJsonPath,
+		zoteroBibPath,
+	} = input;
+
+	const metadataJsonPath = zoteroJsonPath ?? process.env.ZOTERO_BIBLIOGRAPHY_JSON ?? null;
+	const metadataBibPath = zoteroBibPath ?? process.env.ZOTERO_BIBLIOGRAPHY_BIB ?? null;
+	const pathsChecked = {
+		json: metadataJsonPath,
+		bib: metadataBibPath,
+	} as const;
 
 	if (uuid && !isJXASafeString(uuid)) {
 		return {
 			success: false,
 			error: "UUID contains invalid characters for JXA execution",
-			pathsChecked: {
-				json: DEFAULT_ZOTERO_JSON_PATH,
-				bib: DEFAULT_ZOTERO_BIB_PATH,
-			},
+			pathsChecked,
 		};
 	}
 
@@ -236,10 +252,7 @@ const getZoteroMetadata = async (
 		return {
 			success: false,
 			error: "Database name contains invalid characters for JXA execution",
-			pathsChecked: {
-				json: DEFAULT_ZOTERO_JSON_PATH,
-				bib: DEFAULT_ZOTERO_BIB_PATH,
-			},
+			pathsChecked,
 		};
 	}
 
@@ -247,17 +260,9 @@ const getZoteroMetadata = async (
 		return {
 			success: false,
 			error: "recordPath contains invalid characters for JXA execution",
-			pathsChecked: {
-				json: DEFAULT_ZOTERO_JSON_PATH,
-				bib: DEFAULT_ZOTERO_BIB_PATH,
-			},
+			pathsChecked,
 		};
 	}
-
-	const metadataJsonPath =
-		process.env.ZOTERO_BIBLIOGRAPHY_JSON ?? DEFAULT_ZOTERO_JSON_PATH;
-	const metadataBibPath =
-		process.env.ZOTERO_BIBLIOGRAPHY_BIB ?? DEFAULT_ZOTERO_BIB_PATH;
 
 	let resolvedFinderPath = finderPath ?? null;
 	let recordContext: RecordLookupResult["record"] = undefined;
@@ -277,10 +282,7 @@ const getZoteroMetadata = async (
 				error:
 					recordLookup.error ||
 					"Failed to locate record in DEVONthink for metadata lookup",
-				pathsChecked: {
-					json: metadataJsonPath,
-					bib: metadataBibPath,
-				},
+				pathsChecked,
 			};
 		}
 
@@ -297,16 +299,13 @@ const getZoteroMetadata = async (
 		return {
 			success: false,
 			error: "Unable to determine Finder path for metadata lookup",
-			pathsChecked: {
-				json: metadataJsonPath,
-				bib: metadataBibPath,
-			},
+			pathsChecked,
 		};
 	}
 
 	const lookupResult = await lookupZoteroMetadataByPath(resolvedFinderPath, {
-		jsonPath: metadataJsonPath,
-		bibPath: metadataBibPath,
+		jsonPath: metadataJsonPath ?? undefined,
+		bibPath: metadataBibPath ?? undefined,
 	});
 
 	if (!lookupResult.success) {
@@ -314,10 +313,7 @@ const getZoteroMetadata = async (
 			success: false,
 			error: "No Zotero metadata entry found for the provided Finder path",
 			details: lookupResult.errors,
-			pathsChecked: {
-				json: metadataJsonPath,
-				bib: metadataBibPath,
-			},
+			pathsChecked,
 		};
 	}
 
@@ -333,10 +329,7 @@ const getZoteroMetadata = async (
 				matchValue: lookupResult.matchValue,
 				propertyPath: lookupResult.propertyPath,
 			},
-			pathsChecked: {
-				json: metadataJsonPath,
-				bib: metadataBibPath,
-			},
+			pathsChecked,
 		};
 	}
 
@@ -353,17 +346,14 @@ const getZoteroMetadata = async (
 			matchValue: lookupResult.matchValue,
 			rawEntry: lookupResult.rawEntry,
 		},
-		pathsChecked: {
-			json: metadataJsonPath,
-			bib: metadataBibPath,
-		},
+		pathsChecked,
 	};
 };
 
 export const getZoteroMetadataTool: Tool = {
 	name: "get_zotero_metadata",
 	description:
-		"Look up Zotero metadata for a DEVONthink record. Provide a Finder path directly or identify the record by UUID, record ID (with database name), or DEVONthink location path.",
+		"Look up Zotero metadata for a DEVONthink record. Provide a Finder path directly or identify the record by UUID, record ID (with database name), or DEVONthink location path. Optional `zoteroJsonPath` / `zoteroBibPath` inputs override the metadata export locations for a single call.",
 	inputSchema: zodToJsonSchema(GetZoteroMetadataSchema) as ToolInput,
 	run: getZoteroMetadata,
 };

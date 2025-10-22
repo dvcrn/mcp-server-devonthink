@@ -12,6 +12,7 @@ This MCP server provides access to DEVONthink functionality via the Model Contex
 - Retrieve and modify record content, properties, and tags
 - Create records from URLs in multiple formats
 - List open databases and group contents
+- Resolve Zotero metadata for DEVONthink attachments via Zotero exports
 - All tools are type-safe and validated with Zod schemas
 
 ## Tools
@@ -100,6 +101,11 @@ This MCP server provides access to DEVONthink functionality via the Model Contex
     - Input: primary record UUID, optional second record UUID, database name, and comparison type
     - Returns: Either similar records (single mode) or detailed comparison analysis (two-record mode)
 
+17. `get_zotero_metadata`
+    - Resolves Zotero metadata for a DEVONthink record or Finder path
+    - Input: Finder path, record UUID, DEVONthink ID + database, or DEVONthink location path
+    - Returns: Matched Zotero item data from JSON or BibTeX export, plus lookup diagnostics
+
 ### Example: Search Tool
 
 ```json
@@ -144,3 +150,28 @@ Add to your Claude configuration:
 - Includes comprehensive tests using Vitest
 
 See [CLAUDE.md](./CLAUDE.md) for full documentation, tool development guidelines, and API reference.
+
+## Zotero Metadata Lookup
+
+Zotero attachments stored in DEVONthink can be matched to exported Zotero metadata. The MCP server inspects both JSON and BibTeX exports and prefers JSON when both are present.
+
+1. Export your Zotero library (or a subset) to `bibliography.json` and/or `bibliography.bib`.
+2. Point the server at the exports via environment variables before launching it (using Claude's MCP configuration or your shell):
+
+   ```bash
+   export ZOTERO_BIBLIOGRAPHY_JSON="/path/to/bibliography.json"   # optional
+   export ZOTERO_BIBLIOGRAPHY_BIB="/path/to/bibliography.bib"     # optional
+   ```
+
+   - Supplying only one file is fine—the server detects whether you provided a `.json` or `.bib` path and uses it automatically.
+   - If no metadata file is configured, the tool returns an informative error so you can correct the setup.
+
+3. Call the `get_zotero_metadata` tool with a Finder path or any supported DEVONthink identifier. The tool returns the matched Zotero entry (including citation key, fields, and the property that matched) or detailed errors describing which files were checked.
+
+Example invocation:
+
+```json
+{
+  "uuid": "7F8C5A5B-1234-5678-ABCD-9876543210EF"
+}
+```

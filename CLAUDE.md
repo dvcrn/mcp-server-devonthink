@@ -33,8 +33,11 @@
   - **`duplicateRecord.ts`**: Duplicates records to any database (creates independent copies)
   - **`convertRecord.ts`**: Converts records to different formats
   - **`updateRecordContent.ts`**: Updates the content of existing records while preserving UUID
+  - **`getZoteroMetadata.ts`**: Looks up Zotero metadata for DEVONthink records using Finder paths or record identifiers
 - **`src/utils/`**: Utility functions
   - **`escapeString.ts`**: Provides safe string escaping for JXA script interpolation
+  - **`jxaHelpers.ts`**: Shared helper functions injected into JXA scripts for record lookup and conversion
+  - **`zoteroMetadata.ts`**: Loads Zotero export files and resolves attachment metadata by Finder path
 - **`src/applescript/execute.ts`**: A utility module that provides the `executeJxa` function to run JXA scripts via the command line.
 
 ## Available Tools
@@ -64,6 +67,7 @@ The MCP server currently provides the following tools:
 21. **`duplicate_record`** - Duplicate records to any database (creates independent copies)
 22. **`convert_record`** - Convert records to different formats (plain text, rich text, markdown, HTML, PDF, etc.)
 23. **`update_record_content`** - Update the content of existing records while preserving UUID and metadata
+24. **`get_zotero_metadata`** - Look up Zotero attachment metadata for a DEVONthink record or Finder path
 
 ## Adding New Tools
 

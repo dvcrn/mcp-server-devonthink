@@ -1,25 +1,5 @@
 import { promises as fs } from "fs";
 import { fileURLToPath, pathToFileURL } from "url";
-import path from "path";
-import os from "os";
-
-export const DEFAULT_ZOTERO_JSON_PATH = path.join(
-	os.homedir(),
-	"Library",
-	"CloudStorage",
-	"Dropbox",
-	"pkm",
-	"bibliography.json",
-);
-
-export const DEFAULT_ZOTERO_BIB_PATH = path.join(
-	os.homedir(),
-	"Library",
-	"CloudStorage",
-	"Dropbox",
-	"pkm",
-	"bibliography.bib",
-);
 
 export interface ZoteroJsonMatch {
 	success: true;
@@ -406,32 +386,40 @@ export const lookupZoteroMetadataByPath = async (
 	options: ZoteroLookupOptions = {},
 ): Promise<ZoteroMetadataMatch | { success: false; errors: string[] }> => {
 	const errors: string[] = [];
-	const jsonPath =
-		options.jsonPath ??
-		process.env.ZOTERO_BIBLIOGRAPHY_JSON ??
-		DEFAULT_ZOTERO_JSON_PATH;
+	const jsonPath = options.jsonPath ?? process.env.ZOTERO_BIBLIOGRAPHY_JSON ?? null;
+	const bibPath = options.bibPath ?? process.env.ZOTERO_BIBLIOGRAPHY_BIB ?? null;
+	let attempted = false;
 
-	const bibPath =
-		options.bibPath ?? process.env.ZOTERO_BIBLIOGRAPHY_BIB ?? DEFAULT_ZOTERO_BIB_PATH;
-
-	if (await fileExists(jsonPath)) {
-		const jsonMatch = await lookupInJson(finderPath, jsonPath);
-		if (jsonMatch) {
-			return jsonMatch;
+	if (jsonPath) {
+		attempted = true;
+		if (await fileExists(jsonPath)) {
+			const jsonMatch = await lookupInJson(finderPath, jsonPath);
+			if (jsonMatch) {
+				return jsonMatch;
+			}
+			errors.push(`No matching entry found in JSON metadata at ${jsonPath}`);
+		} else {
+			errors.push(`JSON metadata file not found at ${jsonPath}`);
 		}
-		errors.push(`No matching entry found in JSON metadata at ${jsonPath}`);
-	} else {
-		errors.push(`JSON metadata file not found at ${jsonPath}`);
 	}
 
-	if (await fileExists(bibPath)) {
-		const bibMatch = await lookupInBib(finderPath, bibPath);
-		if (bibMatch) {
-			return bibMatch;
+	if (bibPath) {
+		attempted = true;
+		if (await fileExists(bibPath)) {
+			const bibMatch = await lookupInBib(finderPath, bibPath);
+			if (bibMatch) {
+				return bibMatch;
+			}
+			errors.push(`No matching entry found in BibTeX metadata at ${bibPath}`);
+		} else {
+			errors.push(`BibTeX metadata file not found at ${bibPath}`);
 		}
-		errors.push(`No matching entry found in BibTeX metadata at ${bibPath}`);
-	} else {
-		errors.push(`BibTeX metadata file not found at ${bibPath}`);
+	}
+
+	if (!attempted) {
+		errors.push(
+			"No Zotero metadata files configured. Provide ZOTERO_BIBLIOGRAPHY_JSON or ZOTERO_BIBLIOGRAPHY_BIB, or call lookupZoteroMetadataByPath with explicit paths.",
+		);
 	}
 
 	return { success: false, errors };
