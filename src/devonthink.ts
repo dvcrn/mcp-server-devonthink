@@ -32,6 +32,10 @@ import { replicateRecordTool } from "./tools/replicateRecord.js";
 import { duplicateRecordTool } from "./tools/duplicateRecord.js";
 import { convertRecordTool } from "./tools/convertRecord.js";
 import { updateRecordContentTool } from "./tools/updateRecordContent.js";
+import { askAiAboutDocumentsTool } from "./tools/ai/askAiAboutDocuments.js";
+import { checkAIHealthTool } from "./tools/ai/checkAIHealth.js";
+import { createSummaryDocumentTool } from "./tools/ai/createSummaryDocument.js";
+import { getToolDocumentationTool } from "./tools/ai/getToolDocumentation.js";
 
 export const createServer = async () => {
 	const server = new Server(
@@ -72,6 +76,10 @@ export const createServer = async () => {
 		duplicateRecordTool,
 		convertRecordTool,
 		updateRecordContentTool,
+		askAiAboutDocumentsTool,
+		checkAIHealthTool,
+		createSummaryDocumentTool,
+		getToolDocumentationTool,
 	];
 
 	server.setRequestHandler(ListToolsRequestSchema, async () => {
