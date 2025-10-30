@@ -24,11 +24,13 @@ const SearchSchema = z
 		groupPath: z
 			.string()
 			.optional()
-			.describe("Path of the group to search in (e.g., '/Trips/2025') (optional)"),
+			.describe(
+				"Database-relative path of the group to search in (e.g., '/Inbox', '/Projects/Archive'). MUST be used with databaseName parameter. Do NOT include the database name in the path.",
+			),
 		databaseName: z
 			.string()
 			.optional()
-			.describe("Database name (optional, required with groupId)"),
+			.describe("Database name (optional, required when using groupId or groupPath)"),
 		useCurrentGroup: z
 			.boolean()
 			.optional()
@@ -67,6 +69,10 @@ const SearchSchema = z
 			if (data.groupId !== undefined && !data.databaseName) {
 				return false;
 			}
+			// If groupPath is provided, databaseName must also be provided
+			if (data.groupPath && !data.databaseName) {
+				return false;
+			}
 			// If useCurrentGroup is true, other group parameters should not be provided
 			if (data.useCurrentGroup && (data.groupUuid || data.groupId || data.groupPath)) {
 				return false;
@@ -75,7 +81,7 @@ const SearchSchema = z
 		},
 		{
 			message:
-				"databaseName is required when using groupId; when useCurrentGroup is true, other group parameters should not be provided",
+				"databaseName is required when using groupId or groupPath; when useCurrentGroup is true, other group parameters should not be provided",
 		},
 	);
 
@@ -310,7 +316,7 @@ const search = async (input: SearchInput): Promise<SearchResult> => {
 
 export const searchTool: Tool = {
 	name: "search",
-	description: 'Search for records in DEVONthink.\n\nExample:\n{\n  "query": "invoice 2024"\n}',
+	description: `Search DEVONthink records. Examples: {"query": "invoice"} or {"query": "project review", "groupPath": "/Meetings", "databaseName": "MyDB"}. Note: groupPath requires databaseName and must be database-relative (e.g., "/Meetings" not "/MyDB/Meetings").`,
 	inputSchema: zodToJsonSchema(SearchSchema) as ToolInput,
 	run: search,
 };
