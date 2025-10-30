@@ -1,25 +1,42 @@
 import { z } from "zod";
 import { createDevonThinkTool } from "../base/DevonThinkTool.js";
 
-const CreateSummaryDocumentSchema = z.object({
-  documentUuids: z.array(z.string()).min(1).describe("UUIDs of documents to summarize"),
-  summaryType: z.enum(['markdown', 'rich', 'sheet', 'simple']).default('markdown').describe("Output document format: markdown, rich text, sheet, or plain text"),
-  // Note: summaryStyle parameter is documented in DEVONthink API but appears non-functional in testing
-  // Keeping for future compatibility when/if it works
-  summaryStyle: z.enum(['text summary', 'key points summary', 'list summary', 'table summary', 'custom summary']).optional().describe("Summary style (Note: Currently non-functional in DEVONthink API)"),
-  parentGroupUuid: z.string().optional().describe("UUID of group where summary should be created"),
-  customTitle: z.string().optional().describe("Custom title for the summary document"),
-}).strict();
+const CreateSummaryDocumentSchema = z
+	.object({
+		documentUuids: z.array(z.string()).min(1).describe("UUIDs of documents to summarize"),
+		summaryType: z
+			.enum(["markdown", "rich", "sheet", "simple"])
+			.default("markdown")
+			.describe("Output document format: markdown, rich text, sheet, or plain text"),
+		// Note: summaryStyle parameter is documented in DEVONthink API but appears non-functional in testing
+		// Keeping for future compatibility when/if it works
+		summaryStyle: z
+			.enum([
+				"text summary",
+				"key points summary",
+				"list summary",
+				"table summary",
+				"custom summary",
+			])
+			.optional()
+			.describe("Summary style (Note: Currently non-functional in DEVONthink API)"),
+		parentGroupUuid: z
+			.string()
+			.optional()
+			.describe("UUID of group where summary should be created"),
+		customTitle: z.string().optional().describe("Custom title for the summary document"),
+	})
+	.strict();
 
 export const createSummaryDocumentTool = createDevonThinkTool({
-  name: "create_summary_document", 
-  description: "Create an AI-generated summary document from multiple DEVONthink documents.",
+	name: "create_summary_document",
+	description: "Create an AI-generated summary document from multiple DEVONthink documents.",
 
-  inputSchema: CreateSummaryDocumentSchema,
-  buildScript: (input, helpers) => {
-    const { documentUuids, summaryType, summaryStyle, parentGroupUuid, customTitle } = input;
-    
-    return helpers.wrapInTryCatch(`
+	inputSchema: CreateSummaryDocumentSchema,
+	buildScript: (input, helpers) => {
+		const { documentUuids, summaryType, summaryStyle, parentGroupUuid, customTitle } = input;
+
+		return helpers.wrapInTryCatch(`
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
       
@@ -89,7 +106,7 @@ export const createSummaryDocumentTool = createDevonThinkTool({
         
         // Note: summaryStyle parameter exists in API but appears non-functional
         // Keeping for future compatibility if/when it works
-        ${summaryStyle ? `summaryOptions["as"] = ${helpers.formatValue(summaryStyle)};` : ''}
+        ${summaryStyle ? `summaryOptions["as"] = ${helpers.formatValue(summaryStyle)};` : ""}
         
         // Create the summary using DEVONthink's native AI summarization
         summaryRecord = theApp.summarizeContentsOf(summaryOptions);
@@ -129,5 +146,5 @@ export const createSummaryDocumentTool = createDevonThinkTool({
       
       return JSON.stringify(result);
     `);
-  }
+	},
 });

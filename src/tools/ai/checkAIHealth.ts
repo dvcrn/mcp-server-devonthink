@@ -8,20 +8,20 @@ import { AI_ENGINES } from "./constants.js";
 const CheckAIHealthSchema = z.object({}).strict();
 
 interface AIHealthResult {
-  success: boolean;
-  devonthinkRunning: boolean;
-  aiAvailable: boolean;
-  chatCapable: boolean;
-  configuredEngines: string[];
-  workingEngines: Array<{
-    engine: string;
-    status: "working" | "failed";
-    model?: string;
-    error?: string;
-  }>;
-  summary: string;
-  setupInstructions?: string;
-  timestamp: string;
+	success: boolean;
+	devonthinkRunning: boolean;
+	aiAvailable: boolean;
+	chatCapable: boolean;
+	configuredEngines: string[];
+	workingEngines: Array<{
+		engine: string;
+		status: "working" | "failed";
+		model?: string;
+		error?: string;
+	}>;
+	summary: string;
+	setupInstructions?: string;
+	timestamp: string;
 }
 
 /**
@@ -29,11 +29,11 @@ interface AIHealthResult {
  * Performs a simple test to verify AI functionality
  */
 export const checkAIHealthTool = createDevonThinkTool({
-  name: "check_ai_health",
-  description: "Check if DEVONthink's AI services are available and working properly.",
-  inputSchema: CheckAIHealthSchema,
-  buildScript: (input, helpers) => {
-    return helpers.wrapInTryCatch(`
+	name: "check_ai_health",
+	description: "Check if DEVONthink's AI services are available and working properly.",
+	inputSchema: CheckAIHealthSchema,
+	buildScript: (input, helpers) => {
+		return helpers.wrapInTryCatch(`
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
       
@@ -134,5 +134,5 @@ export const checkAIHealthTool = createDevonThinkTool({
       
       return JSON.stringify(result);
     `);
-  }
+	},
 });
