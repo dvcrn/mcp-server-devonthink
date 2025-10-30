@@ -7,35 +7,35 @@
 import { executeJxa } from "../../src/applescript/execute.js";
 
 interface TestResult {
-  tool: string;
-  status: "pass" | "fail" | "skip";
-  error?: string;
-  details?: string;
+	tool: string;
+	status: "pass" | "fail" | "skip";
+	error?: string;
+	details?: string;
 }
 
 const results: TestResult[] = [];
 
 async function testIsRunning(): Promise<TestResult> {
-  try {
-    const script = `
+	try {
+		const script = `
       (() => {
         const theApp = Application("DEVONthink");
         return JSON.stringify({ success: true, running: theApp.running() });
       })();
     `;
-    const result = await executeJxa<{ success: boolean; running: boolean }>(script);
-    if (result.success && result.running) {
-      return { tool: "is_running", status: "pass", details: "DEVONthink is running" };
-    }
-    return { tool: "is_running", status: "fail", error: "DEVONthink not running" };
-  } catch (error) {
-    return { tool: "is_running", status: "fail", error: String(error) };
-  }
+		const result = await executeJxa<{ success: boolean; running: boolean }>(script);
+		if (result.success && result.running) {
+			return { tool: "is_running", status: "pass", details: "DEVONthink is running" };
+		}
+		return { tool: "is_running", status: "fail", error: "DEVONthink not running" };
+	} catch (error) {
+		return { tool: "is_running", status: "fail", error: String(error) };
+	}
 }
 
 async function testGetOpenDatabases(): Promise<TestResult> {
-  try {
-    const script = `
+	try {
+		const script = `
       (() => {
         const theApp = Application("DEVONthink");
         theApp.includeStandardAdditions = true;
@@ -65,19 +65,29 @@ async function testGetOpenDatabases(): Promise<TestResult> {
         }
       })();
     `;
-    const result = await executeJxa<{ success: boolean; databases?: any[]; error?: string }>(script);
-    if (result.success && result.databases && result.databases.length > 0) {
-      return { tool: "get_open_databases", status: "pass", details: `Found ${result.databases.length} databases` };
-    }
-    return { tool: "get_open_databases", status: "fail", error: result.error || "No databases found" };
-  } catch (error) {
-    return { tool: "get_open_databases", status: "fail", error: String(error) };
-  }
+		const result = await executeJxa<{ success: boolean; databases?: any[]; error?: string }>(
+			script,
+		);
+		if (result.success && result.databases && result.databases.length > 0) {
+			return {
+				tool: "get_open_databases",
+				status: "pass",
+				details: `Found ${result.databases.length} databases`,
+			};
+		}
+		return {
+			tool: "get_open_databases",
+			status: "fail",
+			error: result.error || "No databases found",
+		};
+	} catch (error) {
+		return { tool: "get_open_databases", status: "fail", error: String(error) };
+	}
 }
 
 async function testGetCurrentDatabase(): Promise<TestResult> {
-  try {
-    const script = `
+	try {
+		const script = `
       (() => {
         const theApp = Application("DEVONthink");
         theApp.includeStandardAdditions = true;
@@ -108,20 +118,30 @@ async function testGetCurrentDatabase(): Promise<TestResult> {
         }
       })();
     `;
-    const result = await executeJxa<{ success: boolean; database?: any; error?: string }>(script);
-    if (result.success && result.database) {
-      return { tool: "get_current_database", status: "pass", details: `Current DB: ${result.database.name}` };
-    }
-    return { tool: "get_current_database", status: "fail", error: result.error || "No current database" };
-  } catch (error) {
-    return { tool: "get_current_database", status: "fail", error: String(error) };
-  }
+		const result = await executeJxa<{ success: boolean; database?: any; error?: string }>(
+			script,
+		);
+		if (result.success && result.database) {
+			return {
+				tool: "get_current_database",
+				status: "pass",
+				details: `Current DB: ${result.database.name}`,
+			};
+		}
+		return {
+			tool: "get_current_database",
+			status: "fail",
+			error: result.error || "No current database",
+		};
+	} catch (error) {
+		return { tool: "get_current_database", status: "fail", error: String(error) };
+	}
 }
 
 async function testCreateAndDeleteRecord(): Promise<TestResult> {
-  try {
-    // Get current database first
-    const getDbScript = `
+	try {
+		// Get current database first
+		const getDbScript = `
       (() => {
         const theApp = Application("DEVONthink");
         const db = theApp.currentDatabase();
@@ -135,13 +155,15 @@ async function testCreateAndDeleteRecord(): Promise<TestResult> {
       })();
     `;
 
-    const dbResult = await executeJxa<{ success: boolean; uuid?: string; error?: string }>(getDbScript);
-    if (!dbResult.success || !dbResult.uuid) {
-      return { tool: "create_record", status: "skip", error: "No current database" };
-    }
+		const dbResult = await executeJxa<{ success: boolean; uuid?: string; error?: string }>(
+			getDbScript,
+		);
+		if (!dbResult.success || !dbResult.uuid) {
+			return { tool: "create_record", status: "skip", error: "No current database" };
+		}
 
-    // Create a test record
-    const createScript = `
+		// Create a test record
+		const createScript = `
       (() => {
         const theApp = Application("DEVONthink");
         theApp.includeStandardAdditions = true;
@@ -175,13 +197,22 @@ async function testCreateAndDeleteRecord(): Promise<TestResult> {
       })();
     `;
 
-    const createResult = await executeJxa<{ success: boolean; uuid?: string; id?: number; error?: string }>(createScript);
-    if (!createResult.success || !createResult.uuid) {
-      return { tool: "create_record", status: "fail", error: createResult.error || "Failed to create record" };
-    }
+		const createResult = await executeJxa<{
+			success: boolean;
+			uuid?: string;
+			id?: number;
+			error?: string;
+		}>(createScript);
+		if (!createResult.success || !createResult.uuid) {
+			return {
+				tool: "create_record",
+				status: "fail",
+				error: createResult.error || "Failed to create record",
+			};
+		}
 
-    // Try to get the record properties
-    const getPropsScript = `
+		// Try to get the record properties
+		const getPropsScript = `
       (() => {
         const theApp = Application("DEVONthink");
         theApp.includeStandardAdditions = true;
@@ -213,13 +244,15 @@ async function testCreateAndDeleteRecord(): Promise<TestResult> {
       })();
     `;
 
-    const propsResult = await executeJxa<{ success: boolean; record?: any; error?: string }>(getPropsScript);
-    if (!propsResult.success) {
-      return { tool: "get_record_properties", status: "fail", error: propsResult.error };
-    }
+		const propsResult = await executeJxa<{ success: boolean; record?: any; error?: string }>(
+			getPropsScript,
+		);
+		if (!propsResult.success) {
+			return { tool: "get_record_properties", status: "fail", error: propsResult.error };
+		}
 
-    // Delete the test record
-    const deleteScript = `
+		// Delete the test record
+		const deleteScript = `
       (() => {
         const theApp = Application("DEVONthink");
         theApp.includeStandardAdditions = true;
@@ -247,20 +280,24 @@ async function testCreateAndDeleteRecord(): Promise<TestResult> {
       })();
     `;
 
-    const deleteResult = await executeJxa<{ success: boolean; error?: string }>(deleteScript);
-    if (!deleteResult.success) {
-      return { tool: "delete_record", status: "fail", error: deleteResult.error };
-    }
+		const deleteResult = await executeJxa<{ success: boolean; error?: string }>(deleteScript);
+		if (!deleteResult.success) {
+			return { tool: "delete_record", status: "fail", error: deleteResult.error };
+		}
 
-    return { tool: "create_delete_cycle", status: "pass", details: "Created, read, and deleted test record" };
-  } catch (error) {
-    return { tool: "create_delete_cycle", status: "fail", error: String(error) };
-  }
+		return {
+			tool: "create_delete_cycle",
+			status: "pass",
+			details: "Created, read, and deleted test record",
+		};
+	} catch (error) {
+		return { tool: "create_delete_cycle", status: "fail", error: String(error) };
+	}
 }
 
 async function testSearch(): Promise<TestResult> {
-  try {
-    const script = `
+	try {
+		const script = `
       (() => {
         const theApp = Application("DEVONthink");
         theApp.includeStandardAdditions = true;
@@ -292,20 +329,29 @@ async function testSearch(): Promise<TestResult> {
       })();
     `;
 
-    const result = await executeJxa<{ success: boolean; count?: number; sample?: any[]; error?: string }>(script);
-    if (result.success) {
-      return { tool: "search", status: "pass", details: `Found ${result.count} markdown files` };
-    }
-    return { tool: "search", status: "fail", error: result.error };
-  } catch (error) {
-    return { tool: "search", status: "fail", error: String(error) };
-  }
+		const result = await executeJxa<{
+			success: boolean;
+			count?: number;
+			sample?: any[];
+			error?: string;
+		}>(script);
+		if (result.success) {
+			return {
+				tool: "search",
+				status: "pass",
+				details: `Found ${result.count} markdown files`,
+			};
+		}
+		return { tool: "search", status: "fail", error: result.error };
+	} catch (error) {
+		return { tool: "search", status: "fail", error: String(error) };
+	}
 }
 
 async function testListGroupContent(): Promise<TestResult> {
-  try {
-    // Get root group of current database
-    const script = `
+	try {
+		// Get root group of current database
+		const script = `
       (() => {
         const theApp = Application("DEVONthink");
         theApp.includeStandardAdditions = true;
@@ -346,19 +392,28 @@ async function testListGroupContent(): Promise<TestResult> {
       })();
     `;
 
-    const result = await executeJxa<{ success: boolean; count?: number; children?: any[]; error?: string }>(script);
-    if (result.success) {
-      return { tool: "list_group_content", status: "pass", details: `Found ${result.count} items in root` };
-    }
-    return { tool: "list_group_content", status: "fail", error: result.error };
-  } catch (error) {
-    return { tool: "list_group_content", status: "fail", error: String(error) };
-  }
+		const result = await executeJxa<{
+			success: boolean;
+			count?: number;
+			children?: any[];
+			error?: string;
+		}>(script);
+		if (result.success) {
+			return {
+				tool: "list_group_content",
+				status: "pass",
+				details: `Found ${result.count} items in root`,
+			};
+		}
+		return { tool: "list_group_content", status: "fail", error: result.error };
+	} catch (error) {
+		return { tool: "list_group_content", status: "fail", error: String(error) };
+	}
 }
 
 async function testVersionSpecificAPIs(): Promise<TestResult> {
-  try {
-    const script = `
+	try {
+		const script = `
       (() => {
         const theApp = Application("DEVONthink");
         theApp.includeStandardAdditions = true;
@@ -403,97 +458,99 @@ async function testVersionSpecificAPIs(): Promise<TestResult> {
       })();
     `;
 
-    const result = await executeJxa<{ success: boolean; tests?: any; error?: string }>(script);
-    if (result.success && result.tests) {
-      const failedTests = Object.entries(result.tests).filter(([key, value]) =>
-        key !== "version" && value === false
-      );
+		const result = await executeJxa<{ success: boolean; tests?: any; error?: string }>(script);
+		if (result.success && result.tests) {
+			const failedTests = Object.entries(result.tests).filter(
+				([key, value]) => key !== "version" && value === false,
+			);
 
-      if (failedTests.length > 0) {
-        return {
-          tool: "api_compatibility",
-          status: "fail",
-          error: `Failed API checks: ${failedTests.map(([k]) => k).join(", ")}`,
-          details: JSON.stringify(result.tests, null, 2)
-        };
-      }
+			if (failedTests.length > 0) {
+				return {
+					tool: "api_compatibility",
+					status: "fail",
+					error: `Failed API checks: ${failedTests.map(([k]) => k).join(", ")}`,
+					details: JSON.stringify(result.tests, null, 2),
+				};
+			}
 
-      return {
-        tool: "api_compatibility",
-        status: "pass",
-        details: `All API methods available for version ${result.tests.version}`
-      };
-    }
-    return { tool: "api_compatibility", status: "fail", error: result.error };
-  } catch (error) {
-    return { tool: "api_compatibility", status: "fail", error: String(error) };
-  }
+			return {
+				tool: "api_compatibility",
+				status: "pass",
+				details: `All API methods available for version ${result.tests.version}`,
+			};
+		}
+		return { tool: "api_compatibility", status: "fail", error: result.error };
+	} catch (error) {
+		return { tool: "api_compatibility", status: "fail", error: String(error) };
+	}
 }
 
 async function runAllTests() {
-  console.log("🔍 Running DEVONthink MCP Server Regression Tests\n");
-  console.log("=" .repeat(60));
+	console.log("🔍 Running DEVONthink MCP Server Regression Tests\n");
+	console.log("=".repeat(60));
 
-  const tests = [
-    { name: "Version & API Compatibility", fn: testVersionSpecificAPIs },
-    { name: "Is Running", fn: testIsRunning },
-    { name: "Get Open Databases", fn: testGetOpenDatabases },
-    { name: "Get Current Database", fn: testGetCurrentDatabase },
-    { name: "Create/Read/Delete Cycle", fn: testCreateAndDeleteRecord },
-    { name: "Search", fn: testSearch },
-    { name: "List Group Content", fn: testListGroupContent },
-  ];
+	const tests = [
+		{ name: "Version & API Compatibility", fn: testVersionSpecificAPIs },
+		{ name: "Is Running", fn: testIsRunning },
+		{ name: "Get Open Databases", fn: testGetOpenDatabases },
+		{ name: "Get Current Database", fn: testGetCurrentDatabase },
+		{ name: "Create/Read/Delete Cycle", fn: testCreateAndDeleteRecord },
+		{ name: "Search", fn: testSearch },
+		{ name: "List Group Content", fn: testListGroupContent },
+	];
 
-  for (const test of tests) {
-    process.stdout.write(`\n📝 Testing: ${test.name}... `);
-    const result = await test.fn();
-    results.push(result);
+	for (const test of tests) {
+		process.stdout.write(`\n📝 Testing: ${test.name}... `);
+		const result = await test.fn();
+		results.push(result);
 
-    if (result.status === "pass") {
-      console.log("✅ PASS");
-      if (result.details) {
-        console.log(`   ${result.details}`);
-      }
-    } else if (result.status === "skip") {
-      console.log("⏭️  SKIP");
-      if (result.error) {
-        console.log(`   ${result.error}`);
-      }
-    } else {
-      console.log("❌ FAIL");
-      if (result.error) {
-        console.log(`   Error: ${result.error}`);
-      }
-      if (result.details) {
-        console.log(`   Details: ${result.details}`);
-      }
-    }
-  }
+		if (result.status === "pass") {
+			console.log("✅ PASS");
+			if (result.details) {
+				console.log(`   ${result.details}`);
+			}
+		} else if (result.status === "skip") {
+			console.log("⏭️  SKIP");
+			if (result.error) {
+				console.log(`   ${result.error}`);
+			}
+		} else {
+			console.log("❌ FAIL");
+			if (result.error) {
+				console.log(`   Error: ${result.error}`);
+			}
+			if (result.details) {
+				console.log(`   Details: ${result.details}`);
+			}
+		}
+	}
 
-  console.log("\n" + "=".repeat(60));
-  console.log("\n📊 Summary:");
-  const passed = results.filter(r => r.status === "pass").length;
-  const failed = results.filter(r => r.status === "fail").length;
-  const skipped = results.filter(r => r.status === "skip").length;
+	console.log("\n" + "=".repeat(60));
+	console.log("\n📊 Summary:");
+	const passed = results.filter((r) => r.status === "pass").length;
+	const failed = results.filter((r) => r.status === "fail").length;
+	const skipped = results.filter((r) => r.status === "skip").length;
 
-  console.log(`   ✅ Passed: ${passed}`);
-  console.log(`   ❌ Failed: ${failed}`);
-  console.log(`   ⏭️  Skipped: ${skipped}`);
-  console.log(`   📝 Total: ${results.length}`);
+	console.log(`   ✅ Passed: ${passed}`);
+	console.log(`   ❌ Failed: ${failed}`);
+	console.log(`   ⏭️  Skipped: ${skipped}`);
+	console.log(`   📝 Total: ${results.length}`);
 
-  if (failed > 0) {
-    console.log("\n⚠️  Failed Tests:");
-    results.filter(r => r.status === "fail").forEach(r => {
-      console.log(`   - ${r.tool}: ${r.error}`);
-    });
-    process.exit(1);
-  } else {
-    console.log("\n✨ All tests passed!");
-    process.exit(0);
-  }
+	if (failed > 0) {
+		console.log("\n⚠️  Failed Tests:");
+		results
+			.filter((r) => r.status === "fail")
+			.forEach((r) => {
+				console.log(`   - ${r.tool}: ${r.error}`);
+			});
+		process.exit(1);
+	} else {
+		console.log("\n✨ All tests passed!");
+		process.exit(0);
+	}
 }
 
-runAllTests().catch(error => {
-  console.error("\n💥 Test runner failed:", error);
-  process.exit(1);
+runAllTests().catch((error) => {
+	console.error("\n💥 Test runner failed:", error);
+	process.exit(1);
 });

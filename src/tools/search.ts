@@ -8,7 +8,12 @@ import {
 	isJXASafeString,
 	escapeStringForJXA,
 } from "../utils/escapeString.js";
-import { getRecordLookupHelpers, getDatabaseHelper, isGroupHelper, versionHelper } from "../utils/jxaHelpers.js";
+import {
+	getRecordLookupHelpers,
+	getDatabaseHelper,
+	isGroupHelper,
+	versionHelper,
+} from "../utils/jxaHelpers.js";
 
 const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
