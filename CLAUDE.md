@@ -33,8 +33,17 @@
   - **`duplicateRecord.ts`**: Duplicates records to any database (creates independent copies)
   - **`convertRecord.ts`**: Converts records to different formats
   - **`updateRecordContent.ts`**: Updates the content of existing records while preserving UUID
+  - **`ai/`**: AI-powered tools leveraging DEVONthink's native AI capabilities
+    - **`askAiAboutDocuments.ts`**: Ask AI questions about specific documents for analysis
+    - **`checkAIHealth.ts`**: Check AI service availability and configuration
+    - **`createSummaryDocument.ts`**: Create AI-generated document summaries
+    - **`getToolDocumentation.ts`**: Get detailed documentation for AI tools
+    - **`constants.ts`**: Shared AI constants and type definitions
+  - **`base/`**: Base classes and utilities for tool development
+    - **`DevonThinkTool.ts`**: Base class providing standardized tool creation with helper functions
 - **`src/utils/`**: Utility functions
   - **`escapeString.ts`**: Provides safe string escaping for JXA script interpolation
+  - **`jxaHelpers.ts`**: JXA helper functions including version detection
 - **`src/applescript/execute.ts`**: A utility module that provides the `executeJxa` function to run JXA scripts via the command line.
 
 ## Available Tools
@@ -64,12 +73,19 @@ The MCP server currently provides the following tools:
 21. **`duplicate_record`** - Duplicate records to any database (creates independent copies)
 22. **`convert_record`** - Convert records to different formats (plain text, rich text, markdown, HTML, PDF, etc.)
 23. **`update_record_content`** - Update the content of existing records while preserving UUID and metadata
+24. **`ask_ai_about_documents`** - Ask AI questions about specific documents for analysis, comparison, or extraction
+25. **`check_ai_health`** - Check if DEVONthink's AI services are available and working properly
+26. **`create_summary_document`** - Create AI-generated summaries from multiple documents
+27. **`get_ai_tool_documentation`** - Get detailed documentation for AI tools including examples and use cases
 
 ## Adding New Tools
 
-To add a new tool to the MCP server, follow these steps:
+To add a new tool to the MCP server, you have two approaches:
 
-### 1. Create the Tool File
+1. **Traditional Approach**: Manual tool definition with full control
+2. **DevonThinkTool Base Class**: Simplified tool creation with built-in helpers (recommended for most cases)
+
+### Approach 1: Traditional Tool Definition
 
 Create a new TypeScript file in the `src/tools/` directory following the naming convention `toolName.ts`:
 
@@ -139,6 +155,75 @@ export const yourToolTool: Tool = {
 };
 ```
 
+### Approach 2: DevonThinkTool Base Class (Recommended)
+
+The `DevonThinkTool` base class provides a simplified, standardized approach with built-in helpers. This is the recommended approach for most tools as it reduces boilerplate and provides useful utilities.
+
+Create a new TypeScript file in the `src/tools/` directory:
+
+```typescript
+import { z } from "zod";
+import { createDevonThinkTool } from "../base/DevonThinkTool.js";
+
+// Define your input schema
+const YourToolSchema = z.object({
+  parameter1: z.string().describe("Description of parameter1"),
+  parameter2: z.number().optional().describe("Optional parameter2"),
+}).strict();
+
+// Create the tool using the factory function
+export const yourToolTool = createDevonThinkTool({
+  name: "your_tool_name",
+  description: "Description of what your tool does",
+
+  inputSchema: YourToolSchema,
+
+  buildScript: (input, helpers) => {
+    const { parameter1, parameter2 } = input;
+
+    // Use helper functions for safe script building
+    return helpers.wrapInTryCatch(`
+      const theApp = Application("DEVONthink");
+      theApp.includeStandardAdditions = true;
+
+      // Use helpers.formatValue() for safe value interpolation
+      const param1 = ${helpers.formatValue(parameter1)};
+      const param2 = ${parameter2 !== undefined ? parameter2 : 'null'};
+
+      // Your DEVONthink operations here...
+
+      // Always build result objects using bracket notation
+      const result = {};
+      result["success"] = true;
+      result["data"] = "your data here";
+
+      return JSON.stringify(result);
+    `);
+  }
+});
+```
+
+**Key Benefits of DevonThinkTool Base Class**:
+
+1. **Built-in Helpers**: Automatic access to:
+   - `helpers.escapeString()`: Safe string escaping for JXA
+   - `helpers.formatValue()`: Automatically formats any value for JXA
+   - `helpers.wrapInTryCatch()`: Adds proper error handling
+   - `helpers.buildDatabaseLookup()`: Standard database lookup code
+   - `helpers.buildRecordLookup()`: Standard record lookup code
+
+2. **Automatic Error Handling**: The base class handles validation and execution errors
+
+3. **Type Safety**: Full TypeScript support with inferred types
+
+4. **Consistency**: Ensures all tools follow the same patterns
+
+5. **Less Boilerplate**: No need to manually create Tool objects or handle executeJxa
+
+**Example: AI Tool Pattern**
+
+See `src/tools/ai/askAiAboutDocuments.ts` for a real-world example of using the DevonThinkTool base class with complex AI interactions.
+
 ### 2. Update the Main Server File
 
 Add your new tool to `src/devonthink.ts`:
@@ -189,9 +274,20 @@ Update this `CLAUDE.md` file to:
 
 Refer to `docs/devonthink-javascript-2.md` for comprehensive documentation of available DEVONthink JXA commands and properties.
 
-## Recent Improvements (2025-07)
+## Recent Improvements
 
-### Content Update Capability
+### AI-Powered Tools (2025-08)
+- Added comprehensive AI integration leveraging DEVONthink's native AI capabilities
+- New `ask_ai_about_documents` tool for AI-powered document analysis and Q&A
+- New `check_ai_health` tool to verify AI service availability and configuration
+- New `create_summary_document` tool for generating AI summaries from multiple documents
+- New `get_ai_tool_documentation` tool providing comprehensive AI tool documentation
+- Introduced `DevonThinkTool` base class for simplified, standardized tool creation
+- Built-in helper functions for safe JXA script generation and common patterns
+- Supports multiple AI engines: ChatGPT, Claude, Gemini, Mistral AI, GPT4All, LM Studio, Ollama
+- Comprehensive error handling and user-friendly setup guidance
+
+### Content Update Capability (2025-07)
 - Added `update_record_content` tool to modify existing records without changing UUID
 - Supports updating markdown, text, RTF, formatted notes, and HTML documents
 - Preserves all metadata including creation date, tags, and references
