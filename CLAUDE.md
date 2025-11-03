@@ -1,8 +1,40 @@
 # Copilot Instructions
 
 - This project uses [Vitest](https://vitest.dev/) for testing.
+- This project uses [Biome](https://biomejs.dev/) for code formatting and linting.
+- **CRITICAL**: All changes must pass `npm run format:check` before being considered complete.
 - All changes must pass `npm test` before being considered complete.
-- All changes must pass `npm run build`
+- All changes must pass `npm run build` before being considered complete.
+- If formatting issues are found, run `npm run format` to auto-fix them.
+
+## CI/CD Pipeline
+
+This project uses GitHub Actions for continuous integration. The CI pipeline runs on every push and pull request to the `main` branch.
+
+### CI Pipeline Steps (in order)
+
+1. **Install dependencies**: `npm ci`
+2. **Check formatting**: `npm run format:check` ⚠️ **This will fail if code is not properly formatted**
+3. **Run tests**: `npm test`
+4. **Build**: `npm run build`
+
+### Common CI Failures
+
+**Formatting Errors**: The most common CI failure is code formatting issues. If your PR fails CI with formatting errors:
+1. Run `npm run format` locally to auto-fix all formatting issues
+2. Commit the formatting changes
+3. Push to trigger CI again
+
+**Why CI fails on formatting**: The project uses Biome for consistent code formatting. All code must be formatted according to the project's Biome configuration before it can be merged.
+
+### Pre-commit Checklist
+
+Before pushing any changes or creating a PR, always run:
+```bash
+npm run format:check  # Check formatting (or npm run format to auto-fix)
+npm test              # Run all tests
+npm run build         # Verify the build works
+```
 
 ## Project Structure
 
