@@ -54,6 +54,12 @@ interface RecordProperties {
 	flag?: boolean;
 	unread?: boolean;
 	locked?: boolean;
+	excludeFromChat?: boolean;
+	excludeFromClassification?: boolean;
+	excludeFromSearch?: boolean;
+	excludeFromSeeAlso?: boolean;
+	excludeFromTagging?: boolean;
+	excludeFromWikiLinking?: boolean;
 	plainText?: string;
 	wordCount?: number;
 	characterCount?: number;
@@ -70,22 +76,25 @@ const getRecordProperties = async (input: GetRecordPropertiesInput): Promise<Rec
 		return { success: false, error: "Record path contains invalid characters" };
 	}
 	if (databaseName && !isJXASafeString(databaseName)) {
-		return { success: false, error: "Database name contains invalid characters" };
+		return {
+			success: false,
+			error: "Database name contains invalid characters",
+		};
 	}
 
 	const script = `
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
-      
+
       // Inject helper functions
       ${getRecordLookupHelpers()}
       ${getDatabaseHelper}
-      
+
       try {
         // Get target database
         const targetDatabase = getDatabase(theApp, ${databaseName ? `"${escapeStringForJXA(databaseName)}"` : "null"});
-        
+
         // Build lookup options
         const lookupOptions = {
           uuid: ${uuid ? `"${escapeStringForJXA(uuid)}"` : "null"},
@@ -94,10 +103,10 @@ const getRecordProperties = async (input: GetRecordPropertiesInput): Promise<Rec
           name: null,
           database: targetDatabase
         };
-        
+
         // Use the unified lookup function
         const lookupResult = getRecord(theApp, lookupOptions);
-        
+
         if (!lookupResult.record) {
           // Build detailed error message
           let errorDetails = lookupResult.error || "Record not found";
@@ -108,15 +117,15 @@ const getRecordProperties = async (input: GetRecordPropertiesInput): Promise<Rec
           } else if (${recordPath ? `"${escapeStringForJXA(recordPath)}"` : "null"}) {
             errorDetails = "Record at DEVONthink location path " + (${recordPath ? `"${escapeStringForJXA(recordPath)}"` : "null"} || "unknown") + " not found";
           }
-          
+
           return JSON.stringify({
             success: false,
             error: errorDetails
           });
         }
-        
+
         const targetRecord = lookupResult.record;
-        
+
         // Get all properties
         const properties = {
           success: true,
@@ -142,20 +151,28 @@ const getRecordProperties = async (input: GetRecordPropertiesInput): Promise<Rec
           wordCount: targetRecord.wordCount(),
           characterCount: targetRecord.characterCount()
         };
-        
+
+        // Add optional exclusion flags if available on this record type
+        try { if (targetRecord.excludeFromChat && targetRecord.excludeFromChat() !== undefined) { properties.excludeFromChat = targetRecord.excludeFromChat(); } } catch (e) {}
+        try { if (targetRecord.excludeFromClassification && targetRecord.excludeFromClassification() !== undefined) { properties.excludeFromClassification = targetRecord.excludeFromClassification(); } } catch (e) {}
+        try { if (targetRecord.excludeFromSearch && targetRecord.excludeFromSearch() !== undefined) { properties.excludeFromSearch = targetRecord.excludeFromSearch(); } } catch (e) {}
+        try { if (targetRecord.excludeFromSeeAlso && targetRecord.excludeFromSeeAlso() !== undefined) { properties.excludeFromSeeAlso = targetRecord.excludeFromSeeAlso(); } } catch (e) {}
+        try { if (targetRecord.excludeFromTagging && targetRecord.excludeFromTagging() !== undefined) { properties.excludeFromTagging = targetRecord.excludeFromTagging(); } } catch (e) {}
+        try { if (targetRecord.excludeFromWikiLinking && targetRecord.excludeFromWikiLinking() !== undefined) { properties.excludeFromWikiLinking = targetRecord.excludeFromWikiLinking(); } } catch (e) {}
+
         // Only include plain text for text-based records and limit size
-        if (targetRecord.recordType() === "markdown" || 
-            targetRecord.recordType() === "formatted note" || 
+        if (targetRecord.recordType() === "markdown" ||
+            targetRecord.recordType() === "formatted note" ||
             targetRecord.recordType() === "txt") {
           const plainText = targetRecord.plainText();
           if (plainText && plainText.length > 0) {
             // Limit to first 1000 characters to avoid overwhelming responses
-            properties.plainText = plainText.length > 1000 ? 
-              plainText.substring(0, 1000) + "..." : 
+            properties.plainText = plainText.length > 1000 ?
+              plainText.substring(0, 1000) + "..." :
               plainText;
           }
         }
-        
+
         return JSON.stringify(properties);
       } catch (error) {
         return JSON.stringify({
