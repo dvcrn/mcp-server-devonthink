@@ -93,7 +93,15 @@ const importDirectory = async (input: ImportDirectoryInput): Promise<ImportDirec
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
       const sysEvents = Application("System Events");
-      
+
+      // Helper function to create error responses
+      function createErrorResponse(errorMessage) {
+        const response = {};
+        response["success"] = false;
+        response["error"] = errorMessage;
+        return JSON.stringify(response);
+      }
+
       try {
         const pDirectoryPath = ${directoryPath ? `"${escapeStringForJXA(directoryPath)}"` : "null"};
         const pParentGroupUuid = ${parentGroupUuid ? `"${escapeStringForJXA(parentGroupUuid)}"` : "null"};
@@ -102,53 +110,38 @@ const importDirectory = async (input: ImportDirectoryInput): Promise<ImportDirec
         const pFileFilter = ${fileFilter ? `"${escapeStringForJXA(fileFilter)}"` : "null"};
         const pExcludeHidden = ${excludeHidden};
         const pPreservePath = ${preservePath};
-        
+
         if (!pDirectoryPath) {
-          const errorResponse = {};
-          errorResponse["success"] = false;
-          errorResponse["error"] = "Directory path is required";
-          return JSON.stringify(errorResponse);
+          return createErrorResponse("Directory path is required");
         }
-        
+
         // Let DEVONthink handle directory existence checking during import
-        
+
         // Determine which database to import into
         let targetDatabase;
         if (pDatabaseName) {
           const databases = theApp.databases();
           targetDatabase = databases.find(db => db.name() === pDatabaseName);
           if (!targetDatabase) {
-            const errorResponse = {};
-            errorResponse["success"] = false;
-            errorResponse["error"] = "Database not found: " + pDatabaseName;
-            return JSON.stringify(errorResponse);
+            return createErrorResponse("Database not found: " + pDatabaseName);
           }
         } else {
           targetDatabase = theApp.currentDatabase();
           if (!targetDatabase) {
-            const errorResponse = {};
-            errorResponse["success"] = false;
-            errorResponse["error"] = "No current database available";
-            return JSON.stringify(errorResponse);
+            return createErrorResponse("No current database available");
           }
         }
-        
+
         // Determine which group to import into
         let targetGroup;
         if (pParentGroupUuid) {
           try {
             targetGroup = theApp.getRecordWithUuid(pParentGroupUuid);
             if (!targetGroup) {
-              const errorResponse = {};
-              errorResponse["success"] = false;
-              errorResponse["error"] = "Parent group not found with UUID: " + pParentGroupUuid;
-              return JSON.stringify(errorResponse);
+              return createErrorResponse("Parent group not found with UUID: " + pParentGroupUuid);
             }
           } catch (e) {
-            const errorResponse = {};
-            errorResponse["success"] = false;
-            errorResponse["error"] = "Invalid parent group UUID: " + pParentGroupUuid + " - " + e.toString();
-            return JSON.stringify(errorResponse);
+            return createErrorResponse("Invalid parent group UUID: " + pParentGroupUuid + " - " + e.toString());
           }
         } else {
           targetGroup = targetDatabase.incomingGroup();
@@ -356,10 +349,7 @@ const importDirectory = async (input: ImportDirectoryInput): Promise<ImportDirec
         return JSON.stringify(response);
         
       } catch (error) {
-        const errorResponse = {};
-        errorResponse["success"] = false;
-        errorResponse["error"] = error.toString();
-        return JSON.stringify(errorResponse);
+        return createErrorResponse(error.toString());
       }
     })();
   `;

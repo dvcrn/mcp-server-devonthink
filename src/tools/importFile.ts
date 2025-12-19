@@ -77,64 +77,57 @@ const importFile = async (input: ImportFileInput): Promise<ImportFileResult> => 
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
-      
+
+      // Helper function to create error responses
+      function createErrorResponse(errorMessage) {
+        const response = {};
+        response["success"] = false;
+        response["error"] = errorMessage;
+        return JSON.stringify(response);
+      }
+
       try {
         const pFilePath = ${filePath ? `"${escapeStringForJXA(filePath)}"` : "null"};
         const pParentGroupUuid = ${parentGroupUuid ? `"${escapeStringForJXA(parentGroupUuid)}"` : "null"};
         const pDatabaseName = ${databaseName ? `"${escapeStringForJXA(databaseName)}"` : "null"};
         const pCustomName = ${customName ? `"${escapeStringForJXA(customName)}"` : "null"};
-        
+
         if (!pFilePath) {
-          const errorResponse = {};
-          errorResponse["success"] = false;
-          errorResponse["error"] = "File path is required";
-          return JSON.stringify(errorResponse);
+          return createErrorResponse("File path is required");
         }
-        
+
         // Let DEVONthink handle file existence checking during import
-        
+
         // Get target database
         let targetDatabase;
         if (pDatabaseName) {
           const databases = theApp.databases();
           targetDatabase = databases.find(db => db.name() === pDatabaseName);
           if (!targetDatabase) {
-            const errorResponse = {};
-            errorResponse["success"] = false;
-            errorResponse["error"] = "Database not found: " + pDatabaseName;
-            return JSON.stringify(errorResponse);
+            return createErrorResponse("Database not found: " + pDatabaseName);
           }
         } else {
           targetDatabase = theApp.currentDatabase();
           if (!targetDatabase) {
-            const errorResponse = {};
-            errorResponse["success"] = false;
-            errorResponse["error"] = "No current database available";
-            return JSON.stringify(errorResponse);
+            return createErrorResponse("No current database available");
           }
         }
-        
+
         // Get target group
         let targetGroup;
         if (pParentGroupUuid) {
           try {
             targetGroup = theApp.getRecordWithUuid(pParentGroupUuid);
             if (!targetGroup) {
-              const errorResponse = {};
-              errorResponse["success"] = false;
-              errorResponse["error"] = "Parent group not found with UUID: " + pParentGroupUuid;
-              return JSON.stringify(errorResponse);
+              return createErrorResponse("Parent group not found with UUID: " + pParentGroupUuid);
             }
           } catch (e) {
-            const errorResponse = {};
-            errorResponse["success"] = false;
-            errorResponse["error"] = "Invalid parent group UUID: " + pParentGroupUuid + " - " + e.toString();
-            return JSON.stringify(errorResponse);
+            return createErrorResponse("Invalid parent group UUID: " + pParentGroupUuid + " - " + e.toString());
           }
         } else {
           targetGroup = targetDatabase.incomingGroup();
         }
-        
+
         // Build import options for importPath
         const importJxaOptions = {};
         importJxaOptions["to"] = targetGroup;
@@ -142,23 +135,20 @@ const importFile = async (input: ImportFileInput): Promise<ImportFileResult> => 
 
         // Import the file using DEVONthink's importPath method
         const importedRecord = theApp.importPath(pFilePath, importJxaOptions);
-        
+
         // Apply custom name after import if provided (importPath doesn't support name option)
         if (importedRecord && pCustomName) {
           importedRecord.name = pCustomName;
         }
-        
+
         if (!importedRecord) {
-          const errorResponse = {};
-          errorResponse["success"] = false;
-          errorResponse["error"] = "Failed to import file: " + pFilePath;
-          return JSON.stringify(errorResponse);
+          return createErrorResponse("Failed to import file: " + pFilePath);
         }
-        
+
         // Build response object
         const response = {};
         response["success"] = true;
-        
+
         const recordInfo = {};
         recordInfo["uuid"] = importedRecord.uuid();
         recordInfo["name"] = importedRecord.name();
@@ -166,16 +156,13 @@ const importFile = async (input: ImportFileInput): Promise<ImportFileResult> => 
         recordInfo["recordType"] = importedRecord.recordType();
         recordInfo["size"] = importedRecord.size();
         recordInfo["createdDate"] = importedRecord.creationDate().toISOString();
-        
+
         response["importedRecord"] = recordInfo;
-        
+
         return JSON.stringify(response);
-        
+
       } catch (error) {
-        const errorResponse = {};
-        errorResponse["success"] = false;
-        errorResponse["error"] = error.toString();
-        return JSON.stringify(errorResponse);
+        return createErrorResponse(error.toString());
       }
     })();
   `;

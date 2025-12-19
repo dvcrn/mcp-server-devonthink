@@ -128,12 +128,20 @@ const importWithOptions = async (
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
       const sysEvents = Application("System Events");
-      
+
+      // Helper function to create error responses
+      function createErrorResponse(errorMessage) {
+        const response = {};
+        response["success"] = false;
+        response["error"] = errorMessage;
+        return JSON.stringify(response);
+      }
+
       try {
         const pSourcePaths = [${sourcePaths.map((path) => `"${escapeStringForJXA(path)}"`).join(", ")}];
         const pParentGroupUuid = ${parentGroupUuid ? `"${escapeStringForJXA(parentGroupUuid)}"` : "null"};
         const pDatabaseName = ${databaseName ? `"${escapeStringForJXA(databaseName)}"` : "null"};
-        
+
         // Import options
         const pCreateIndex = ${createIndex};
         const pDuplicateDetection = ${duplicateDetection ? `"${escapeStringForJXA(duplicateDetection)}"` : `"rename"`};
@@ -143,51 +151,36 @@ const importWithOptions = async (
         const pFileFilter = ${fileFilter ? `"${escapeStringForJXA(fileFilter)}"` : "null"};
         const pExcludeHidden = ${excludeHidden};
         const pPreservePath = ${preservePath};
-        
+
         if (!pSourcePaths || pSourcePaths.length === 0) {
-          const errorResponse = {};
-          errorResponse["success"] = false;
-          errorResponse["error"] = "Source paths array is required and cannot be empty";
-          return JSON.stringify(errorResponse);
+          return createErrorResponse("Source paths array is required and cannot be empty");
         }
-        
+
         // Get target database
         let targetDatabase;
         if (pDatabaseName) {
           const databases = theApp.databases();
           targetDatabase = databases.find(db => db.name() === pDatabaseName);
           if (!targetDatabase) {
-            const errorResponse = {};
-            errorResponse["success"] = false;
-            errorResponse["error"] = "Database not found: " + pDatabaseName;
-            return JSON.stringify(errorResponse);
+            return createErrorResponse("Database not found: " + pDatabaseName);
           }
         } else {
           targetDatabase = theApp.currentDatabase();
           if (!targetDatabase) {
-            const errorResponse = {};
-            errorResponse["success"] = false;
-            errorResponse["error"] = "No current database available";
-            return JSON.stringify(errorResponse);
+            return createErrorResponse("No current database available");
           }
         }
-        
+
         // Get target group
         let targetGroup;
         if (pParentGroupUuid) {
           try {
             targetGroup = theApp.getRecordWithUuid(pParentGroupUuid);
             if (!targetGroup) {
-              const errorResponse = {};
-              errorResponse["success"] = false;
-              errorResponse["error"] = "Parent group not found with UUID: " + pParentGroupUuid;
-              return JSON.stringify(errorResponse);
+              return createErrorResponse("Parent group not found with UUID: " + pParentGroupUuid);
             }
           } catch (e) {
-            const errorResponse = {};
-            errorResponse["success"] = false;
-            errorResponse["error"] = "Invalid parent group UUID: " + pParentGroupUuid + " - " + e.toString();
-            return JSON.stringify(errorResponse);
+            return createErrorResponse("Invalid parent group UUID: " + pParentGroupUuid + " - " + e.toString());
           }
         } else {
           targetGroup = targetDatabase.incomingGroup();
@@ -513,10 +506,7 @@ const importWithOptions = async (
         return JSON.stringify(response);
         
       } catch (error) {
-        const errorResponse = {};
-        errorResponse["success"] = false;
-        errorResponse["error"] = error.toString();
-        return JSON.stringify(errorResponse);
+        return createErrorResponse(error.toString());
       }
     })();
   `;

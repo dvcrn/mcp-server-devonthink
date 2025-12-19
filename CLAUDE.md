@@ -812,6 +812,21 @@ mcp_client.call("import_with_options", {
 })
 ```
 
+### Import Options Behavior Details
+
+**`duplicateDetection` modes**:
+- `"skip"`: If a file with the same name exists in the target group, the import is skipped entirely
+- `"rename"`: Creates a unique name by appending a counter (e.g., "file 1.txt", "file 2.txt") when duplicates are detected
+- `"replace"`: Deletes the existing record before importing the new file
+
+**`createIndex` (asIndexed)**:
+- When `true`, creates indexed entries that reference the original file location
+- When `false`, imports files into the DEVONthink database (copies the file)
+
+**`preserveCreationDate`**:
+- Passes the original file's creation date to DEVONthink's import function
+- DEVONthink preserves this metadata on the imported record
+
 ### Key Advantages Over Content-Based Creation
 
 1. **Encoding Safety**: DEVONthink handles all character encodings internally
