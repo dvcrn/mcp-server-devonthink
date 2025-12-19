@@ -9,80 +9,86 @@ const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const ImportDirectorySchema = z
-  .object({
-    directoryPath: z
-      .string()
-      .describe("Absolute path to the directory to import"),
-    parentGroupUuid: z
-      .string()
-      .optional()
-      .describe("UUID of the parent group (defaults to database inbox)"),
-    databaseName: z
-      .string()
-      .optional()
-      .describe("Name of the target database (defaults to current database)"),
-    recursive: z
-      .boolean()
-      .optional()
-      .default(true)
-      .describe("Whether to import subdirectories recursively"),
-    fileFilter: z
-      .string()
-      .optional()
-      .describe("Glob pattern to filter files (e.g., *.md, *.{txt,md})"),
-    excludeHidden: z
-      .boolean()
-      .optional()
-      .default(true)
-      .describe("Whether to exclude hidden files and directories"),
-    preservePath: z
-      .boolean()
-      .optional()
-      .default(true)
-      .describe("Whether to preserve the directory structure in DEVONthink"),
-  })
-  .strict();
+	.object({
+		directoryPath: z.string().describe("Absolute path to the directory to import"),
+		parentGroupUuid: z
+			.string()
+			.optional()
+			.describe("UUID of the parent group (defaults to database inbox)"),
+		databaseName: z
+			.string()
+			.optional()
+			.describe("Name of the target database (defaults to current database)"),
+		recursive: z
+			.boolean()
+			.optional()
+			.default(true)
+			.describe("Whether to import subdirectories recursively"),
+		fileFilter: z
+			.string()
+			.optional()
+			.describe("Glob pattern to filter files (e.g., *.md, *.{txt,md})"),
+		excludeHidden: z
+			.boolean()
+			.optional()
+			.default(true)
+			.describe("Whether to exclude hidden files and directories"),
+		preservePath: z
+			.boolean()
+			.optional()
+			.default(true)
+			.describe("Whether to preserve the directory structure in DEVONthink"),
+	})
+	.strict();
 
 type ImportDirectoryInput = z.infer<typeof ImportDirectorySchema>;
 
 interface ImportDirectoryResult {
-  success: boolean;
-  error?: string;
-  importedRecords?: Array<{
-    uuid: string;
-    name: string;
-    location: string;
-    recordType: string;
-    size: number;
-    createdDate: string;
-  }>;
-  skippedFiles?: Array<{
-    path: string;
-    reason: string;
-  }>;
-  totalFiles?: number;
-  importedCount?: number;
-  skippedCount?: number;
+	success: boolean;
+	error?: string;
+	importedRecords?: Array<{
+		uuid: string;
+		name: string;
+		location: string;
+		recordType: string;
+		size: number;
+		createdDate: string;
+	}>;
+	skippedFiles?: Array<{
+		path: string;
+		reason: string;
+	}>;
+	totalFiles?: number;
+	importedCount?: number;
+	skippedCount?: number;
 }
 
 const importDirectory = async (input: ImportDirectoryInput): Promise<ImportDirectoryResult> => {
-  const { directoryPath, parentGroupUuid, databaseName, recursive, fileFilter, excludeHidden, preservePath } = input;
+	const {
+		directoryPath,
+		parentGroupUuid,
+		databaseName,
+		recursive,
+		fileFilter,
+		excludeHidden,
+		preservePath,
+	} = input;
 
-  // Security validation - check directory path for security risks
-  const pathValidation = validateFilePath(directoryPath, {
-    allowUserHome: true,
-    allowTempFiles: true,
-    allowRelativePaths: false
-  });
+	// Security validation - check directory path for security risks
+	const pathValidation = validateFilePath(directoryPath, {
+		allowUserHome: true,
+		allowTempFiles: true,
+		allowRelativePaths: false,
+	});
 
-  if (!pathValidation.isValid) {
-    return {
-      success: false,
-      error: createSecurityMessage(pathValidation)
-    };
-  }
+	if (!pathValidation.isValid) {
+		return {
+			success: false,
+			error: createSecurityMessage(pathValidation),
+		};
+	}
 
-  const script = `
+	const script = `
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
@@ -212,7 +218,7 @@ const importDirectory = async (input: ImportDirectoryInput): Promise<ImportDirec
             for (let i = 0; i < folderFiles.length; i++) {
               const file = folderFiles[i];
               const filePath = file.toString();
-              const fileName = filePath.split("/").pop();
+              const fileName = file.name();
               
               // Skip hidden files if requested
               if (pExcludeHidden && fileName.startsWith(".")) {
@@ -236,7 +242,7 @@ const importDirectory = async (input: ImportDirectoryInput): Promise<ImportDirec
               for (let i = 0; i < subFolders.length; i++) {
                 const subFolder = subFolders[i];
                 const subFolderPath = subFolder.toString();
-                const subFolderName = subFolderPath.split("/").pop();
+                const subFolderName = subFolder.name();
                 
                 // Skip hidden folders if requested
                 if (pExcludeHidden && subFolderName.startsWith(".")) {
@@ -358,12 +364,13 @@ const importDirectory = async (input: ImportDirectoryInput): Promise<ImportDirec
     })();
   `;
 
-  return await executeJxa<ImportDirectoryResult>(script);
+	return await executeJxa<ImportDirectoryResult>(script);
 };
 
 export const importDirectoryTool: Tool = {
-  name: "import_directory",
-  description: "Import a directory and its contents into DEVONthink, preserving structure. This tool recursively imports all files from a directory, optionally filtering by file patterns and preserving the folder hierarchy. Ideal for importing entire project structures or documentation folders.",
-  inputSchema: zodToJsonSchema(ImportDirectorySchema) as ToolInput,
-  run: importDirectory,
+	name: "import_directory",
+	description:
+		"Import a directory and its contents into DEVONthink, preserving structure. This tool recursively imports all files from a directory, optionally filtering by file patterns and preserving the folder hierarchy. Ideal for importing entire project structures or documentation folders.",
+	inputSchema: zodToJsonSchema(ImportDirectorySchema) as ToolInput,
+	run: importDirectory,
 };

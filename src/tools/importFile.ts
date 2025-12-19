@@ -9,73 +9,71 @@ const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const ImportFileSchema = z
-  .object({
-    filePath: z
-      .string()
-      .describe("Absolute path to the file to import"),
-    parentGroupUuid: z
-      .string()
-      .optional()
-      .describe("UUID of the parent group (defaults to database inbox)"),
-    databaseName: z
-      .string()
-      .optional()
-      .describe("Name of the target database (defaults to current database)"),
-    customName: z
-      .string()
-      .optional()
-      .describe("Custom name for the imported record (defaults to filename)"),
-  })
-  .strict();
+	.object({
+		filePath: z.string().describe("Absolute path to the file to import"),
+		parentGroupUuid: z
+			.string()
+			.optional()
+			.describe("UUID of the parent group (defaults to database inbox)"),
+		databaseName: z
+			.string()
+			.optional()
+			.describe("Name of the target database (defaults to current database)"),
+		customName: z
+			.string()
+			.optional()
+			.describe("Custom name for the imported record (defaults to filename)"),
+	})
+	.strict();
 
 type ImportFileInput = z.infer<typeof ImportFileSchema>;
 
 interface ImportFileResult {
-  success: boolean;
-  error?: string;
-  importedRecord?: {
-    uuid: string;
-    name: string;
-    location: string;
-    recordType: string;
-    size: number;
-    createdDate: string;
-  };
+	success: boolean;
+	error?: string;
+	importedRecord?: {
+		uuid: string;
+		name: string;
+		location: string;
+		recordType: string;
+		size: number;
+		createdDate: string;
+	};
 }
 
 const importFile = async (input: ImportFileInput): Promise<ImportFileResult> => {
-  const { filePath, parentGroupUuid, databaseName, customName } = input;
+	const { filePath, parentGroupUuid, databaseName, customName } = input;
 
-  // Security validation - check file path for security risks
-  const pathValidation = validateFilePath(filePath, {
-    allowUserHome: true,
-    allowTempFiles: true, // Allow temp files for legitimate use cases
-    allowRelativePaths: false
-  });
+	// Security validation - check file path for security risks
+	const pathValidation = validateFilePath(filePath, {
+		allowUserHome: true,
+		allowTempFiles: true, // Allow temp files for legitimate use cases
+		allowRelativePaths: false,
+	});
 
-  if (!pathValidation.isValid) {
-    return {
-      success: false,
-      error: createSecurityMessage(pathValidation)
-    };
-  }
+	if (!pathValidation.isValid) {
+		return {
+			success: false,
+			error: createSecurityMessage(pathValidation),
+		};
+	}
 
-  // Additional validation for user inputs that go into JXA scripts
-  if (customName && !isJXASafeString(customName)) {
-    return {
-      success: false,
-      error: "Security: Custom name contains patterns that could cause script execution issues"
-    };
-  }
+	// Additional validation for user inputs that go into JXA scripts
+	if (customName && !isJXASafeString(customName)) {
+		return {
+			success: false,
+			error: "Security: Custom name contains patterns that could cause script execution issues",
+		};
+	}
 
-  if (databaseName && !isJXASafeString(databaseName)) {
-    return {
-      success: false,
-      error: "Security: Database name contains unsafe characters"
-    };
-  }
+	if (databaseName && !isJXASafeString(databaseName)) {
+		return {
+			success: false,
+			error: "Security: Database name contains unsafe characters",
+		};
+	}
 
-  const script = `
+	const script = `
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
@@ -182,12 +180,13 @@ const importFile = async (input: ImportFileInput): Promise<ImportFileResult> => 
     })();
   `;
 
-  return await executeJxa<ImportFileResult>(script);
+	return await executeJxa<ImportFileResult>(script);
 };
 
 export const importFileTool: Tool = {
-  name: "import_file",
-  description: "Import a file from the filesystem into DEVONthink, preserving file type and metadata. This tool uses DEVONthink native import functionality which handles all file types properly, including binary files, and preserves metadata unlike content-based record creation.",
-  inputSchema: zodToJsonSchema(ImportFileSchema) as ToolInput,
-  run: importFile,
+	name: "import_file",
+	description:
+		"Import a file from the filesystem into DEVONthink, preserving file type and metadata. This tool uses DEVONthink native import functionality which handles all file types properly, including binary files, and preserves metadata unlike content-based record creation.",
+	inputSchema: zodToJsonSchema(ImportFileSchema) as ToolInput,
+	run: importFile,
 };

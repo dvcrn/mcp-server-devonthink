@@ -9,134 +9,128 @@ const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const ImportOptionsSchema = z.object({
-  createIndex: z
-    .boolean()
-    .optional()
-    .default(true)
-    .describe("Create index entries for imported files"),
-  duplicateDetection: z
-    .enum(["skip", "rename", "replace"])
-    .optional()
-    .default("rename")
-    .describe("How to handle duplicate files"),
-  preserveCreationDate: z
-    .boolean()
-    .optional()
-    .default(true)
-    .describe("Preserve original file creation dates"),
-  addTags: z
-    .array(z.string())
-    .optional()
-    .describe("Tags to add to all imported records"),
-  recursive: z
-    .boolean()
-    .optional()
-    .default(true)
-    .describe("Import subdirectories recursively (applies to directory sources)"),
-  fileFilter: z
-    .string()
-    .optional()
-    .describe("Glob pattern to filter files (e.g., *.md, *.{txt,md})"),
-  excludeHidden: z
-    .boolean()
-    .optional()
-    .default(true)
-    .describe("Whether to exclude hidden files and directories"),
-  preservePath: z
-    .boolean()
-    .optional()
-    .default(true)
-    .describe("Whether to preserve directory structure"),
+	createIndex: z
+		.boolean()
+		.optional()
+		.default(true)
+		.describe("Create index entries for imported files"),
+	duplicateDetection: z
+		.enum(["skip", "rename", "replace"])
+		.optional()
+		.default("rename")
+		.describe("How to handle duplicate files"),
+	preserveCreationDate: z
+		.boolean()
+		.optional()
+		.default(true)
+		.describe("Preserve original file creation dates"),
+	addTags: z.array(z.string()).optional().describe("Tags to add to all imported records"),
+	recursive: z
+		.boolean()
+		.optional()
+		.default(true)
+		.describe("Import subdirectories recursively (applies to directory sources)"),
+	fileFilter: z
+		.string()
+		.optional()
+		.describe("Glob pattern to filter files (e.g., *.md, *.{txt,md})"),
+	excludeHidden: z
+		.boolean()
+		.optional()
+		.default(true)
+		.describe("Whether to exclude hidden files and directories"),
+	preservePath: z
+		.boolean()
+		.optional()
+		.default(true)
+		.describe("Whether to preserve directory structure"),
 });
 
 const ImportWithOptionsSchema = z
-  .object({
-    sourcePaths: z
-      .array(z.string())
-      .min(1)
-      .describe("Array of file/directory paths to import"),
-    parentGroupUuid: z
-      .string()
-      .optional()
-      .describe("UUID of the parent group (defaults to database inbox)"),
-    databaseName: z
-      .string()
-      .optional()
-      .describe("Name of the target database (defaults to current database)"),
-    importOptions: ImportOptionsSchema
-      .optional()
-      .describe("Import configuration options"),
-  })
-  .strict();
+	.object({
+		sourcePaths: z.array(z.string()).min(1).describe("Array of file/directory paths to import"),
+		parentGroupUuid: z
+			.string()
+			.optional()
+			.describe("UUID of the parent group (defaults to database inbox)"),
+		databaseName: z
+			.string()
+			.optional()
+			.describe("Name of the target database (defaults to current database)"),
+		importOptions: ImportOptionsSchema.optional().describe("Import configuration options"),
+	})
+	.strict();
 
 type ImportWithOptionsInput = z.infer<typeof ImportWithOptionsSchema>;
 
 interface ImportWithOptionsResult {
-  success: boolean;
-  error?: string;
-  importedRecords?: Array<{
-    uuid: string;
-    name: string;
-    location: string;
-    recordType: string;
-    size: number;
-    createdDate: string;
-    sourcePath: string;
-  }>;
-  skippedFiles?: Array<{
-    path: string;
-    reason: string;
-  }>;
-  duplicateFiles?: Array<{
-    path: string;
-    action: string;
-    existingRecord?: string;
-  }>;
-  totalFiles?: number;
-  importedCount?: number;
-  skippedCount?: number;
-  duplicateCount?: number;
+	success: boolean;
+	error?: string;
+	importedRecords?: Array<{
+		uuid: string;
+		name: string;
+		location: string;
+		recordType: string;
+		size: number;
+		createdDate: string;
+		sourcePath: string;
+	}>;
+	skippedFiles?: Array<{
+		path: string;
+		reason: string;
+	}>;
+	duplicateFiles?: Array<{
+		path: string;
+		action: string;
+		existingRecord?: string;
+	}>;
+	totalFiles?: number;
+	importedCount?: number;
+	skippedCount?: number;
+	duplicateCount?: number;
 }
 
-const importWithOptions = async (input: ImportWithOptionsInput): Promise<ImportWithOptionsResult> => {
-  const { sourcePaths, parentGroupUuid, databaseName, importOptions } = input;
-  
-  // Security validation - check all source paths for security risks
-  const pathValidation = validateFilePaths(sourcePaths, {
-    allowUserHome: true,
-    allowTempFiles: true,
-    allowRelativePaths: false
-  });
+const importWithOptions = async (
+	input: ImportWithOptionsInput,
+): Promise<ImportWithOptionsResult> => {
+	const { sourcePaths, parentGroupUuid, databaseName, importOptions } = input;
 
-  if (pathValidation.invalid.length > 0) {
-    const blockedPaths = pathValidation.invalid.map(item =>
-      `${item.path}: ${createSecurityMessage(item.result)}`
-    ).join('; ');
+	// Security validation - check all source paths for security risks
+	const pathValidation = validateFilePaths(sourcePaths, {
+		allowUserHome: true,
+		allowTempFiles: true,
+		allowRelativePaths: false,
+	});
 
-    return {
-      success: false,
-      error: `Security validation failed for paths - ${blockedPaths}`
-    };
-  }
+	if (pathValidation.invalid.length > 0) {
+		const blockedPaths = pathValidation.invalid
+			.map((item) => `${item.path}: ${createSecurityMessage(item.result)}`)
+			.join("; ");
 
-  // Extract import options with defaults
-  const createIndex = importOptions?.createIndex ?? true;
-  const duplicateDetection = importOptions?.duplicateDetection ?? "rename";
-  const preserveCreationDate = importOptions?.preserveCreationDate ?? true;
-  const addTags = importOptions?.addTags ?? [];
-  const recursive = importOptions?.recursive ?? true;
-  const fileFilter = importOptions?.fileFilter;
-  const excludeHidden = importOptions?.excludeHidden ?? true;
-  const preservePath = importOptions?.preservePath ?? true;
+		return {
+			success: false,
+			error: `Security validation failed for paths - ${blockedPaths}`,
+		};
+	}
 
-  const script = `
+	// Extract import options with defaults
+	const createIndex = importOptions?.createIndex ?? true;
+	const duplicateDetection = importOptions?.duplicateDetection ?? "rename";
+	const preserveCreationDate = importOptions?.preserveCreationDate ?? true;
+	const addTags = importOptions?.addTags ?? [];
+	const recursive = importOptions?.recursive ?? true;
+	const fileFilter = importOptions?.fileFilter;
+	const excludeHidden = importOptions?.excludeHidden ?? true;
+	const preservePath = importOptions?.preservePath ?? true;
+
+	const script = `
     (() => {
       const theApp = Application("DEVONthink");
       theApp.includeStandardAdditions = true;
       const sysEvents = Application("System Events");
       
       try {
-        const pSourcePaths = [${sourcePaths.map(path => `"${escapeStringForJXA(path)}"`).join(', ')}];
+        const pSourcePaths = [${sourcePaths.map((path) => `"${escapeStringForJXA(path)}"`).join(", ")}];
         const pParentGroupUuid = ${parentGroupUuid ? `"${escapeStringForJXA(parentGroupUuid)}"` : "null"};
         const pDatabaseName = ${databaseName ? `"${escapeStringForJXA(databaseName)}"` : "null"};
         
@@ -144,7 +138,7 @@ const importWithOptions = async (input: ImportWithOptionsInput): Promise<ImportW
         const pCreateIndex = ${createIndex};
         const pDuplicateDetection = ${duplicateDetection ? `"${escapeStringForJXA(duplicateDetection)}"` : `"rename"`};
         const pPreserveCreationDate = ${preserveCreationDate};
-        const pAddTags = [${addTags.map(tag => `"${escapeStringForJXA(tag)}"`).join(', ')}];
+        const pAddTags = [${addTags.map((tag) => `"${escapeStringForJXA(tag)}"`).join(", ")}];
         const pRecursive = ${recursive};
         const pFileFilter = ${fileFilter ? `"${escapeStringForJXA(fileFilter)}"` : "null"};
         const pExcludeHidden = ${excludeHidden};
@@ -527,12 +521,13 @@ const importWithOptions = async (input: ImportWithOptionsInput): Promise<ImportW
     })();
   `;
 
-  return await executeJxa<ImportWithOptionsResult>(script);
+	return await executeJxa<ImportWithOptionsResult>(script);
 };
 
 export const importWithOptionsTool: Tool = {
-  name: "import_with_options",
-  description: "Import files with advanced options and transformations. This tool provides comprehensive import functionality with batch processing, duplicate handling, filtering, tagging, and directory structure preservation. Ideal for complex import operations with specific requirements.",
-  inputSchema: zodToJsonSchema(ImportWithOptionsSchema) as ToolInput,
-  run: importWithOptions,
+	name: "import_with_options",
+	description:
+		"Import files with advanced options and transformations. This tool provides comprehensive import functionality with batch processing, duplicate handling, filtering, tagging, and directory structure preservation. Ideal for complex import operations with specific requirements.",
+	inputSchema: zodToJsonSchema(ImportWithOptionsSchema) as ToolInput,
+	run: importWithOptions,
 };
