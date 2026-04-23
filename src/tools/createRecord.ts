@@ -34,6 +34,7 @@ const createRecord = async (
 	recordId?: number;
 	name?: string;
 	uuid?: string;
+	referenceURL?: string;
 	error?: string;
 }> => {
 	const { name, type, content, url, parentGroupUuid, databaseName } = input;
@@ -86,7 +87,8 @@ const createRecord = async (
             success: true,
             recordId: newRecord.id(),
             name: newRecord.name(),
-            uuid: newRecord.uuid()
+            uuid: newRecord.uuid(),
+            referenceURL: newRecord.referenceURL()
           });
         } else {
           return JSON.stringify({
@@ -108,6 +110,7 @@ const createRecord = async (
 		recordId?: number;
 		name?: string;
 		uuid?: string;
+		referenceURL?: string;
 		error?: string;
 	}>(script);
 };
